@@ -39,6 +39,14 @@ static int debug;
 
 static struct usb_gadget_strings strings;
 
+struct endpoint_item {
+	char desc[7];
+	struct endpoint_item *next;
+};
+
+static struct endpoint_item *ep_head;
+static int ep_list_len;
+
 /*-------------------------------------------------------------------------*/
 
 /* Copy config from given vId/pId device */

@@ -83,15 +83,14 @@ static int autoconfig()
 
 /*-------------------------------------------------------------------------*/
 
-/* full duplex data, with at least three threads: ep0, sink, and source */
+struct thread_handle {
+	pthread_t thread;
+	struct pollfd poll;
+	char desc[7];
+};
 
-static pthread_t	ep0;
-
-static pthread_t	source;
-static int		source_fd = -1;
-
-static pthread_t	sink;
-static int		sink_fd = -1;
+static struct thread_handle ep0;
+static struct thread_handle *eps;
 
 // FIXME no status i/o yet
 
@@ -103,7 +102,7 @@ static void close_fd (void *fd_ptr)
 	*(int *)fd_ptr = -1;
 
 	/* test the FIFO ioctls (non-ep0 code paths) */
-	if (pthread_self () != ep0) {
+	if (pthread_self () != ep0.thread) {
 		status = ioctl (fd, GADGETFS_FIFO_STATUS);
 		if (status < 0) {
 			/* ENODEV reported after disconnect */
@@ -129,10 +128,7 @@ static void close_fd (void *fd_ptr)
  * whether or not the host is connected
  */
 static int
-ep_config (char *name, const char *label,
-	struct usb_endpoint_descriptor *fs,
-	struct usb_endpoint_descriptor *hs
-)
+ep_config (char *name, const char *label, char *ep)
 {
 	int		fd, status;
 	char		buf [USB_BUFSIZE];
@@ -148,12 +144,9 @@ ep_config (char *name, const char *label,
 
 	/* one (fs or ls) or two (fs + hs) sets of config descriptors */
 	*(__u32 *)buf = 1;	/* tag for this format */
-	memcpy (buf + 4, fs, USB_DT_ENDPOINT_SIZE);
-	if (HIGHSPEED)
-		memcpy (buf + 4 + USB_DT_ENDPOINT_SIZE,
-			hs, USB_DT_ENDPOINT_SIZE);
-	status = write (fd, buf, 4 + USB_DT_ENDPOINT_SIZE
-			+ (HIGHSPEED ? USB_DT_ENDPOINT_SIZE : 0));
+	memcpy(buf + 4,  ep, USB_DT_ENDPOINT_SIZE);
+	memcpy(buf + 4 + USB_DT_ENDPOINT_SIZE, ep, USB_DT_ENDPOINT_SIZE);
+	status = write (fd, buf, 4 + USB_DT_ENDPOINT_SIZE + USB_DT_ENDPOINT_SIZE);
 	if (status < 0) {
 		status = -errno;
 		fprintf (stderr, "%s config %s error %d (%s)\n",
@@ -169,17 +162,19 @@ ep_config (char *name, const char *label,
 	return fd;
 }
 
-static void *simple_source_thread (void *param)
+static void *in_thread (void *param)
 {
-	char		*name = (char *) param;
-	int		status;
+	struct thread_handle *ep = (struct thread_handle *) param;
+	char name[8];
+	int	 status;
 
-	status = ep_config(name, "source_open", NULL, NULL);
+	sprintf(name, "ep%d%s", (ep->desc[2] && 0x7f), "in");
+	status = ep_config(name, "source_open", ep->desc);
 	if (status < 0)
 		return 0;
-	source_fd = status;
+	ep->poll.fd = status;
 
-	pthread_cleanup_push (close_fd, &source_fd);
+	pthread_cleanup_push (close_fd, &ep->poll.fd);
 	do {
 		/* original LinuxThreads cancelation didn't work right
 		 * so test for it explicitly.
@@ -187,7 +182,7 @@ static void *simple_source_thread (void *param)
 		pthread_testcancel ();
 
 		/* FIXME: actually do something useful */
-		status = write(source_fd, name, 1);
+		status = write(ep->poll.fd, name, 1);
 
 	} while (status > 0);
 	if (status == 0) {
@@ -202,26 +197,28 @@ static void *simple_source_thread (void *param)
 	return 0;
 }
 
-static void *simple_sink_thread (void *param)
+static void *out_thread (void *param)
 {
-	char		*name = (char *) param;
+	struct thread_handle *ep = (struct thread_handle *) param;
+	char name[8];
 	int		status;
 	char		buf [1];
 
-	status = ep_config(name, "sink_open", NULL, NULL);
+	sprintf(name, "ep%d%s", (ep->desc[2] && 0x7f), "in");
+	status = ep_config(name, "sink_open", ep->desc);
 	if (status < 0)
 		return 0;
-	sink_fd = status;
+	ep->poll.fd = status;
 
 	/* synchronous reads of endless streams of data */
-	pthread_cleanup_push (close_fd, &sink_fd);
+	pthread_cleanup_push (close_fd, &ep->poll.fd);
 	do {
 		/* original LinuxThreads cancelation didn't work right
 		 * so test for it explicitly.
 		 */
 		pthread_testcancel ();
 		errno = 0;
-		status = read (sink_fd, buf, 1);
+		status = read (ep->poll.fd, buf, 1);
 		if (status < 0)
 			break;
 	} while (status > 0);
@@ -237,37 +234,48 @@ static void *simple_sink_thread (void *param)
 	return 0;
 }
 
-static void *(*source_thread) (void *);
-static void *(*sink_thread) (void *);
+//static void *(*in_thread) (void *, void *);
+//static void *(*out_thread) (void *, void *);
 
 static void start_io ()
 {
 	sigset_t	allsig, oldsig;
+	struct endpoint_item *ep_item = ep_head;
+	int i;
+	char name[8];
 
 	sigfillset (&allsig);
 	errno = pthread_sigmask (SIG_SETMASK, &allsig, &oldsig);
 	if (errno < 0) {
-		perror ("set thread signal mask");
+		perror("set thread signal mask");
 		return;
 	}
 
-	/* is it true that the LSB requires programs to disconnect
-	 * from their controlling tty before pthread_create()?
-	 * why?  this clearly doesn't ...
-	 */
-
-	if (pthread_create (&source, 0,
-			source_thread, (void *) "ep1in") != 0) {
-		perror ("can't create source thread");
-		goto cleanup;
-	}
-
-	if (pthread_create (&sink, 0,
-			sink_thread, (void *) "ep1out") != 0) {
-		perror ("can't create sink thread");
-		pthread_cancel (source);
-		source = ep0;
-		goto cleanup;
+	eps = malloc(ep_list_len * sizeof(struct thread_handle));
+	if(eps == NULL)
+		fprintf(stderr, "Unable to allocate %d bytes for threads\n", ep_list_len * sizeof(struct thread_handle));
+	
+	for(i=0; i<ep_list_len; i++) {
+		memcpy(ep_item->desc, &eps[i].desc, 7);
+		if(ep_item->desc[2] && 0x80) {
+			
+			if (pthread_create(&eps[i].thread, 0, in_thread,
+							   (void *) &eps[i]) != 0) {
+				perror("can't create thread");
+				goto cleanup;
+			}
+		} else {
+			sprintf(name, "ep%d%s", (ep_item->desc[2] && 0x7f), "out");
+			if (pthread_create(&eps[i].thread, 0, out_thread,
+							   (void *) &eps[i]) != 0) {
+				perror("can't create thread");
+				// DGS FIXME Clean up existing threads
+				//pthread_cancel (source);
+				//source = ep0.thread;
+				goto cleanup;
+			}
+		}
+		ep_item = ep_item->next;
 	}
 
 	/* give the other threads a chance to run before we report
@@ -287,18 +295,15 @@ cleanup:
 
 static void stop_io ()
 {
-	if (!pthread_equal (source, ep0)) {
-		pthread_cancel (source);
-		if (pthread_join (source, 0) != 0)
-			perror ("can't join source thread");
-		source = ep0;
-	}
-
-	if (!pthread_equal (sink, ep0)) {
-		pthread_cancel (sink);
-		if (pthread_join (sink, 0) != 0)
-			perror ("can't join sink thread");
-		sink = ep0;
+	int i;
+	// DGS FIXME Loop through EP threads, kill all
+	for(i=0; i<ep_list_len; i++) {
+		if (!pthread_equal (eps[i].thread, ep0.thread)) {
+			pthread_cancel (eps[i].thread);
+			if (pthread_join (eps[i].thread, 0) != 0)
+				perror ("can't join source thread");
+			eps[i].thread = ep0.thread;
+		}
 	}
 }
 
@@ -350,7 +355,7 @@ static int init_device(__u16 vendorId, __u16 productId)
 
 static void handle_control (int fd, struct usb_ctrlrequest *setup)
 {
-	int		status, tmp;
+	int		status, tmp, i;
 	__u8		buf [256];
 	__u16		value, index, length;
 
@@ -465,13 +470,11 @@ static void handle_control (int fd, struct usb_ctrlrequest *setup)
 
 		/* just reset toggle/halt for the interface's endpoints */
 		status = 0;
-		if (ioctl (source_fd, GADGETFS_CLEAR_HALT) < 0) {
-			status = errno;
-			perror ("reset source fd");
-		}
-		if (ioctl (sink_fd, GADGETFS_CLEAR_HALT) < 0) {
-			status = errno;
-			perror ("reset sink fd");
+		for(i=0; i<ep_list_len; i++) {
+			if (ioctl (eps[i].poll.fd, GADGETFS_CLEAR_HALT) < 0) {
+				status = errno;
+				perror("reset pe fd");
+			}
 		}
 		/* FIXME eventually reset the status endpoint too */
 		if (status)
@@ -535,9 +538,8 @@ static void *ep0_thread (void *param)
 	int			fd = *(int*) param;
 	struct sigaction	action;
 	time_t			now, last;
-	struct pollfd		ep0_poll;
 
-	source = sink = ep0 = pthread_self();
+	ep0.thread = pthread_self();
 	pthread_cleanup_push (close_fd, param);
 
 	/* REVISIT signal handling ... normally one pthread should
@@ -555,8 +557,8 @@ static void *ep0_thread (void *param)
 		return 0;
 	}
 
-	ep0_poll.fd = fd;
-	ep0_poll.events = POLLIN | POLLOUT | POLLHUP;
+	ep0.poll.fd = fd;
+	ep0.poll.events = POLLIN | POLLOUT | POLLHUP;
 
 	/* event loop */
 	last = 0;
@@ -572,7 +574,7 @@ static void *ep0_thread (void *param)
 		 * AIO is needed without pthreads, ep0 can be driven
 		 * instead using SIGIO.
 		 */
-		tmp = poll(&ep0_poll, 1, -1);
+		tmp = poll(&ep0.poll, 1, -1);
 		if (debug) {
 			time (&now);
 			if ((now - last) > LOGDELAY) {
@@ -669,8 +671,8 @@ main (int argc, char **argv)
 	__u16 vendorId, productId;
 	int have_vid, have_pid;
 
-	source_thread = simple_source_thread;
-	sink_thread = simple_sink_thread;
+	//source_thread = simple_source_thread;
+	//sink_thread = simple_sink_thread;
 
 	have_vid = have_pid = 0;
 	while ((c = getopt (argc, argv, "p:v:d")) != EOF) {

@@ -12,11 +12,10 @@ Why?
 How?
 ----
 As root, or using sudo:
-
-# modprobe gadgetfs
-# mkdir /gadget
-# mount -t gadgetfs none /gadget
-# proxy -v <vendorId> -p <productId>
+    # modprobe gadgetfs
+    # mkdir /gadget
+    # mount -t gadgetfs none /gadget
+    # proxy -v <vendorId> -p <productId>
 
 ToDo
 ----

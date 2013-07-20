@@ -91,8 +91,32 @@ int fetch_strings(libusb_device_handle *dev) {
 	return max_index;
 }
 
+static struct endpoint_item *ep_tail = NULL;
+
+/* We're going to need the endpoints again, so store them in a list */
+int append_endpoint(struct usb_endpoint_descriptor *ep) {
+	struct endpoint_item *ep_item;
+	
+	if(ep_tail == NULL)
+		ep_item = ep_head;
+	else
+		ep_item = ep_tail->next;
+		
+	ep_item = malloc(sizeof(struct endpoint_item));
+	if(ep_item == NULL) {
+		fprintf(stderr, "Out of memory - unable to allocate %d bytes", sizeof(struct endpoint_item));
+		return -1;
+	}
+	memcpy(ep, &ep_item->desc, USB_DT_ENDPOINT_SIZE);
+	ep_tail = ep_item;
+
+	ep_list_len++;
+	return 0;
+}
+
+/* Clone a config descriptor + associated interfaces and endpoints */
 static char *
-clone_config(char *cp, struct libusb_config_descriptor *config)
+clone_config(char *cp, struct libusb_config_descriptor *config, int highspeed)
 {
 	const struct libusb_interface_descriptor *iface;
 	const struct libusb_endpoint_descriptor *libusb_ep;
@@ -106,6 +130,7 @@ clone_config(char *cp, struct libusb_config_descriptor *config)
 	memcpy(cp, config, USB_DT_CONFIG_SIZE);
 	cp += USB_DT_CONFIG_SIZE;
 
+	/* interfaces */
 	for(i=0; i < config->bNumInterfaces; i++) {
 		/* No endianness issues here, all fields are u8s */
 		for(j=0; j < config->interface->num_altsetting; j++) {
@@ -113,12 +138,15 @@ clone_config(char *cp, struct libusb_config_descriptor *config)
 			memcpy(cp, iface, USB_DT_INTERFACE_SIZE);
 			cp += USB_DT_INTERFACE_SIZE;
 
+			/* endpoints */
 			for (k = 0; k < iface->bNumEndpoints; k++) {
 				libusb_ep = &iface->endpoint[k];
 				memcpy (cp, libusb_ep, USB_DT_ENDPOINT_SIZE);
 				ep = (struct usb_endpoint_descriptor *) cp;
 				ep->wMaxPacketSize = __cpu_to_le16(libusb_ep->wMaxPacketSize);
 				cp += USB_DT_ENDPOINT_SIZE;
+				if(!highspeed)
+					append_endpoint(ep);
 			}
 		}
 	}
@@ -134,8 +162,9 @@ int clone_descriptors(__u16 vendorId, __u16 productId, char *buf) {
 	struct libusb_device_descriptor slave_desc;
 	struct usb_device_descriptor *device_desc;
 	struct libusb_config_descriptor *config;
-	int i, r, silly;
-	
+	int i, r, hs;
+
+	ep_list_len = 0;
 	cp = &buf[0];
 	/* tag for this descriptor format */
 	*(__u32 *)cp = 0;
@@ -155,20 +184,20 @@ int clone_descriptors(__u16 vendorId, __u16 productId, char *buf) {
 
 		/* This is silly! Copy endpoints a second time if we're using a
 		 * high speed controller - which we are */
-		for(silly=0; silly < 2; silly++) {
+		for(hs=0; hs < 2; hs++) {
 			for(i=0; i<slave_desc.bNumConfigurations; ++i) {
 				r = libusb_get_config_descriptor(dev, i, &config);
 				if(r<0) {
 					show_libusb_error(r);
 					return r;
 				}
-				cp = clone_config(cp, config);
+				cp = clone_config(cp, config, hs);
 			}
 		}
 
 		libusb_free_config_descriptor(config);
 
-		/* and device descriptor at the end */
+		/* device descriptor is the last descriptor */
 		device_desc = (struct usb_device_descriptor *) cp;
 		memcpy (cp, &slave_desc, USB_DT_DEVICE_SIZE);
 		cp += USB_DT_DEVICE_SIZE;
