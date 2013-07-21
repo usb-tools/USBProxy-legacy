@@ -295,7 +295,7 @@ cleanup:
 	}
 }
 
-static void stop_io ()
+static void stop_io()
 {
 	int i;
 	// DGS FIXME Loop through EP threads, kill all
@@ -365,35 +365,29 @@ static int init_device(__u16 vendorId, __u16 productId)
 
 static void handle_control (int fd, struct usb_ctrlrequest *setup)
 {
-	int		status, r;
+	int status, r;
 	unsigned char buf[256];
-	__u16		value, index, length;
+	__u16 value, index, length;
 
 	value = __le16_to_cpu(setup->wValue);
 	index = __le16_to_cpu(setup->wIndex);
 	length = __le16_to_cpu(setup->wLength);
 
 	if (debug)
-		fprintf (stderr, "SETUP %02x.%02x "
-				"v%04x i%04x %d\n",
-			setup->bRequestType, setup->bRequest,
-			value, index, length);
+		fprintf (stderr, "SETUP %02x.%02x v%04x i%04x %d\n",
+				 setup->bRequestType, setup->bRequest, value, index, length);
 
-	status = 0;
-	while(status >= 0) {
-		r = libusb_control_transfer(devh, setup->bRequestType,
-										setup->bRequest, value, index, &buf[0],
-										length, 0);
-		if(r < 0) {
-			fprintf(stderr, "Error forwarding control request");
-		}
-		status = write (fd, buf, r);
+	r = libusb_control_transfer(devh, setup->bRequestType,
+									setup->bRequest, value, index, &buf[0],
+									length, 0);
+	if(r < 0) {
+		fprintf(stderr, "Error forwarding control request (%d)\n", r);
+	} else {
+		status = write(fd, &buf[0], r);
 
-		if (status != -1)
-			fprintf (stderr, "can't stall ep0 for %02x.%02x\n",
-				setup->bRequestType, setup->bRequest);
-		else if (errno != EL2HLT)
-			perror ("ep0 stall");
+		if (status != r)
+			fprintf (stderr, "Error writing to ep0 (%d of %d written)\n",
+					 status, r);
 	}
 }
 
@@ -423,7 +417,7 @@ static const char *speed (enum usb_device_speed s)
 
 static void *ep0_thread (void *param)
 {
-	int			fd = *(int*) param;
+	int fd = *(int*) param;
 	struct sigaction	action;
 	time_t			now, last;
 
@@ -452,10 +446,8 @@ static void *ep0_thread (void *param)
 	/* event loop */
 	last = 0;
 	while(1) {
-		int				tmp;
 		struct usb_gadgetfs_event	event [NEVENT];
-		int				connected = 0;
-		int				i, nevent;
+		int tmp, i, nevent, connected = 0;
 
 		/* Use poll() to test that mechanism, to generate
 		 * activity timestamps, and to make it easier to
@@ -517,7 +509,7 @@ static void *ep0_thread (void *param)
 				current_speed = USB_SPEED_UNKNOWN;
 				if (debug)
 					fprintf(stderr, "DISCONNECT\n");
-				stop_io ();
+				stop_io();
 				break;
 			case GADGETFS_SUSPEND:
 				// connected = 1;
@@ -534,7 +526,7 @@ static void *ep0_thread (void *param)
 done:
 		fflush (stdout);
 		if (connected)
-			stop_io ();
+			stop_io();
 		break;
 	}
 	if (debug)
@@ -600,6 +592,6 @@ main (int argc, char **argv)
 	fprintf (stderr, "/gadget/%s ep0 configured\n", DEVNAME);
 	fflush (stderr);
 
-	(void) ep0_thread(&fd);
+	ep0_thread(&fd);
 	return 0;
 }
