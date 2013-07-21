@@ -17,12 +17,14 @@ inspection, it would only build against a relatively old kernel version.
 How?
 ----
 As root, or using sudo:
+
     # modprobe gadgetfs
     # mkdir /gadget
     # mount -t gadgetfs none /gadget
     # usb-mitm -d -v <vendorId> -p <productId>
 
 Then, open a second connection to the BBB and run tshark to dump packets:
+
     # tshark -i usbmon1 -w /tmp/capture.pcap
 
 ToDo
