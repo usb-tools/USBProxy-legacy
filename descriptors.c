@@ -1,7 +1,7 @@
 /*
  * Copyright 2013 Dominic Spill
  *
- * This file is part of USB Proxy.
+ * This file is part of USB-MitM.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -155,10 +155,9 @@ clone_config(char *cp, struct libusb_config_descriptor *config, int highspeed)
 }
 
 /* Copy config from given vId/pId device */
-int clone_descriptors(__u16 vendorId, __u16 productId, char *buf) {
+int clone_descriptors(__u16 vendorId, __u16 productId, libusb_device_handle* devh, char *buf) {
 	char *cp;
 	libusb_device* dev;
-	libusb_device_handle* slave_devh;
 	struct libusb_device_descriptor slave_desc;
 	struct usb_device_descriptor *device_desc;
 	struct libusb_config_descriptor *config;
@@ -170,12 +169,9 @@ int clone_descriptors(__u16 vendorId, __u16 productId, char *buf) {
 	*(__u32 *)cp = 0;
 	cp += 4;
 
-	libusb_init(NULL);
-	libusb_set_debug(NULL, debug);
-	if((slave_devh = libusb_open_device_with_vid_pid(NULL, vendorId, productId))
-	   != NULL) {
+	if(devh != NULL) {
 		/* Copy configuration in to gadget structs */
-		dev = libusb_get_device(slave_devh);
+		dev = libusb_get_device(devh);
 		r = libusb_get_device_descriptor(dev, &slave_desc);
 		if(r<0) {
 			show_libusb_error(r);

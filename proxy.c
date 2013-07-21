@@ -1,7 +1,7 @@
 /*
  * Copyright 2013 Dominic Spill
  *
- * This file is part of USB Proxy.
+ * This file is part of USB-MitM.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,6 +53,8 @@
 
 #include "descriptors.h"
 
+static int debug;
+
 /*-------------------------------------------------------------------------*/
 
 #define	CONFIG_VALUE		3
@@ -91,6 +93,8 @@ struct thread_handle {
 
 static struct thread_handle ep0;
 static struct thread_handle *eps;
+
+static libusb_device_handle* devh;
 
 // FIXME no status i/o yet
 
@@ -234,9 +238,6 @@ static void *out_thread (void *param)
 	return 0;
 }
 
-//static void *(*in_thread) (void *, void *);
-//static void *(*out_thread) (void *, void *);
-
 static void start_io ()
 {
 	sigset_t	allsig, oldsig;
@@ -257,6 +258,7 @@ static void start_io ()
 	
 	for(i=0; i<ep_list_len; i++) {
 		memcpy(ep_item->desc, &eps[i].desc, 7);
+		// DGS FIXME: Only supports buk in/out EPs so far
 		if(ep_item->desc[2] && 0x80) {
 			
 			if (pthread_create(&eps[i].thread, 0, in_thread,
@@ -313,8 +315,16 @@ static int init_device(__u16 vendorId, __u16 productId)
 {
 	int len, status, fd, i;
 	char buf[4096];
+	printf("in init_device\n");
 
-	len = clone_descriptors(vendorId, productId, buf);
+	libusb_init(NULL);
+	libusb_set_debug(NULL, debug);
+	devh = libusb_open_device_with_vid_pid(NULL, vendorId, productId);
+	printf("devh acquired - cloning...\n");
+
+	len = clone_descriptors(vendorId, productId, devh, buf);
+	printf("devh cloned\n");
+
 	if(len < 0) {
 		fprintf (stderr, "Unable to clone device config (%d)\n", len);
 		return len;
@@ -355,8 +365,8 @@ static int init_device(__u16 vendorId, __u16 productId)
 
 static void handle_control (int fd, struct usb_ctrlrequest *setup)
 {
-	int		status, tmp, i;
-	__u8		buf [256];
+	int		status, r;
+	unsigned char buf[256];
 	__u16		value, index, length;
 
 	value = __le16_to_cpu(setup->wValue);
@@ -369,144 +379,22 @@ static void handle_control (int fd, struct usb_ctrlrequest *setup)
 			setup->bRequestType, setup->bRequest,
 			value, index, length);
 
-	/*
-	if ((setup->bRequestType & USB_TYPE_MASK) != USB_TYPE_STANDARD)
-		goto special;
-	*/
-
-	switch (setup->bRequest) {	/* usb 2.0 spec ch9 requests */
-	case USB_REQ_GET_DESCRIPTOR:
-		if (setup->bRequestType != USB_DIR_IN)
-			goto stall;
-		switch (value >> 8) {
-		case USB_DT_STRING:
-			tmp = value & 0x0ff;
-			if (debug > 1)
-				fprintf (stderr,
-					"... get string %d lang %04x\n",
-					tmp, index);
-			if (tmp != 0 && index != strings.language)
-				goto stall;
-			status = usb_gadget_get_string (&strings, tmp, buf);
-			if (status < 0)
-				goto stall;
-			tmp = status;
-			if (length < tmp)
-				tmp = length;
-			status = write (fd, buf, tmp);
-			if (status < 0) {
-				if (errno == EIDRM)
-					fprintf (stderr, "string timeout\n");
-				else
-					perror ("write string data");
-			} else if (status != tmp) {
-				fprintf (stderr, "short string write, %d\n",
-					status);
-			}
-			break;
-		default:
-			goto stall;
+	status = 0;
+	while(status >= 0) {
+		r = libusb_control_transfer(devh, setup->bRequestType,
+										setup->bRequest, value, index, &buf[0],
+										length, 0);
+		if(r < 0) {
+			fprintf(stderr, "Error forwarding control request");
 		}
-		return;
-	case USB_REQ_SET_CONFIGURATION:
-		if (setup->bRequestType != USB_DIR_OUT)
-			goto stall;
-		if (debug)
-			fprintf (stderr, "CONFIG #%d\n", value);
+		status = write (fd, buf, r);
 
-		/* Kernel is normally waiting for us to finish reconfiguring
-		 * the device.
-		 *
-		 * Some hardware can't, notably older PXA2xx hardware.  (With
-		 * racey and restrictive config change automagic.  PXA 255 is
-		 * OK, most PXA 250s aren't.  If it has a UDC CFR register,
-		 * it can handle deferred response for SET_CONFIG.)  To handle
-		 * such hardware, don't write code this way ... instead, keep
-		 * the endpoints always active and don't rely on seeing any
-		 * config change events, either this or SET_INTERFACE.
-		 */
-		switch (value) {
-		case CONFIG_VALUE:
-			start_io ();
-			break;
-		case 0:
-			stop_io ();
-			break;
-		default:
-			/* kernel bug -- "can't happen" */
-			fprintf (stderr, "? illegal config\n");
-			goto stall;
-		}
-
-		/* ... ack (a write would stall) */
-		status = read (fd, &status, 0);
-		if (status)
-			perror ("ack SET_CONFIGURATION");
-		return;
-	case USB_REQ_GET_INTERFACE:
-		if (setup->bRequestType != (USB_DIR_IN|USB_RECIP_INTERFACE)
-				|| index != 0
-				|| length > 1)
-			goto stall;
-
-		/* only one altsetting in this driver */
-		buf [0] = 0;
-		status = write (fd, buf, length);
-		if (status < 0) {
-			if (errno == EIDRM)
-				fprintf (stderr, "GET_INTERFACE timeout\n");
-			else
-				perror ("write GET_INTERFACE data");
-		} else if (status != length) {
-			fprintf (stderr, "short GET_INTERFACE write, %d\n",
-				status);
-		}
-		return;
-	case USB_REQ_SET_INTERFACE:
-		if (setup->bRequestType != USB_RECIP_INTERFACE
-				|| index != 0
-				|| value != 0)
-			goto stall;
-
-		/* just reset toggle/halt for the interface's endpoints */
-		status = 0;
-		for(i=0; i<ep_list_len; i++) {
-			if (ioctl (eps[i].poll.fd, GADGETFS_CLEAR_HALT) < 0) {
-				status = errno;
-				perror("reset pe fd");
-			}
-		}
-		/* FIXME eventually reset the status endpoint too */
-		if (status)
-			goto stall;
-
-		/* ... and ack (a write would stall) */
-		status = read (fd, &status, 0);
-		if (status)
-			perror ("ack SET_INTERFACE");
-		return;
-	default:
-		goto stall;
+		if (status != -1)
+			fprintf (stderr, "can't stall ep0 for %02x.%02x\n",
+				setup->bRequestType, setup->bRequest);
+		else if (errno != EL2HLT)
+			perror ("ep0 stall");
 	}
-
-stall:
-	if (debug)
-		fprintf (stderr, "... protocol stall %02x.%02x\n",
-			setup->bRequestType, setup->bRequest);
-
-	/* non-iso endpoints are stalled by issuing an i/o request
-	 * in the "wrong" direction.  ep0 is special only because
-	 * the direction isn't fixed.
-	 */
-	if (setup->bRequestType & USB_DIR_IN)
-		status = read (fd, &status, 0);
-	else
-		status = write (fd, &status, 0);
-	if (status != -1)
-		fprintf (stderr, "can't stall ep0 for %02x.%02x\n",
-			setup->bRequestType, setup->bRequest);
-	else if (errno != EL2HLT)
-		perror ("ep0 stall");
 }
 
 static void signothing (int sig, siginfo_t *info, void *ptr)
@@ -560,9 +448,10 @@ static void *ep0_thread (void *param)
 	ep0.poll.fd = fd;
 	ep0.poll.events = POLLIN | POLLOUT | POLLHUP;
 
+	start_io();
 	/* event loop */
 	last = 0;
-	for (;;) {
+	while(1) {
 		int				tmp;
 		struct usb_gadgetfs_event	event [NEVENT];
 		int				connected = 0;
@@ -621,7 +510,7 @@ static void *ep0_thread (void *param)
 				break;
 			case GADGETFS_SETUP:
 				connected = 1;
-				handle_control (fd, &event [i].u.setup);
+				handle_control(fd, &event [i].u.setup);
 				break;
 			case GADGETFS_DISCONNECT:
 				connected = 0;
@@ -703,6 +592,7 @@ main (int argc, char **argv)
 		return 1;
 	}
 
+	printf("Calling init_device\n");
 	fd = init_device(vendorId, productId);
 	if (fd < 0)
 		return 1;
@@ -710,9 +600,6 @@ main (int argc, char **argv)
 	fprintf (stderr, "/gadget/%s ep0 configured\n", DEVNAME);
 	fflush (stderr);
 
-	// FIXME: Temporary stall to allow testing of init(), etc
-	while(1)
-		sleep(5);
-	(void) ep0_thread (&fd);
+	(void) ep0_thread(&fd);
 	return 0;
 }

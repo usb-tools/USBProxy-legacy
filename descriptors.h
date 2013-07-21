@@ -1,7 +1,7 @@
 /*
  * Copyright 2013 Dominic Spill
  *
- * This file is part of USB Proxy.
+ * This file is part of USB-MitM.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,8 +29,6 @@
 
 #include "usbstring.h"
 
-static int debug;
-
 #define	STRINGID_MFGR		1
 #define	STRINGID_PRODUCT	2
 #define	STRINGID_SERIAL		3
@@ -50,4 +48,4 @@ static int ep_list_len;
 /*-------------------------------------------------------------------------*/
 
 /* Copy config from given vId/pId device */
-int clone_descriptors(__u16 vendorId, __u16 productId, char *buf);
+int clone_descriptors(__u16 vendorId, __u16 productId, libusb_device_handle* devh, char *buf);
