@@ -21,24 +21,11 @@
 
 /*
  * This file is based on http://www.linux-usb.org/gadget/usb.c
- * That file lacks any copyright information - but it belongs to someone.
+ * That file lacks any copyright information - but it belongs to someone
+ * probably David Brownell - so thank you very much to him too!
  */
 
-/* $(CROSS_COMPILE)cc -Wall -g -o usb usb.c usbstring.c -lpthread */
-
-/*
- * this is an example pthreaded USER MODE driver implementing a
- * USB Gadget/Device with simple bulk source/sink functionality.
- * you could implement pda sync software this way, or some usb class
- * protocols (printers, test-and-measurement equipment, and so on).
- *
- * with hardware that also supports isochronous data transfers, this
- * can stream data using multi-buffering and AIO.  that's the way to
- * handle audio or video data, where on-time delivery is essential.
- *
- * needs "gadgetfs" and a supported USB device controller driver
- * in the kernel; this autoconfigures, based on the driver it finds.
- */
+/* $(CROSS_COMPILE)cc -Wall -g -o proxy proxy.c usbstring.c -lpthread */
 
 #include <errno.h>
 #include <fcntl.h>
@@ -315,7 +302,6 @@ static int init_device(__u16 vendorId, __u16 productId)
 {
 	int len, status, fd, i;
 	char buf[4096];
-	printf("in init_device\n");
 
 	libusb_init(NULL);
 	libusb_set_debug(NULL, debug);

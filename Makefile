@@ -34,14 +34,14 @@ endif
 
 LDFLAGS += -l$(LIBUSB) -lpthread
 
-SOURCE_FILES = proxy.c usbstring.c descriptors.c
+SOURCE_FILES = usb-mitm.c usbstring.c descriptors.c
 
-all: proxy
+all: usb-mitm
 
-proxy: $(SOURCE_FILES)
-	$(CC) $(CFLAGS) -g -o proxy $(SOURCE_FILES) $(LDFLAGS)
+usb-mitm: $(SOURCE_FILES)
+	$(CC) $(CFLAGS) -g -o usb-mitm $(SOURCE_FILES) $(LDFLAGS)
 
 clean:
-	rm -f proxy
+	rm -f usb-mitm
 
 .PHONY: all clean
