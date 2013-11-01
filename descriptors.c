@@ -155,7 +155,7 @@ clone_config(char *cp, struct libusb_config_descriptor *config, int highspeed)
 }
 
 /* Copy config from given vId/pId device */
-int clone_descriptors(__u16 vendorId, __u16 productId, libusb_device_handle* devh, char *buf) {
+int clone_descriptors(libusb_device_handle* devh, char *buf) {
 	char *cp;
 	libusb_device* dev;
 	struct libusb_device_descriptor slave_desc;

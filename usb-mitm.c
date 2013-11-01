@@ -81,6 +81,7 @@ struct thread_handle {
 static struct thread_handle ep0;
 static struct thread_handle *eps;
 
+static libusb_context *ctx;
 static libusb_device_handle* devh;
 
 // FIXME no status i/o yet
@@ -298,17 +299,12 @@ static void stop_io()
 
 /*-------------------------------------------------------------------------*/
 
-static int init_device(__u16 vendorId, __u16 productId)
+static int init_device()
 {
 	int len, status, fd, i;
 	char buf[4096];
 
-	libusb_init(NULL);
-	libusb_set_debug(NULL, debug);
-	devh = libusb_open_device_with_vid_pid(NULL, vendorId, productId);
-	printf("devh acquired - cloning...\n");
-
-	len = clone_descriptors(vendorId, productId, devh, buf);
+	len = clone_descriptors(devh, buf);
 	printf("devh cloned\n");
 
 	if(len < 0) {
@@ -530,27 +526,64 @@ void usage(char *arg) {
 			arg);
 	
 }
-int
-main (int argc, char **argv)
+
+int open_single_nonhub_device() {
+	libusb_device **list;
+	libusb_device *found = NULL;
+
+	ssize_t cnt=libusb_get_device_list(ctx,&list);
+	if (cnt<0) {fprintf(stderr,"Error %d retrieving device list.",cnt);return cnt;}
+	
+	ssize_t i;
+	
+	struct libusb_device_descriptor desc;
+	int device_count=0;
+	int rc;
+	
+	for(i = 0; i < cnt; i++){
+		libusb_device *device = list[i];
+		rc = libusb_get_device_descriptor(device,&desc);
+		if (rc<0) {fprintf(stderr,"Error %d retrieving device descriptor.",rc);return rc;}
+		if (desc.bDeviceClass!=LIBUSB_CLASS_HUB) {
+			device_count++;
+			found=device;
+		}
+	}
+	if (device_count==1) {	
+		rc=libusb_open(found,&devh);
+		if (rc<0) {fprintf(stderr,"Error %d opening device handle.",rc);return rc;}
+	}
+	libusb_free_device_list(list,1);
+	return device_count;
+}
+
+void print_device_info() {
+	uint8_t str_mfr[200];
+	uint8_t str_prd[200];
+	struct libusb_device_descriptor desc;
+	libusb_device* dev=libusb_get_device(devh);
+	int rc=libusb_get_device_descriptor (dev,&desc);
+	if (rc<0) {fprintf(stderr,"Error %d retrieving device descriptor.",rc);return rc;}
+	rc=libusb_get_string_descriptor_ascii(devh,desc.iManufacturer,str_mfr,200);
+	if (rc<0) {fprintf(stderr,"Error %d retrieving string descriptor.",rc);return rc;}
+	rc=libusb_get_string_descriptor_ascii(devh,desc.iProduct,str_prd,200);
+	if (rc<0) {fprintf(stderr,"Error %d retrieving string descriptor.",rc);return rc;}
+	fprintf(stdout,"%04x:%04x %s - %s\n",desc.idVendor,desc.idProduct,str_mfr,str_prd);
+}
+
+int main(int argc, char **argv)
 {
-	int fd, c;
-	char *end;
-	__u16 vendorId, productId;
-	int have_vid, have_pid;
+	int c;
+	char* end;
+	__u16 vendorId=0, productId=0;
 
-	//source_thread = simple_source_thread;
-	//sink_thread = simple_sink_thread;
-
-	have_vid = have_pid = 0;
 	while ((c = getopt (argc, argv, "p:v:d")) != EOF) {
 		switch (c) {
 		case 'p':
 			productId = strtol(optarg, &end, 16);
-			have_pid++;
 			continue;
 		case 'v':
 			vendorId = strtol(optarg, &end, 16);
-			have_vid++;
 			continue;
 		case 'd':		/* verbose */
 			debug++;
@@ -560,12 +593,39 @@ main (int argc, char **argv)
 		return 1;
 	}
 
-	if(!have_vid || !have_pid) {
-		fprintf(stderr, "Both vendorId and productId are required (for now)\n");
+	if ((!productId && vendorId) || (productId && !vendorId)) {
+		fprintf(stderr, "If you supply Vendor ID or Product ID then you must supply both of them.\n");
 		usage(argv[0]);
 		return 1;
 	}
-	if (chdir ("/gadget") < 0) {
+
+	//we have enough info to search now
+
+	int rc=libusb_init(&ctx);
+	if (rc<0) {fprintf(stderr,"Error %d initializing libusb.",rc);return rc;}
+	libusb_set_debug(ctx, debug);
+
+	if (productId && vendorId) {
+		devh=libusb_open_device_with_vid_pid(ctx,vendorId,productId);
+		if (devh==NULL) {
+			fprintf(stderr,"Device not found for Vendor ID [%04x] and Product ID [%04x].\n",vendorId,productId);
+			return 1;
+		}
+	} 
+	if (!productId && !vendorId) {
+		int found_device_count=open_single_nonhub_device();
+		if (devh==NULL) {
+			fprintf(stderr,"Device auto-detection failed, requires exactly one non-hub device, %d were found.",found_device_count);
+			return 1;
+		}
+		//libusb_set_auto_detach_kernel_driver(devh,1);
+	}
+
+	if (debug) {print_device_info();}
+	
+	int fd;
+
+	if (chdir("/gadget") < 0) {
 		perror ("can't chdir /gadget");
 		return 1;
 	}
@@ -580,4 +640,5 @@ main (int argc, char **argv)
 
 	ep0_thread(&fd);
 	return 0;
+	libusb_exit(ctx);
 }

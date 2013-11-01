@@ -48,4 +48,4 @@ static int ep_list_len;
 /*-------------------------------------------------------------------------*/
 
 /* Copy config from given vId/pId device */
-int clone_descriptors(__u16 vendorId, __u16 productId, libusb_device_handle* devh, char *buf);
+int clone_descriptors(libusb_device_handle* devh, char *buf);
