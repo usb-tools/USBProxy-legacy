@@ -26,21 +26,13 @@
  */
 
 /* $(CROSS_COMPILE)cc -Wall -g -o proxy proxy.c usbstring.c -lpthread */
+#include "usb-mitm.h"
 
-#include <errno.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <pthread.h>
-#include <signal.h>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/ioctl.h>
-#include <sys/poll.h>
-
-#include "descriptors.h"
-
-static int debug;
+static int debug=0;
+static int libusb_initialized=0;
+static int exiting=0;
+static int restarting=0;
+static libusb_hotplug_callback_handle callback;
 
 /*-------------------------------------------------------------------------*/
 
@@ -48,9 +40,6 @@ static int debug;
  * to turn big requests into lots of smaller ones; so this is "small".
  */
 #define	USB_BUFSIZE	(7 * 1024)
-
-static libusb_context *ctx;
-static libusb_device_handle* devh;
 
 /*-------------------------------------------------------------------------*/
 
@@ -60,48 +49,45 @@ void usage(char *arg) {
 	
 }
 
-int open_single_nonhub_device() {
-	libusb_device **list;
-	libusb_device *found = NULL;
+void cleanup(void) {
+	if (libusb_initialized) {libusb_exit(NULL);}
+	if (callback) {libusb_hotplug_deregister_callback(NULL,&callback);}
 
-	ssize_t cnt=libusb_get_device_list(ctx,&list);
-	if (cnt<0) {fprintf(stderr,"Error %d retrieving device list.",cnt);return cnt;}
-	
-	ssize_t i;
-	
-	struct libusb_device_descriptor desc;
-	int device_count=0;
-	int rc;
-	
-	for(i = 0; i < cnt; i++){
-		libusb_device *device = list[i];
-		rc = libusb_get_device_descriptor(device,&desc);
-		if (rc<0) {fprintf(stderr,"Error %d retrieving device descriptor.",rc);return rc;}
-		if (desc.bDeviceClass!=LIBUSB_CLASS_HUB) {
-			device_count++;
-			found=device;
-		}
-	}
-	if (device_count==1) {	
-		rc=libusb_open(found,&devh);
-		if (rc<0) {fprintf(stderr,"Error %d opening device handle.",rc);return rc;}
-	}
-	libusb_free_device_list(list,1);
-	return device_count;
+	fflush (stderr);
 }
 
-void print_device_info() {
-	uint8_t str_mfr[200];
-	uint8_t str_prd[200];
-	struct libusb_device_descriptor desc;
-	libusb_device* dev=libusb_get_device(devh);
-	int rc=libusb_get_device_descriptor (dev,&desc);
-	if (rc<0) {fprintf(stderr,"Error %d retrieving device descriptor.",rc);return;}
-	rc=libusb_get_string_descriptor_ascii(devh,desc.iManufacturer,str_mfr,200);
-	if (rc<0) {fprintf(stderr,"Error %d retrieving string descriptor.",rc);return;}
-	rc=libusb_get_string_descriptor_ascii(devh,desc.iProduct,str_prd,200);
-	if (rc<0) {fprintf(stderr,"Error %d retrieving string descriptor.",rc);return;}
-	fprintf(stdout,"%04x:%04x %s - %s\n",desc.idVendor,desc.idProduct,str_mfr,str_prd);
+//sigterm: stop forwarding threads, and/or hotplug loop and exit
+//sighup: reset forwarding threads, reset device and gadget
+void handle_signal(int signum)
+{
+	switch (signum) {
+		case SIGTERM:
+			printf("Received SIGTERM, exiting...\n");
+			exiting=1;
+			break;
+		case SIGINT:
+			printf("Received SIGINT, exiting...\n");
+			exiting=1;
+			break;
+		case SIGHUP:
+			printf("Received SIGHUP, restarting...\n");
+			restarting=1;
+			break;
+	}
+}
+
+static int LIBUSB_CALL hotplug_connect(struct libusb_context *ctx, struct libusb_device *dev,libusb_hotplug_event event, void *user_data) {
+	printf("callback started\n");
+	if (LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED != event) {
+		return 0;
+	}
+	printf("device connected\n");
+	return 1;
+	//TODO: we need to actually connect to this device
+}
+
+int register_connect_callback(__u16 vendorId,__u16 productId) {
+	return libusb_hotplug_register_callback(NULL,LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED,0,vendorId?vendorId:LIBUSB_HOTPLUG_MATCH_ANY,productId?productId:LIBUSB_HOTPLUG_MATCH_ANY,LIBUSB_HOTPLUG_MATCH_ANY,hotplug_connect,NULL,&callback);
 }
 
 int main(int argc, char **argv)
@@ -109,7 +95,14 @@ int main(int argc, char **argv)
 	int c;
 	char* end;
 	__u16 vendorId=0, productId=0;
-
+	
+	struct sigaction action;
+	memset(&action, 0, sizeof(struct sigaction));
+	action.sa_handler = handle_signal;
+	sigaction(SIGTERM, &action, NULL);
+	sigaction(SIGHUP, &action, NULL);
+	sigaction(SIGINT, &action, NULL);
+	
 	while ((c = getopt (argc, argv, "p:v:d")) != EOF) {
 		switch (c) {
 		case 'p':
@@ -127,48 +120,41 @@ int main(int argc, char **argv)
 	}
 
 	if ((!productId && vendorId) || (productId && !vendorId)) {
-		fprintf(stderr, "If you supply Vendor ID or Product ID then you must supply both of them.\n");
+		perror("If you supply Vendor ID or Product ID then you must supply both of them.\n");
 		usage(argv[0]);
 		return 1;
 	}
 
-	//we have enough info to search now
-
-	int rc=libusb_init(&ctx);
-	if (rc<0) {fprintf(stderr,"Error %d initializing libusb.",rc);return rc;}
-	libusb_set_debug(ctx, debug);
-
-	if (productId && vendorId) {
-		devh=libusb_open_device_with_vid_pid(ctx,vendorId,productId);
-		if (devh==NULL) {
-			fprintf(stderr,"Device not found for Vendor ID [%04x] and Product ID [%04x].\n",vendorId,productId);
-			return 1;
-		}
-	} 
-	if (!productId && !vendorId) {
-		int found_device_count=open_single_nonhub_device();
-		if (devh==NULL) {
-			fprintf(stderr,"Device auto-detection failed, requires exactly one non-hub device, %d were found.",found_device_count);
-			return 1;
-		}
-		//libusb_set_auto_detach_kernel_driver(devh,1);
-	}
-
-	if (debug) {print_device_info();}
-	
 	if (chdir("/gadget") < 0) {
-		perror ("can't chdir /gadget");
+		perror("can't chdir /gadget\n");
 		return 1;
 	}
 
-	printf("Calling init_device\n");
-	//fd = init_device(vendorId, productId);
-	//if (fd < 0)	return 1;
+	//we have enough info to search now
+	int rc=libusb_init(NULL);
+	if (rc) {fprintf(stderr,"Error %d initializing libusb.\n",rc);return rc;} else {libusb_initialized=1;}
+	libusb_set_debug(NULL, debug);
 
-	//fprintf (stderr, "/gadget/%s ep0 configured\n", DEVNAME);
-	fflush (stderr);
+	libusb_device_handle* devh=get_device_handle(vendorId,productId);
 
-	//ep0_thread(&fd);
+	if (!devh) {
+		//if we can't register the connect callback, no point in waiting
+		rc=register_connect_callback(vendorId,productId);
+		if (rc) {fprintf(stderr,"Error %d registering callback.\n",rc);exiting=1;} else {printf("Waiting for device connection...\n");}
+	} else {
+		//TODO: start relaying thread(s) for device
+		if (debug) {print_device_info(devh);}
+	}
+
+	struct timeval tv;
+	tv.tv_sec=1;
+	
+	while (!exiting)
+	{
+		rc=libusb_handle_events_timeout_completed(NULL,&tv,NULL);
+		if (rc) {fprintf(stderr,"Error %d waiting for events.\n",rc);exiting=1;} else {printf("Waiting for device connection...\n");}
+	}
+	
 	return 0;
-	libusb_exit(ctx);
+	cleanup();
 }
