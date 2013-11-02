@@ -19,10 +19,22 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#include "descriptors.h"
+#include <linux/types.h>
+#include <linux/usb/gadgetfs.h>
+#include <libusb-1.0/libusb.h>
+#include <stdio.h>
+#include <memory.h>
+#include <asm/byteorder.h>
+#include <stdlib.h>
 
-static inline int max(__u8 a, __u8 b)
-{
-	return (a > b) ? a : b;
-}
+#include "usbstring.h"
 
+struct endpoint_item {
+	char desc[7];
+	struct endpoint_item *next;
+};
+
+/*-------------------------------------------------------------------------*/
+
+/* Copy config from given vId/pId device */
+int clone_descriptors(libusb_device_handle* devh, char *buf);

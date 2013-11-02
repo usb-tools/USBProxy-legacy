@@ -27,23 +27,10 @@
 #include <asm/byteorder.h>
 #include <stdlib.h>
 
-#include "usbstring.h"
-
-#define	STRINGID_MFGR		1
-#define	STRINGID_PRODUCT	2
-#define	STRINGID_SERIAL		3
-#define	STRINGID_CONFIG		4
-#define	STRINGID_INTERFACE	5
-
-static struct usb_gadget_strings strings;
-
 struct endpoint_item {
 	char desc[7];
 	struct endpoint_item *next;
 };
-
-static struct endpoint_item *ep_head;
-static int ep_list_len;
 
 /*-------------------------------------------------------------------------*/
 
