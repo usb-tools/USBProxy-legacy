@@ -34,7 +34,7 @@ endif
 
 LDFLAGS += -l$(LIBUSB) -lpthread
 
-SOURCE_FILES = usb-mitm.c usbstring.c descriptors.c
+SOURCE_FILES = usb-mitm.c descriptors.c
 
 all: usb-mitm
 
