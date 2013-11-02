@@ -11,9 +11,7 @@ libusb_device_handle* get_device_handle(__u16 vendorId,__u16 productId) {
 		}
 	} 
 	if (!productId && !vendorId) {
-		fprintf(stderr,"%d\n",devh);
 		int found_device_count=open_single_nonhub_device(&devh);
-		fprintf(stderr,"%d\n",devh);
 		if (devh==NULL) {
 			fprintf(stderr,"Device auto-detection failed, requires exactly one non-hub device, %d were found.\n",found_device_count);
 			return NULL;
@@ -61,8 +59,8 @@ void print_device_info(libusb_device_handle* devh) {
 	int rc=libusb_get_device_descriptor (dev,&desc);
 	if (rc) {fprintf(stderr,"Error %d retrieving device descriptor.",rc);return;}
 	rc=libusb_get_string_descriptor_ascii(devh,desc.iManufacturer,str_mfr,200);
-	if (rc) {fprintf(stderr,"Error %d retrieving string descriptor.",rc);return;}
+	if (rc<0) {fprintf(stderr,"Error %d retrieving string descriptor.",rc);return;}
 	rc=libusb_get_string_descriptor_ascii(devh,desc.iProduct,str_prd,200);
-	if (rc) {fprintf(stderr,"Error %d retrieving string descriptor.",rc);return;}
+	if (rc<0) {fprintf(stderr,"Error %d retrieving string descriptor.",rc);return;}
 	fprintf(stdout,"%04x:%04x %s - %s\n",desc.idVendor,desc.idProduct,str_mfr,str_prd);
 }
