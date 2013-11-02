@@ -1,5 +1,6 @@
 /*
  * Copyright 2013 Dominic Spill
+ * Copyright 2013 Adam Stasiak
  *
  * This file is part of USB-MitM.
  *
