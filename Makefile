@@ -16,13 +16,21 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, Inc., 51 Franklin Street,
 # Boston, MA 02110-1301, USA.
+TARGET=usb-enum
 
 CROSS_COMPILE ?= /opt/gcc-linaro-arm-linux-gnueabihf/bin/arm-linux-gnueabihf-
 
 CC = $(CROSS_COMPILE)gcc
+CXX = $(CROSS_COMPILE)g++
 
-OPTFLAGS = -Wall
-CFLAGS  += $(OPTFLAGS)
+# CPPFLAGS = compiler options for C and C++
+CPPFLAGS = -Wall -g -Os -mthumb -fdata-sections -ffunction-sections -MMD $(OPTIONS)
+
+# compiler options for C++ only
+CXXFLAGS = -std=gnu++0x -felide-constructors -fno-exceptions -fno-rtti
+
+# compiler options for C only
+CFLAGS =
 
 OS = $(shell uname)
 ifeq ($(OS), FreeBSD)
@@ -32,16 +40,22 @@ else
 	LIBUSB = usb-1.0
 endif
 
-LDFLAGS += -l$(LIBUSB) -lpthread
+LDFLAGS += -l$(LIBUSB) -ludev
 
-SOURCE_FILES = $(wildcard *.c)
+C_FILES := $(wildcard *.c) 
+CPP_FILES := $(wildcard *.cpp) 
+OBJS := $(C_FILES:.c=.o) $(CPP_FILES:.cpp=.o)
 
-all: usb-mitm
+all: $(TARGET)
 
-usb-mitm: $(SOURCE_FILES)
-	$(CC) $(CFLAGS) -g -o usb-mitm $(SOURCE_FILES) $(LDFLAGS)
+list:
+	echo "blah"
+	echo $(OBJS)
+
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) -g -o $(TARGET) $(OBJS) $(LDFLAGS)
 
 clean:
-	rm -f usb-mitm
+	rm -f $(TARGET) *.o *.d
 
 .PHONY: all clean

@@ -1,2 +1,5 @@
 # usb-mitm binary
 usb-mitm
+#object files
+*.o
+*.d
