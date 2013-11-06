@@ -18,33 +18,28 @@
  * along with this program; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
+ *
+ * USBEndpoint.h
+ *
+ * Created on: Nov 6, 2013
  */
-
-#ifndef _USBDevice_
-#define _USBDevice_
+#ifndef USBENDPOINT_H_
+#define USBENDPOINT_H_
 
 #include <linux/usb/ch9.h>
 #include "USBDeviceProxy.h"
-#include "USBConfiguration.h"
 
-class USBDevice {
-private:
-	int activeConfigurationIndex=-1;
-	int address=-1;
-    usb_device_descriptor descriptor;
-	USBConfiguration* activeConfiguration=NULL;
-    USBConfiguration** configurations;
-    //USBVendor deviceVendor;
-    //vector(of endpoints) endpoints;
+class USBEndpoint {
+	private:
+		usb_endpoint_descriptor descriptor;
 
-public:
-    USBDevice(USBDeviceProxy* proxy);
-	USBDevice(usb_device_descriptor* _descriptor);
-	USBDevice(__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	__u8  bDeviceProtocol,	__u8  bMaxPacketSize0,	__le16 idVendor,	__le16 idProduct,	__le16 bcdDevice,	__u8  iManufacturer,	__u8  iProduct,	__u8  iSerialNumber,	__u8  bNumConfigurations);
-	~USBDevice();
-	const usb_device_descriptor* getDescriptor();
-	void add_configuration(USBConfiguration* config);
-	USBConfiguration* get_configuration(__u8 index);
+	public:
+		USBEndpoint(__u8* p);
+		USBEndpoint(usb_endpoint_descriptor* _descriptor);
+		USBEndpoint(__u8 bEndpointAddress,__u8 bmAttributes,__u16 wMaxPacketSize,__u8 bInterval);
+		~USBEndpoint();
+		const usb_endpoint_descriptor* getDescriptor();
+		void getFullDescriptor(__u8** p);
 };
 
-#endif
+#endif /* USBENDPOINT_H_ */

@@ -5,3 +5,6 @@ usb-mitm
 *.d
 #shell to move changes from usb-test
 merge.sh
+#eclipse stuff
+.project
+.cproject

@@ -18,33 +18,32 @@
  * along with this program; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
+ *
+ * USBInterface.h
+ *
+ * Created on: Nov 6, 2013
  */
-
-#ifndef _USBDevice_
-#define _USBDevice_
+#ifndef USBINTERFACE_H_
+#define USBINTERFACE_H_
 
 #include <linux/usb/ch9.h>
 #include "USBDeviceProxy.h"
-#include "USBConfiguration.h"
+#include "USBEndpoint.h"
 
-class USBDevice {
-private:
-	int activeConfigurationIndex=-1;
-	int address=-1;
-    usb_device_descriptor descriptor;
-	USBConfiguration* activeConfiguration=NULL;
-    USBConfiguration** configurations;
-    //USBVendor deviceVendor;
-    //vector(of endpoints) endpoints;
+class USBInterface {
+	private:
+		usb_interface_descriptor descriptor;
+		USBEndpoint** endpoints;
 
-public:
-    USBDevice(USBDeviceProxy* proxy);
-	USBDevice(usb_device_descriptor* _descriptor);
-	USBDevice(__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	__u8  bDeviceProtocol,	__u8  bMaxPacketSize0,	__le16 idVendor,	__le16 idProduct,	__le16 bcdDevice,	__u8  iManufacturer,	__u8  iProduct,	__u8  iSerialNumber,	__u8  bNumConfigurations);
-	~USBDevice();
-	const usb_device_descriptor* getDescriptor();
-	void add_configuration(USBConfiguration* config);
-	USBConfiguration* get_configuration(__u8 index);
+	public:
+		USBInterface(__u8* p);
+		USBInterface(usb_interface_descriptor* _descriptor);
+		USBInterface(__u8 bInterfaceNumber,__u8 bAlternateSetting,__u8 bNumEndpoints,__u8 bInterfaceClass,__u8 bInterfaceSubClass,__u8 bInterfaceProtocol,__u8 iInterface);
+		~USBInterface();
+		const usb_interface_descriptor* getDescriptor();
+		void getFullDescriptor(__u8** p);
+		void add_endpoint(USBEndpoint* endpoint);
+		USBEndpoint* get_endpoint(__u8 index);
 };
 
-#endif
+#endif /* USBINTERFACE_H_ */
