@@ -1,17 +1,39 @@
+/*
+ * Copyright 2013 Dominic Spill
+ * Copyright 2013 Adam Stasiak
+ *
+ * This file is part of USB-MitM.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; see the file COPYING.  If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street,
+ * Boston, MA 02110-1301, USA.
+ */
+
 #include <linux/types.h>
 #include "USBDevice.h"
-#include "Packets.h"
 #include <memory.h>
+#include <stdio.h>
 
 USBDevice::USBDevice(USBDeviceProxy* proxy) {
 	__u8 buf[18];
-	SETUP_PACKET setup_packet;
-	setup_packet.bmRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
+	usb_ctrlrequest setup_packet;
+	setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
 	setup_packet.bRequest=USB_REQ_GET_DESCRIPTOR;
-	setup_packet.wValue=USB_DT_DEVICE;
+	setup_packet.wValue=USB_DT_DEVICE<<8;
 	setup_packet.wIndex=0;
 	setup_packet.wLength=18;
-	__u16 len=0;
+	int len=0;
 	proxy->control_request(&setup_packet,&len,buf);
 	memcpy(&descriptor,buf,len);
 }
@@ -35,8 +57,8 @@ USBDevice::USBDevice(__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	_
 	descriptor.bNumConfigurations=bNumConfigurations;
 }
 
-usb_device_descriptor USBDevice::getDescriptor() {
-	return descriptor;
+const usb_device_descriptor* USBDevice::getDescriptor() {
+	return &descriptor;
 };
 
 /*

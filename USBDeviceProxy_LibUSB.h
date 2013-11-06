@@ -20,28 +20,26 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#ifndef _USBDevice_
-#define _USBDevice_
+#ifndef _LibUSBDeviceProxy_
+#define _LibUSBDeviceProxy_
 
-#include <linux/usb/ch9.h>
 #include "USBDeviceProxy.h"
 
-extern "C" class USBDevice {
-	private:
-		usb_device_descriptor descriptor;
-		__u8 activeConfigurationIndex=0;
-		__u8 address=0;
-
-		//USBConfiguration activeConfiguration;
-    //USBVendor deviceVendor;
-		//vector(of USBConfiguration) configurations;
-		//vector(of endpoints) endpoints;
-
-	public:
-		USBDevice(USBDeviceProxy* proxy);
-		USBDevice(usb_device_descriptor _descriptor);
-		USBDevice(__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	__u8  bDeviceProtocol,	__u8  bMaxPacketSize0,	__le16 idVendor,	__le16 idProduct,	__le16 bcdDevice,	__u8  iManufacturer,	__u8  iProduct,	__u8  iSerialNumber,	__u8  bNumConfigurations);
-		const usb_device_descriptor* getDescriptor();
+class USBDeviceProxy_LibUSB:public USBDeviceProxy {
+private:
+	libusb_context* context;
+	libusb_device_handle* device;
+	bool privateContext=true;
+	bool privateDevice=true;
+public:
+	static int debugLevel;
+	USBDeviceProxy_LibUSB(int vendorId=LIBUSB_HOTPLUG_MATCH_ANY,int productId=LIBUSB_HOTPLUG_MATCH_ANY,bool includeHubs=false);
+	USBDeviceProxy_LibUSB(libusb_context* _context,libusb_device* dvc);
+	USBDeviceProxy_LibUSB(libusb_context* _context,libusb_device_handle* devh);
+	~USBDeviceProxy_LibUSB();
+	void control_request(usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr);
+	bool is_open();
+	const char* toString();
 };
 
 #endif

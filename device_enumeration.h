@@ -37,7 +37,6 @@
 
 #include <linux/types.h>
 #include <linux/usb/gadgetfs.h>
-#include <libusb-1.0/libusb.h>
 #include <stdio.h>
 #include <memory.h>
 #include <asm/byteorder.h>
