@@ -34,6 +34,7 @@ class USBInterfaceGroup {
 		__u8 alternateCount;
 		USBInterface* activeInterface=NULL;
 		USBInterface** interfaces;
+		//TODO: USBDevice (and set upon creation)
 
 	public:
 		USBInterfaceGroup(__u8 number);
@@ -41,6 +42,7 @@ class USBInterfaceGroup {
 		void getFullDescriptor(__u8** p);
 		void add_interface(USBInterface* interface);
 		USBInterface* get_interface(__u8 alternate);
+		void print(__u8 tabs=0);
 };
 
 #endif /* USBINTERFACEGROUP_H_ */

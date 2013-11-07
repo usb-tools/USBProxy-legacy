@@ -32,6 +32,7 @@
 class USBEndpoint {
 	private:
 		usb_endpoint_descriptor descriptor;
+		//TODO: USBDevice (and set upon creation)
 
 	public:
 		USBEndpoint(__u8* p);
@@ -40,6 +41,7 @@ class USBEndpoint {
 		~USBEndpoint();
 		const usb_endpoint_descriptor* getDescriptor();
 		void getFullDescriptor(__u8** p);
+		void print(__u8 tabs=0);
 };
 
 #endif /* USBENDPOINT_H_ */

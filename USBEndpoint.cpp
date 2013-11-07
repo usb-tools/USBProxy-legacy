@@ -25,11 +25,13 @@
  */
 
 #include "USBEndpoint.h"
+#include "stdio.h"
 #include <stdlib.h>
 #include <memory.h>
 
 USBEndpoint::USBEndpoint(__u8* p) {
-	//TODO:read endpoing
+	memcpy(&descriptor,p,7);
+	fprintf(stderr,"E%02x\n",p[2]);
 }
 
 USBEndpoint::USBEndpoint(usb_endpoint_descriptor* _descriptor) {
@@ -44,7 +46,6 @@ USBEndpoint::USBEndpoint(__u8 bEndpointAddress,__u8 bmAttributes,__u16 wMaxPacke
 }
 
 USBEndpoint::~USBEndpoint() {
-
 }
 
 const usb_endpoint_descriptor* USBEndpoint::getDescriptor() {
@@ -56,3 +57,10 @@ void USBEndpoint::getFullDescriptor(__u8** p) {
 	*p=*p+descriptor.bLength;
 }
 
+void USBEndpoint::print(__u8 tabs) {
+	int i;
+	for(i=0;i<tabs;i++) {putchar('\t');}
+	printf("EP(%02x):",descriptor.bEndpointAddress);
+	for(i=0;i<sizeof(descriptor);i++) {printf(" %02x",((__u8*)&descriptor)[i]);}
+	putchar('\n');
+}

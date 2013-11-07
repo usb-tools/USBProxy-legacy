@@ -34,8 +34,8 @@ private:
     usb_device_descriptor descriptor;
 	USBConfiguration* activeConfiguration=NULL;
     USBConfiguration** configurations;
-    //USBVendor deviceVendor;
-    //vector(of endpoints) endpoints;
+    //TODO: USBVendor deviceVendor;
+    //TODO: array(of endpoints) endpoints;
 
 public:
     USBDevice(USBDeviceProxy* proxy);
@@ -45,6 +45,7 @@ public:
 	const usb_device_descriptor* getDescriptor();
 	void add_configuration(USBConfiguration* config);
 	USBConfiguration* get_configuration(__u8 index);
+	void print(__u8 tabs=0);
 };
 
 #endif

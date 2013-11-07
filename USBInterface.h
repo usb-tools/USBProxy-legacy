@@ -34,16 +34,21 @@ class USBInterface {
 	private:
 		usb_interface_descriptor descriptor;
 		USBEndpoint** endpoints;
+		//TODO: USBClass
+		//TODO: USBDevice (and set upon creation)
 
 	public:
-		USBInterface(__u8* p);
+		USBInterface(__u8** p,__u8* e);
 		USBInterface(usb_interface_descriptor* _descriptor);
 		USBInterface(__u8 bInterfaceNumber,__u8 bAlternateSetting,__u8 bNumEndpoints,__u8 bInterfaceClass,__u8 bInterfaceSubClass,__u8 bInterfaceProtocol,__u8 iInterface);
 		~USBInterface();
 		const usb_interface_descriptor* getDescriptor();
 		void getFullDescriptor(__u8** p);
 		void add_endpoint(USBEndpoint* endpoint);
-		USBEndpoint* get_endpoint(__u8 index);
+		USBEndpoint* get_endpoint_by_idx(__u8 index);
+		USBEndpoint* get_endpoint_by_address(__u8 address);
+		__u8 get_endpoint_count();
+		void print(__u8 tabs=0);
 };
 
 #endif /* USBINTERFACE_H_ */

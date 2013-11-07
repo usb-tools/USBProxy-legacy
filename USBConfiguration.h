@@ -35,6 +35,7 @@ class USBConfiguration {
 	private:
 		usb_config_descriptor descriptor;
 		USBInterfaceGroup** interfaceGroups;
+		//TODO: USBDevice (and set upon creation)
 
 	public:
 		USBConfiguration(USBDeviceProxy* proxy, int index);
@@ -45,5 +46,6 @@ class USBConfiguration {
 		const __u8* getFullDescriptor();
 		void add_interface(USBInterface* interface);
 		USBInterface* get_interface(__u8 number,__u8 alternate);
+		void print(__u8 tabs=0);
 };
 #endif /* USBCONFIGURATION_H_ */

@@ -26,6 +26,9 @@
 #include <stdio.h>
 #include <memory.h>
 
+//TODO: update active endpoints upon set configuration request
+//TODO: pull current config from proxy
+
 USBDevice::USBDevice(USBDeviceProxy* proxy) {
 	__u8 buf[18];
 	usb_ctrlrequest setup_packet;
@@ -38,16 +41,17 @@ USBDevice::USBDevice(USBDeviceProxy* proxy) {
 	proxy->control_request(&setup_packet,&len,buf);
 	memcpy(&descriptor,buf,len);
 	int i;
-	configurations=(USBConfiguration **)malloc(sizeof(*configurations)*descriptor.bNumConfigurations);
+	configurations=(USBConfiguration **)calloc(descriptor.bNumConfigurations,sizeof(*configurations));
 	for(i=0;i<descriptor.bNumConfigurations;i++) {
 		configurations[i]=new USBConfiguration(proxy,i);
 	}
 	//TODO: read string descriptors for this and all descendants
+	//TODO: read high speed configs
 }
 
 USBDevice::USBDevice(usb_device_descriptor* _descriptor) {
 	descriptor=*_descriptor;
-	configurations=(USBConfiguration **)malloc(sizeof(*configurations)*descriptor.bNumConfigurations);
+	configurations=(USBConfiguration **)calloc(descriptor.bNumConfigurations,sizeof(*configurations));
 }
 
 USBDevice::USBDevice(__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	__u8  bDeviceProtocol,	__u8  bMaxPacketSize0,	__le16 idVendor,	__le16 idProduct,	__le16 bcdDevice,	__u8  iManufacturer,	__u8  iProduct,	__u8  iSerialNumber,	__u8  bNumConfigurations) {
@@ -63,7 +67,7 @@ USBDevice::USBDevice(__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	_
 	descriptor.iProduct=iProduct;
 	descriptor.iSerialNumber=iSerialNumber;
 	descriptor.bNumConfigurations=bNumConfigurations;
-	configurations=(USBConfiguration **)malloc(sizeof(*configurations)*descriptor.bNumConfigurations);
+	configurations=(USBConfiguration **)calloc(descriptor.bNumConfigurations,sizeof(*configurations));
 }
 
 USBDevice::~USBDevice() {
@@ -76,12 +80,23 @@ const usb_device_descriptor* USBDevice::getDescriptor() {
 	return &descriptor;
 };
 
-//TODO: should this check whether the element already exists?
 void USBDevice::add_configuration(USBConfiguration* config) {
-	configurations[config->getDescriptor()->bConfigurationValue-1]=config;
+	int value=config->getDescriptor()->bConfigurationValue-1;
+	if (configurations[value]) {delete(configurations[value]);}
+	configurations[value]=config;
 }
 
-//TODO: this should this check whether the element already exists
 USBConfiguration* USBDevice::get_configuration(__u8 index) {
 	return configurations[index-1];
+}
+
+void USBDevice::print(__u8 tabs) {
+	int i;
+	for(i=0;i<tabs;i++) {putchar('\t');}
+	printf("Device:");
+	for(i=0;i<sizeof(descriptor);i++) {printf(" %02x",((__u8 *)&descriptor)[i]);}
+	putchar('\n');
+	for(i=0;i<descriptor.bNumConfigurations;i++) {
+		configurations[i]->print(tabs+1);
+	}
 }
