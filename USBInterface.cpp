@@ -25,20 +25,46 @@
  */
 
 #include "USBInterface.h"
+#include "stdio.h"
 #include <stdlib.h>
 #include <memory.h>
 
-USBInterface::USBInterface(__u8* p) {
-	//TODO:read interface then
-	endpoints=(USBEndpoint**)malloc(sizeof(*endpoints)*descriptor.bNumEndpoints);
-	//TODO:read up to next interface
+//TODO:update active interface in interfacegroup upon set interface request
+//TODO:update active endpoints in device upon set interface request
+//TODO:get current alternate from proxy
+
+USBInterface::USBInterface(__u8** p,__u8* e) {
+	device=NULL;
+	memcpy(&descriptor,*p,9);
+	*p=*p+9;
+	endpoints=(USBEndpoint**)calloc(descriptor.bNumEndpoints,sizeof(*endpoints));
+	USBEndpoint** ep=endpoints;
+	while (*p<e && (*(*p+1))!=4) {
+		switch (*(*p+1)) {
+			case 5:
+				*(ep++)=new USBEndpoint(*p);
+				break;
+			default:
+				int i;
+				fprintf(stderr,"Unknown Descriptor:");
+				for(i=0;i<**p;i++) {fprintf(stderr," %02x",(*p)[i]);}
+				fprintf(stderr,"\n");
+				break;
+		}
+		*p=*p+**p;
+	}
+	//TODO:read report descriptors
 	//TODO:read string descriptors
 }
+
 USBInterface::USBInterface(usb_interface_descriptor* _descriptor) {
+	device=NULL;
 	descriptor=*_descriptor;
-	endpoints=(USBEndpoint**)malloc(sizeof(*endpoints)*descriptor.bNumEndpoints);
+	endpoints=(USBEndpoint**)calloc(descriptor.bNumEndpoints,sizeof(*endpoints));
 }
+
 USBInterface::USBInterface(__u8 bInterfaceNumber,__u8 bAlternateSetting,__u8 bNumEndpoints,__u8 bInterfaceClass,__u8 bInterfaceSubClass,__u8 bInterfaceProtocol,__u8 iInterface) {
+	device=NULL;
 	descriptor.bInterfaceNumber=bInterfaceNumber;
 	descriptor.bAlternateSetting=bAlternateSetting;
 	descriptor.bNumEndpoints=bNumEndpoints;
@@ -46,37 +72,82 @@ USBInterface::USBInterface(__u8 bInterfaceNumber,__u8 bAlternateSetting,__u8 bNu
 	descriptor.bInterfaceSubClass=bInterfaceSubClass;
 	descriptor.bInterfaceProtocol=bInterfaceProtocol;
 	descriptor.iInterface=iInterface;
-	endpoints=(USBEndpoint**)malloc(sizeof(*endpoints)*descriptor.bNumEndpoints);
+	endpoints=(USBEndpoint**)calloc(descriptor.bNumEndpoints,sizeof(*endpoints));
 }
+
 USBInterface::~USBInterface() {
 	int i;
 	for(i=0;i<descriptor.bNumEndpoints;i++) {delete(endpoints[i]);}
 	free(endpoints);
 }
-const usb_interface_descriptor* USBInterface::getDescriptor() {
+const usb_interface_descriptor* USBInterface::get_descriptor() {
 	return &descriptor;
 }
-void USBInterface::getFullDescriptor(__u8** p) {
+void USBInterface::get_full_descriptor(__u8** p) {
 	memcpy(*p,&descriptor,descriptor.bLength);
 	*p=*p+descriptor.bLength;
 	//TODO:this will also need to include report descriptors
 	int i;
-	for(i=0;i<descriptor.bNumEndpoints;i++) {endpoints[i]->getFullDescriptor(p);}
+	for(i=0;i<descriptor.bNumEndpoints;i++) {endpoints[i]->get_full_descriptor(p);}
 }
 
-//TODO: should this check whether the element already exists?
-//TODO: this works in a different way that the other add_x since the endpoints aren't necessarily 0-based, does this need to be made more clear somehow
 void USBInterface::add_endpoint(USBEndpoint* endpoint) {
 	int i;
 	for(i=0;i<descriptor.bNumEndpoints;i++) {
 		if (!endpoints[i]) {
 			endpoints[i]=endpoint;
 			break;
+		} else {
+			if (endpoints[i]->get_descriptor()->bEndpointAddress==endpoint->get_descriptor()->bEndpointAddress) {
+				delete(endpoints[i]);
+				endpoints[i]=endpoint;
+				break;
+			}
 		}
 	}
+	fprintf(stderr,"Ran out of endpoint storage space on interface %d.",descriptor.bInterfaceNumber);
 }
-//TODO: should this check whether the element already exists?
-USBEndpoint* USBInterface::get_endpoint(__u8 index) {
+
+USBEndpoint* USBInterface::get_endpoint_by_idx(__u8 index) {
 	return endpoints[index];
+}
+
+USBEndpoint* USBInterface::get_endpoint_by_address(__u8 address) {
+	int i;
+	for(i=0;i<descriptor.bNumEndpoints;i++) {
+		if (endpoints[i]->get_descriptor()->bEndpointAddress==address) {return endpoints[i];}
+	}
+	return NULL;
+}
+
+__u8 USBInterface::get_endpoint_count() {
+	return descriptor.bNumEndpoints;
+}
+
+void USBInterface::print(__u8 tabs) {
+	unsigned int i;
+	for(i=0;i<tabs;i++) {putchar('\t');}
+	printf("Alt(%d):",descriptor.bAlternateSetting);
+	for(i=0;i<sizeof(descriptor);i++) {printf(" %02x",((__u8*)&descriptor)[i]);}
+	putchar('\n');
+	if (descriptor.iInterface) {
+		USBString* s=get_interface_string();
+		if (s) {
+			for(i=0;i<tabs;i++) {putchar('\t');}
+			printf("  Name: ");
+			s->print_ascii(stdout);
+			putchar('\n');
+		}
+	}
+	for(i=0;i<descriptor.bNumEndpoints;i++) {
+		if (endpoints[i]) {endpoints[i]->print(tabs+1);}
+	}
+}
+
+void USBInterface::set_usb_device(USBDevice* _device) {device=_device;}
+
+USBString* USBInterface::get_interface_string(__u16 languageId) {
+	if (!device||!descriptor.iInterface) {return NULL;}
+	return device->get_string(descriptor.iInterface,languageId);
 }
 

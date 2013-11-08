@@ -28,6 +28,8 @@
 
 int USBDeviceProxy_LibUSB::debugLevel=0;
 
+//TODO: hotplug support
+
 USBDeviceProxy_LibUSB::USBDeviceProxy_LibUSB(int vendorId,int productId,bool includeHubs) {
 	libusb_init(&context);
 	libusb_device **list=NULL;
@@ -116,7 +118,7 @@ const char* USBDeviceProxy_LibUSB::toString() {
 	uint8_t address=libusb_get_device_address(dvc);
 	if (desc.iManufacturer) {
 		str_mfr=(unsigned char  *)malloc(126);
-		rc=libusb_get_string_descriptor_ascii(device,desc.iManufacturer,str_mfr,200);
+		rc=libusb_get_string_descriptor_ascii(device,desc.iManufacturer,str_mfr,126);
 		if (rc<0) {
 			if (debugLevel) {fprintf(stderr,"Error %d retrieving string descriptor.\n",rc);}
 			return NULL;
@@ -124,7 +126,7 @@ const char* USBDeviceProxy_LibUSB::toString() {
 	}
 	if (desc.iProduct) {
 		str_prd=(unsigned char  *)malloc(126);
-		rc=libusb_get_string_descriptor_ascii(device,desc.iProduct,str_prd,200);
+		rc=libusb_get_string_descriptor_ascii(device,desc.iProduct,str_prd,126);
 		if (rc<0) {
 			if (debugLevel) {fprintf(stderr,"Error %d retrieving string descriptor.\n",rc);}
 			return NULL;

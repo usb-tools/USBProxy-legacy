@@ -19,29 +19,38 @@
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
  *
- * USBEndpoint.h
+ * USBString.h
  *
- * Created on: Nov 6, 2013
+ * Created on: Nov 7, 2013
  */
-#ifndef USBENDPOINT_H_
-#define USBENDPOINT_H_
+#ifndef USBSTRING_H_
+#define USBSTRING_H_
 
 #include <linux/usb/ch9.h>
+#include <stdio.h>
 #include "USBDeviceProxy.h"
 
-class USBEndpoint {
-	private:
-		usb_endpoint_descriptor descriptor;
-		//TODO: USBDevice (and set upon creation)
+class USBString {
+private:
+	__u16* descriptor;
+	__u16 languageId;
+	__u8  index;
 
-	public:
-		USBEndpoint(__u8* p);
-		USBEndpoint(usb_endpoint_descriptor* _descriptor);
-		USBEndpoint(__u8 bEndpointAddress,__u8 bmAttributes,__u16 wMaxPacketSize,__u8 bInterval);
-		~USBEndpoint();
-		const usb_endpoint_descriptor* get_descriptor();
-		void get_full_descriptor(__u8** p);
-		void print(__u8 tabs=0);
+public:
+	USBString(USBDeviceProxy* proxy,__u8 _index,__u16 _languageId);
+	//create from ascii string
+	USBString(const char* value,__u8 _index,__u16 _languageId);
+	//create from unicode string
+	USBString(const char16_t* value,__u8 _index,__u16 _languageId);
+	~USBString();
+	const __u16* get_descriptor();
+	__u16 get_languageId();
+	__u8  get_index();
+	void get_ascii(char* buf,int buflen);
+	void print_ascii(FILE *stream);
+	__u8 get_char_count();
+	void append_char(__u16 u);
 };
 
-#endif /* USBENDPOINT_H_ */
+
+#endif /* USBSTRING_H_ */

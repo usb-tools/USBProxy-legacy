@@ -28,22 +28,32 @@
 
 #include <linux/usb/ch9.h>
 #include "USBDeviceProxy.h"
+#include "USBDevice.h"
 #include "USBInterfaceGroup.h"
 #include "USBInterface.h"
+#include "USBString.h"
+
+class USBDevice;
+class USBInterfaceGroup;
 
 class USBConfiguration {
 	private:
 		usb_config_descriptor descriptor;
 		USBInterfaceGroup** interfaceGroups;
+		USBDevice* device;
 
 	public:
 		USBConfiguration(USBDeviceProxy* proxy, int index);
 		USBConfiguration(usb_config_descriptor* _descriptor);
 		USBConfiguration(__u16 wTotalLength,__u8 bNumInterfaces,__u8 bConfigurationValue,__u8 iConfiguration,__u8 bmAttributes,__u8 bMaxPower);
 		~USBConfiguration();
-		const usb_config_descriptor* getDescriptor();
-		const __u8* getFullDescriptor();
+		const usb_config_descriptor* get_descriptor();
+		const __u8* get_full_descriptor();
 		void add_interface(USBInterface* interface);
 		USBInterface* get_interface(__u8 number,__u8 alternate);
+		void print(__u8 tabs=0);
+		void set_usb_device(USBDevice* _device);
+		USBString* get_config_string(__u16 languageId=0);
+		__u8 get_interface_alernate_count(__u8 number);
 };
 #endif /* USBCONFIGURATION_H_ */

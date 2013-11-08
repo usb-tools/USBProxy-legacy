@@ -25,6 +25,7 @@
  */
 
 #include "USBInterfaceGroup.h"
+#include "stdio.h"
 #include <stdlib.h>
 #include <memory.h>
 
@@ -42,25 +43,46 @@ USBInterfaceGroup::~USBInterfaceGroup() {
 }
 void USBInterfaceGroup::getFullDescriptor(__u8** p) {
 	int i;
-	for(i=0;i<alternateCount;i++) {interfaces[i]->getFullDescriptor(p);}
+	for(i=0;i<alternateCount;i++) {interfaces[i]->get_full_descriptor(p);}
 }
 
-//TODO: this should this check whether the element already exists
 void USBInterfaceGroup::add_interface(USBInterface* interface) {
-	__u8 alternate=interface->getDescriptor()->bAlternateSetting;
+	__u8 alternate=interface->get_descriptor()->bAlternateSetting;
 	if (alternate>=alternateCount) {
-		USBInterface** newInterfaces=(USBInterface **)malloc(sizeof(*interfaces)*(alternate+1));
+		USBInterface** newInterfaces=(USBInterface **)calloc(alternate+1,sizeof(*interfaces));
 		if (alternateCount) {
 			memcpy(newInterfaces,interfaces,sizeof(*interfaces)*alternateCount);
 			free(interfaces);
 		}
 		interfaces=newInterfaces;
 		alternateCount=alternate+1;
+	} else {
+		if (interfaces[alternate]) {delete(interfaces[alternate]);}
 	}
 	interfaces[alternate]=interface;
 }
 
-//TODO: this should this check whether the element already exists
 USBInterface* USBInterfaceGroup::get_interface(__u8 alternate) {
 	return interfaces[alternate];
+}
+
+void USBInterfaceGroup::print(__u8 tabs) {
+	int i;
+	for(i=0;i<tabs;i++) {putchar('\t');}
+	printf("Interface(%d):",number);
+	putchar('\n');
+	for(i=0;i<alternateCount;i++) {
+		interfaces[i]->print(tabs+1);
+	}
+}
+
+void USBInterfaceGroup::set_usb_device(USBDevice* _device) {
+	if (interfaces) {
+		int i;
+		for(i=0;i<alternateCount;i++) {interfaces[i]->set_usb_device(_device);}
+	}
+}
+
+__u8 USBInterfaceGroup::get_alternate_count() {
+	return alternateCount;
 }
