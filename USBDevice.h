@@ -27,7 +27,7 @@
 #include "USBConfiguration.h"
 #include "USBString.h"
 
-//TODO:error checking on malloc/calloc/realloc
+//TODO: 9 error checking on malloc/calloc/realloc
 
 class USBConfiguration;
 
@@ -36,9 +36,7 @@ private:
 	int activeConfigurationIndex=-1;
 	int address=-1;
     usb_device_descriptor descriptor;
-	USBConfiguration* activeConfiguration=NULL;
     USBConfiguration** configurations;
-    //TODO: USBVendor deviceVendor;
     //this is set up like strings[stringID][array of all languages]
     USBString ***strings;
     int maxStringIdx=0;
@@ -65,6 +63,7 @@ public:
 	USBString* get_serial_string(__u16 languageId=0);
     __u16 get_language_by_index(__u8 index);
     int get_language_count();
+    USBConfiguration* get_active_configuration();
 };
 
 #endif

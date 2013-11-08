@@ -24,10 +24,10 @@
  * Created on: Nov 7, 2013
  */
 
-#include "USBString.h"
 #include <stdlib.h>
 #include <memory.h>
 #include <stdio.h>
+#include "USBString.h"
 
 USBString::USBString(USBDeviceProxy* proxy,__u8 _index,__u16 _languageId) {
 	index=_index;

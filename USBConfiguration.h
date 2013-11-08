@@ -49,9 +49,10 @@ class USBConfiguration {
 		~USBConfiguration();
 		const usb_config_descriptor* get_descriptor();
 		const __u8* get_full_descriptor();
+		size_t get_full_descriptor_length();
 		void add_interface(USBInterface* interface);
 		USBInterface* get_interface(__u8 number,__u8 alternate);
-		void print(__u8 tabs=0);
+		void print(__u8 tabs=0,bool active=false);
 		void set_usb_device(USBDevice* _device);
 		USBString* get_config_string(__u16 languageId=0);
 		__u8 get_interface_alernate_count(__u8 number);

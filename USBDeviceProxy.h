@@ -22,6 +22,7 @@
 
 #ifndef _USBDeviceProxy_
 #define _USBDeviceProxy_
+
 #include <linux/usb/ch9.h>
 
 class USBDeviceProxy{

@@ -19,30 +19,43 @@
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
  *
- * USBEndpoint.h
+ * USBHID.h
  *
- * Created on: Nov 6, 2013
+ * Created on: Nov 8, 2013
  */
-#ifndef USBENDPOINT_H_
-#define USBENDPOINT_H_
+#ifndef USBHID_H_
+#define USBHID_H_
 
-#include <linux/usb/ch9.h>
+#include <linux/types.h>
 #include <stdlib.h>
-#include "USBDeviceProxy.h"
 
-class USBEndpoint {
-	private:
-		usb_endpoint_descriptor descriptor;
+struct usb_hid_descriptor_record  {
+	__u8 bDescriptorType;
+	__le16 wDescriptorLength;
+} __attribute__ ((packed));
 
-	public:
-		USBEndpoint(__u8* p);
-		USBEndpoint(usb_endpoint_descriptor* _descriptor);
-		USBEndpoint(__u8 bEndpointAddress,__u8 bmAttributes,__u16 wMaxPacketSize,__u8 bInterval);
-		~USBEndpoint();
-		const usb_endpoint_descriptor* get_descriptor();
-		size_t get_full_descriptor_length();
-		void get_full_descriptor(__u8** p);
-		void print(__u8 tabs=0);
+struct usb_hid_descriptor {
+	__u8 bLength;
+	__u8 bDescriptorType;
+	__le16 bcdHID;
+	__u8 bCountryCode;
+	__u8 bNumDescriptors;
+	usb_hid_descriptor_record descriptors[0];
+} __attribute__ ((packed));
+
+class USBHID {
+private:
+	usb_hid_descriptor* descriptor;
+
+public:
+	USBHID(__u8* p);
+	USBHID(usb_hid_descriptor* _descriptor);
+	USBHID(__u16 bcdHID,__u8 bCountryCode,__u8 bNumDescriptors,usb_hid_descriptor_record* descriptors);
+	~USBHID();
+	const usb_hid_descriptor* get_descriptor();
+	size_t get_full_descriptor_length();
+	void get_full_descriptor(__u8** p);
+	void print(__u8 tabs=0);
 };
 
-#endif /* USBENDPOINT_H_ */
+#endif /* USBHID_H_ */

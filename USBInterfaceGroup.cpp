@@ -24,10 +24,10 @@
  * Created on: Nov 6, 2013
  */
 
-#include "USBInterfaceGroup.h"
-#include "stdio.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
+#include "USBInterfaceGroup.h"
 
 USBInterfaceGroup::USBInterfaceGroup(__u8 _number) {
 	number=_number;
@@ -41,7 +41,15 @@ USBInterfaceGroup::~USBInterfaceGroup() {
 		free(interfaces);
 	}
 }
-void USBInterfaceGroup::getFullDescriptor(__u8** p) {
+
+size_t USBInterfaceGroup::get_full_descriptor_length() {
+	size_t total=0;
+	int i;
+	for(i=0;i<alternateCount;i++) {total+=interfaces[i]->get_full_descriptor_length();}
+	return total;
+}
+
+void USBInterfaceGroup::get_full_descriptor(__u8** p) {
 	int i;
 	for(i=0;i<alternateCount;i++) {interfaces[i]->get_full_descriptor(p);}
 }
@@ -63,6 +71,7 @@ void USBInterfaceGroup::add_interface(USBInterface* interface) {
 }
 
 USBInterface* USBInterfaceGroup::get_interface(__u8 alternate) {
+	if (alternate>=alternateCount) {return NULL;}
 	return interfaces[alternate];
 }
 
@@ -72,7 +81,7 @@ void USBInterfaceGroup::print(__u8 tabs) {
 	printf("Interface(%d):",number);
 	putchar('\n');
 	for(i=0;i<alternateCount;i++) {
-		interfaces[i]->print(tabs+1);
+		interfaces[i]->print(tabs+1,i==activeAlternateIndex?true:false);
 	}
 }
 
@@ -85,4 +94,9 @@ void USBInterfaceGroup::set_usb_device(USBDevice* _device) {
 
 __u8 USBInterfaceGroup::get_alternate_count() {
 	return alternateCount;
+}
+
+USBInterface* USBInterfaceGroup::get_active_interface() {
+	if (activeAlternateIndex<0) {return NULL;}
+	return get_interface(activeAlternateIndex);
 }

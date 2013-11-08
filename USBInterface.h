@@ -30,6 +30,7 @@
 #include "USBDeviceProxy.h"
 #include "USBDevice.h"
 #include "USBEndpoint.h"
+#include "USBHID.h"
 #include "USBString.h"
 
 class USBDevice;
@@ -39,7 +40,7 @@ class USBInterface {
 		usb_interface_descriptor descriptor;
 		USBEndpoint** endpoints;
 		USBDevice* device;
-		//TODO: USBClass
+		USBHID* hid_descriptor;
 
 	public:
 		USBInterface(__u8** p,__u8* e);
@@ -47,12 +48,13 @@ class USBInterface {
 		USBInterface(__u8 bInterfaceNumber,__u8 bAlternateSetting,__u8 bNumEndpoints,__u8 bInterfaceClass,__u8 bInterfaceSubClass,__u8 bInterfaceProtocol,__u8 iInterface);
 		~USBInterface();
 		const usb_interface_descriptor* get_descriptor();
+		size_t get_full_descriptor_length();
 		void get_full_descriptor(__u8** p);
 		void add_endpoint(USBEndpoint* endpoint);
 		USBEndpoint* get_endpoint_by_idx(__u8 index);
 		USBEndpoint* get_endpoint_by_address(__u8 address);
 		__u8 get_endpoint_count();
-		void print(__u8 tabs=0);
+		void print(__u8 tabs=0,bool active=false);
 		void set_usb_device(USBDevice* _device);
 		USBString* get_interface_string(__u16 languageId=0);
 };

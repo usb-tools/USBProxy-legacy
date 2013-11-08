@@ -20,14 +20,14 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#include <linux/types.h>
-#include "USBDevice.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <memory.h>
+#include "USBDevice.h"
 
-//TODO: update active endpoints upon set configuration request
-//TODO: pull current config from proxy
+//TODO: 9 update active endpoints in proxied device upon set configuration request
+//TODO: 9 update active configuration for the class upon set configuration request
+//TODO: 9 handle any endpoints that become inactive upon set configuration request
 
 USBDevice::USBDevice(USBDeviceProxy* _proxy) {
 	proxy=_proxy;
@@ -69,9 +69,17 @@ USBDevice::USBDevice(USBDeviceProxy* _proxy) {
 			}
 		}
 	}
-	//TODO: read child string descriptors
 
-	//TODO: read high speed configs
+	setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
+	setup_packet.bRequest=USB_REQ_GET_CONFIGURATION;
+	setup_packet.wValue=0;
+	setup_packet.wIndex=0;
+	setup_packet.wLength=1;
+	__u8 result;
+	proxy->control_request(&setup_packet,&len,&result);
+	activeConfigurationIndex=result;
+
+	//TODO: 2 read high speed configs
 }
 
 USBDevice::USBDevice(usb_device_descriptor* _descriptor) {
@@ -111,7 +119,15 @@ USBDevice::~USBDevice() {
 	int i;
 	for(i=0;i<descriptor.bNumConfigurations;i++) {delete(configurations[i]);}
 	free(configurations);
-	//todo: free strings
+	for(i=0;i<=maxStringIdx;i++) {
+		int j=0;
+		while (strings[i][j]) {
+			if (strings[i][j]) {delete(strings[i][j]);}
+			j++;
+		}
+		free(strings[i]);
+	}
+	free(strings);
 }
 
 const usb_device_descriptor* USBDevice::get_descriptor() {
@@ -125,6 +141,7 @@ void USBDevice::add_configuration(USBConfiguration* config) {
 }
 
 USBConfiguration* USBDevice::get_configuration(__u8 index) {
+	if (index>=descriptor.bNumConfigurations) {return NULL;}
 	return configurations[index-1];
 }
 
@@ -163,7 +180,7 @@ void USBDevice::print(__u8 tabs) {
 		}
 	}
 	for(i=0;i<descriptor.bNumConfigurations;i++) {
-		if (configurations[i]) {configurations[i]->print(tabs+1);}
+		if (configurations[i]) {configurations[i]->print(tabs+1,i==(activeConfigurationIndex-1)?true:false);}
 	}
 }
 
@@ -180,7 +197,6 @@ void USBDevice::add_string(USBString* string) {
 		strings=newStrings;
 		maxStringIdx=index;
 	}
-	int x;
 	if (strings[index]) {
 		int i=0;
 		while (true) {
@@ -274,3 +290,7 @@ int USBDevice::get_language_count() {
 	return strings[0][0]->get_char_count();
 }
 
+USBConfiguration* USBDevice::get_active_configuration() {
+	if (activeConfigurationIndex<0) {return NULL;}
+	return get_configuration(activeConfigurationIndex);
+}

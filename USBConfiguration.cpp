@@ -24,10 +24,10 @@
  * Created on: Nov 6, 2013
  */
 
-#include "USBConfiguration.h"
-#include "stdio.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
+#include "USBConfiguration.h"
 
 USBConfiguration::USBConfiguration(USBDeviceProxy* proxy, int idx)
 {
@@ -54,7 +54,22 @@ USBConfiguration::USBConfiguration(USBDeviceProxy* proxy, int idx)
 	while (p<e) {
 		add_interface(new USBInterface(&p,e));
 	}
-	//TODO:read string descriptors
+
+	int i;
+	for (i=0;i<descriptor.bNumInterfaces;i++) {
+		if (interfaceGroups[i]->get_alternate_count()==1) {
+			interfaceGroups[i]->activeAlternateIndex=0;
+		} else {
+			setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
+			setup_packet.bRequest=USB_REQ_GET_INTERFACE;
+			setup_packet.wValue=0;
+			setup_packet.wIndex=i;
+			setup_packet.wLength=1;
+			__u8 result;
+			proxy->control_request(&setup_packet,&len,&result);
+			interfaceGroups[i]->activeAlternateIndex=result;
+		}
+	}
 }
 
 USBConfiguration::USBConfiguration(usb_config_descriptor* _descriptor) {
@@ -84,12 +99,21 @@ const usb_config_descriptor* USBConfiguration::get_descriptor() {
 	return &descriptor;
 }
 
+size_t USBConfiguration::get_full_descriptor_length() {
+	size_t total=descriptor.bLength;
+	int i;
+	for(i=0;i<descriptor.bNumInterfaces;i++) {
+		total+=interfaceGroups[i]->get_full_descriptor_length();
+	}
+	return total;
+}
+
 const __u8* USBConfiguration::get_full_descriptor() {
-	__u8* buf=(__u8*)malloc(descriptor.wTotalLength);
+	__u8* buf=(__u8*)malloc(get_full_descriptor_length());
 	__u8* p=buf;
 	int i;
 	for(i=0;i<descriptor.bNumInterfaces;i++) {
-		interfaceGroups[i]->getFullDescriptor(&p);
+		interfaceGroups[i]->get_full_descriptor(&p);
 	}
 	return buf;
 }
@@ -113,9 +137,10 @@ __u8 USBConfiguration::get_interface_alernate_count(__u8 number) {
 }
 
 
-void USBConfiguration::print(__u8 tabs) {
+void USBConfiguration::print(__u8 tabs,bool active) {
 	unsigned int i;
 	for(i=0;i<tabs;i++) {putchar('\t');}
+	if (active) {putchar('*');}
 	printf("Config(%d):",descriptor.bConfigurationValue);
 	for(i=0;i<sizeof(descriptor);i++) {printf(" %02x",((__u8*)&descriptor)[i]);}
 	putchar('\n');

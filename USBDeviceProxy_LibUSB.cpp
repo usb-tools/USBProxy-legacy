@@ -20,7 +20,6 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#include <linux/types.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <libusb-1.0/libusb.h>
@@ -28,7 +27,7 @@
 
 int USBDeviceProxy_LibUSB::debugLevel=0;
 
-//TODO: hotplug support
+//TODO: 9 hotplug support
 
 USBDeviceProxy_LibUSB::USBDeviceProxy_LibUSB(int vendorId,int productId,bool includeHubs) {
 	libusb_init(&context);

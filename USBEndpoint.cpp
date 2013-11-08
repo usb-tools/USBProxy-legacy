@@ -24,10 +24,10 @@
  * Created on: Nov 6, 2013
  */
 
-#include "USBEndpoint.h"
-#include "stdio.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
+#include "USBEndpoint.h"
 
 USBEndpoint::USBEndpoint(__u8* p) {
 	memcpy(&descriptor,p,7);
@@ -49,6 +49,10 @@ USBEndpoint::~USBEndpoint() {
 
 const usb_endpoint_descriptor* USBEndpoint::get_descriptor() {
 	return &descriptor;
+}
+
+size_t USBEndpoint::get_full_descriptor_length() {
+	return descriptor.bLength;
 }
 
 void USBEndpoint::get_full_descriptor(__u8** p) {

@@ -26,6 +26,7 @@
 #ifndef USBINTERFACEGROUP_H_
 #define USBINTERFACEGROUP_H_
 
+#include <stdlib.h>
 #include "USBDevice.h"
 #include "USBInterface.h"
 
@@ -36,18 +37,21 @@ class USBInterfaceGroup {
 	private:
 		__u8 number;
 		__u8 alternateCount;
-		USBInterface* activeInterface=NULL;
 		USBInterface** interfaces;
 
 	public:
+		int activeAlternateIndex=-1;
+
 		USBInterfaceGroup(__u8 number);
 		~USBInterfaceGroup();
-		void getFullDescriptor(__u8** p);
+		size_t get_full_descriptor_length();
+		void get_full_descriptor(__u8** p);
 		void add_interface(USBInterface* interface);
 		USBInterface* get_interface(__u8 alternate);
 		void print(__u8 tabs=0);
 		void set_usb_device(USBDevice* _device);
 		__u8 get_alternate_count();
+		USBInterface* get_active_interface();
 };
 
 #endif /* USBINTERFACEGROUP_H_ */
