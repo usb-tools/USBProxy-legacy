@@ -50,6 +50,7 @@ USBInterface::USBInterface(__u8** p,__u8* e) {
 				hid_descriptor=new USBHID(*p);
 				break;
 			default:
+				//todo: 1 these unknown descriptors need to be stored too or we won't be able to reconstitute the whole thing
 				int i;
 				fprintf(stderr,"Unknown Descriptor:");
 				for(i=0;i<**p;i++) {fprintf(stderr," %02x",(*p)[i]);}

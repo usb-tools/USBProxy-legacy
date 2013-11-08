@@ -111,6 +111,8 @@ size_t USBConfiguration::get_full_descriptor_length() {
 const __u8* USBConfiguration::get_full_descriptor() {
 	__u8* buf=(__u8*)malloc(get_full_descriptor_length());
 	__u8* p=buf;
+	memcpy(p,&descriptor,descriptor.bLength);
+	p=p+descriptor.bLength;
 	int i;
 	for(i=0;i<descriptor.bNumInterfaces;i++) {
 		interfaceGroups[i]->get_full_descriptor(&p);
