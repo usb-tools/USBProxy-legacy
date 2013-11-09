@@ -34,6 +34,7 @@
 //TODO: 9 check we aren't unnecessarily filling a buffer rather than going straight to descriptor on proxied control requests
 //TODO: 9 bound checking (or resize arrays) on add_*/get_*
 //TODO: 9 handle control_request errors
+//TODO: 9 null terminated arrays, vs ones where the count is stored vs ones where count is stored in descriptor, should some of these be changed to different types
 
 class USBConfiguration;
 class USBDeviceQualifier;
