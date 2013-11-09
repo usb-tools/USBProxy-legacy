@@ -230,17 +230,17 @@ void USBDevice::add_string(__u8 index,__u16 languageId) {
 void USBDevice::add_string(__u8 index) {
 	if (!strings[0]) {return;}
 	if (!strings[0][0]) {return;}
-	const __u16* p=strings[0][0]->get_descriptor();
-	__u8 length=(p[0]&0xff)>>1;
+	const usb_string_descriptor* p=strings[0][0]->get_descriptor();
+	__u8 length=(p->bLength)>>1;
 	int i;
-	for(i=1;i<length;i++) {
-		add_string(index,p[i]);
+	for(i=0;i<(length-1);i++) {
+		add_string(index,p->wData[i]);
 	}
 }
 
 USBString* USBDevice::get_string(__u8 index,__u16 languageId) {
 	if (!strings[index]) {return NULL;}
-	if (!languageId&&index) {languageId=strings[0][0]->get_descriptor()[1];}
+	if (!languageId&&index) {languageId=strings[0][0]->get_descriptor()->wData[0];}
 	int i=0;
 	i=0;
 	while (true) {
@@ -258,32 +258,32 @@ USBString* USBDevice::get_string(__u8 index,__u16 languageId) {
 
 USBString* USBDevice::get_manufacturer_string(__u16 languageId) {
 	if (!descriptor.iManufacturer) {return NULL;}
-	return get_string(descriptor.iManufacturer,languageId?languageId:strings[0][0]->get_descriptor()[1]);
+	return get_string(descriptor.iManufacturer,languageId?languageId:strings[0][0]->get_descriptor()->wData[0]);
 }
 
 USBString* USBDevice::get_product_string(__u16 languageId) {
 	if (!descriptor.iProduct) {return NULL;}
-	return get_string(descriptor.iProduct,languageId?languageId:strings[0][0]->get_descriptor()[1]);
+	return get_string(descriptor.iProduct,languageId?languageId:strings[0][0]->get_descriptor()->wData[0]);
 }
 
 USBString* USBDevice::get_serial_string(__u16 languageId) {
 	if (!descriptor.iSerialNumber) {return NULL;}
-	return get_string(descriptor.iSerialNumber,languageId?languageId:strings[0][0]->get_descriptor()[1]);
+	return get_string(descriptor.iSerialNumber,languageId?languageId:strings[0][0]->get_descriptor()->wData[0]);
 }
 
 void USBDevice::add_language(__u16 languageId) {
 	int count=get_language_count();
 	int i;
-	const __u16* list=strings[0][0]->get_descriptor();
-	for (i=1;i<(count+1);i++) {
-		if (languageId==list[i]) {return;}
+	const usb_string_descriptor* list=strings[0][0]->get_descriptor();
+	for (i=0;i<count;i++) {
+		if (languageId==list->wData[i]) {return;}
 	}
 	strings[0][0]->append_char(languageId);
 }
 
 __u16 USBDevice::get_language_by_index(__u8 index) {
 	if (index>=get_language_count()) {return 0;}
-	return strings[0][0]->get_descriptor()[index+1];
+	return strings[0][0]->get_descriptor()->wData[index];
 }
 
 int USBDevice::get_language_count() {

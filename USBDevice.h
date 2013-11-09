@@ -28,6 +28,8 @@
 #include "USBString.h"
 
 //TODO: 9 error checking on malloc/calloc/realloc
+//TODO: 9 leak checking on malloc/calloc/realloc
+//TODO: 9 change signatures to const where applicable
 
 class USBConfiguration;
 
