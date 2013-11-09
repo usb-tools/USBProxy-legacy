@@ -26,10 +26,28 @@
 #ifndef USBDEVICEQUALIFIER_H_
 #define USBDEVICEQUALIFIER_H_
 
+#include <linux/usb/ch9.h>
+#include "USBConfiguration.h"
+
+class USBDevice;
+class USBConfiguration;
+
 class USBDeviceQualifier {
+private:
+    usb_qualifier_descriptor descriptor;
+    USBConfiguration** configurations;
+    USBDevice* device;
+
 public:
-	USBDeviceQualifier();
+    USBDeviceQualifier(USBDeviceProxy* _proxy,USBDevice* _device);
+    USBDeviceQualifier(usb_qualifier_descriptor* _descriptor);
+    USBDeviceQualifier(__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	__u8  bDeviceProtocol,	__u8  bMaxPacketSize0, __u8 bNumConfigurations);
 	~USBDeviceQualifier();
+	const usb_qualifier_descriptor* get_descriptor();
+	void add_configuration(USBConfiguration* config);
+	USBConfiguration* get_configuration(__u8 index);
+	void print(__u8 tabs=0);
+	void set_device(USBDevice* _device);
 };
 
 #endif /* USBDEVICEQUALIFIER_H_ */

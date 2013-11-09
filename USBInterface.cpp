@@ -36,6 +36,7 @@
 USBInterface::USBInterface(__u8** p,__u8* e) {
 	device=NULL;
 	hid_descriptor=NULL;
+	generic_descriptors=(USBGenericDescriptor**)calloc(1,sizeof(*generic_descriptors));
 
 	memcpy(&descriptor,*p,9);
 	*p=*p+9;
@@ -50,11 +51,13 @@ USBInterface::USBInterface(__u8** p,__u8* e) {
 				hid_descriptor=new USBHID(*p);
 				break;
 			default:
-				//todo: 1 these unknown descriptors need to be stored too or we won't be able to reconstitute the whole thing
-				int i;
-				fprintf(stderr,"Unknown Descriptor:");
-				for(i=0;i<**p;i++) {fprintf(stderr," %02x",(*p)[i]);}
-				fprintf(stderr,"\n");
+				USBGenericDescriptor* d=(USBGenericDescriptor*)malloc((*p)[0]);
+				memcpy(d,*p,(*p)[0]);
+				int i=0;
+				while (generic_descriptors[i]) {i++;}
+				generic_descriptors[i]=d;
+				generic_descriptors=(USBGenericDescriptor**)realloc(generic_descriptors,sizeof(*generic_descriptors)*(i+1));
+				generic_descriptors[i+1]=NULL;
 				break;
 		}
 		*p=*p+**p;
@@ -67,12 +70,14 @@ USBInterface::USBInterface(usb_interface_descriptor* _descriptor) {
 
 	descriptor=*_descriptor;
 	endpoints=(USBEndpoint**)calloc(descriptor.bNumEndpoints,sizeof(*endpoints));
+	generic_descriptors=(USBGenericDescriptor**)calloc(1,sizeof(*generic_descriptors));
 }
 
 USBInterface::USBInterface(__u8 bInterfaceNumber,__u8 bAlternateSetting,__u8 bNumEndpoints,__u8 bInterfaceClass,__u8 bInterfaceSubClass,__u8 bInterfaceProtocol,__u8 iInterface) {
 	device=NULL;
 	hid_descriptor=NULL;
-
+	descriptor.bLength=9;
+	descriptor.bDescriptorType=USB_DT_INTERFACE;
 	descriptor.bInterfaceNumber=bInterfaceNumber;
 	descriptor.bAlternateSetting=bAlternateSetting;
 	descriptor.bNumEndpoints=bNumEndpoints;
@@ -81,6 +86,7 @@ USBInterface::USBInterface(__u8 bInterfaceNumber,__u8 bAlternateSetting,__u8 bNu
 	descriptor.bInterfaceProtocol=bInterfaceProtocol;
 	descriptor.iInterface=iInterface;
 	endpoints=(USBEndpoint**)calloc(descriptor.bNumEndpoints,sizeof(*endpoints));
+	generic_descriptors=(USBGenericDescriptor**)calloc(1,sizeof(*generic_descriptors));
 }
 
 USBInterface::~USBInterface() {
@@ -108,6 +114,12 @@ void USBInterface::get_full_descriptor(__u8** p) {
 	if (hid_descriptor) {hid_descriptor->get_full_descriptor(p);}
 	int i;
 	for(i=0;i<descriptor.bNumEndpoints;i++) {endpoints[i]->get_full_descriptor(p);}
+	i=0;
+	while (generic_descriptors[i]) {
+		free(generic_descriptors[i]);
+		i++;
+	}
+	free(generic_descriptors);
 }
 
 void USBInterface::add_endpoint(USBEndpoint* endpoint) {
@@ -160,6 +172,14 @@ void USBInterface::print(__u8 tabs,bool active) {
 		}
 	}
 	if (hid_descriptor) {hid_descriptor->print(tabs+1);}
+	int j=0;
+	while (generic_descriptors[j]) {
+		for(i=0;i<(tabs+1);i++) {putchar('\t');}
+		printf("Other(%02x):",generic_descriptors[j]->bDescriptorType);
+		for(i=0;i<generic_descriptors[j]->bLength;i++) {printf(" %02x",((__u8*)generic_descriptors[j])[i]);}
+		putchar('\n');
+		j++;
+	}
 	for(i=0;i<descriptor.bNumEndpoints;i++) {
 		if (endpoints[i]) {endpoints[i]->print(tabs+1);}
 	}
@@ -172,3 +192,22 @@ USBString* USBInterface::get_interface_string(__u16 languageId) {
 	return device->get_string(descriptor.iInterface,languageId);
 }
 
+const USBGenericDescriptor* USBInterface::get_generic_descriptor(__u8 index) {
+	return generic_descriptors[index];
+}
+
+__u8 USBInterface::get_generic_descriptor_count(__u8 index) {
+	int i=0;
+	while (generic_descriptors[i]) {i++;}
+	return i;
+}
+
+void USBInterface::add_generic_descriptor(USBGenericDescriptor* _gd) {
+	USBGenericDescriptor* d=(USBGenericDescriptor*)malloc(_gd->bLength);
+	memcpy(d,_gd,_gd->bLength);
+	int i=0;
+	while (generic_descriptors[i]) {i++;}
+	generic_descriptors[i]=d;
+	generic_descriptors=(USBGenericDescriptor**)realloc(generic_descriptors,sizeof(*generic_descriptors)*(i+1));
+	generic_descriptors[i+1]=NULL;
+}

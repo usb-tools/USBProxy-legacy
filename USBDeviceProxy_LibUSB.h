@@ -37,7 +37,7 @@ public:
 	USBDeviceProxy_LibUSB(libusb_context* _context,libusb_device* dvc);
 	USBDeviceProxy_LibUSB(libusb_context* _context,libusb_device_handle* devh);
 	~USBDeviceProxy_LibUSB();
-	void control_request(usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr);
+	int control_request(usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr);
 	bool is_open();
 	const char* toString();
 };

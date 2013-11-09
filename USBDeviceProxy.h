@@ -32,7 +32,7 @@ class USBDeviceProxy{
 	//recv setup
 	public:
 		virtual ~USBDeviceProxy() {}
-		virtual void control_request(usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr)=0;
+		virtual int control_request(usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr)=0;
 		virtual const char* toString() {return NULL;}
 };
 

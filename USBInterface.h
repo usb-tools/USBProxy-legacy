@@ -35,12 +35,19 @@
 
 class USBDevice;
 
+struct USBGenericDescriptor {
+	__u8  bLength;
+	__u8  bDescriptorType;
+	__u8 bData[0];
+} __attribute__ ((packed));
+
 class USBInterface {
 	private:
 		usb_interface_descriptor descriptor;
 		USBEndpoint** endpoints;
 		USBDevice* device;
 		USBHID* hid_descriptor;
+		USBGenericDescriptor** generic_descriptors;
 
 	public:
 		USBInterface(__u8** p,__u8* e);
@@ -57,6 +64,9 @@ class USBInterface {
 		void print(__u8 tabs=0,bool active=false);
 		void set_usb_device(USBDevice* _device);
 		USBString* get_interface_string(__u16 languageId=0);
+		const USBGenericDescriptor* get_generic_descriptor(__u8 index);
+		__u8 get_generic_descriptor_count(__u8 index);
+		void add_generic_descriptor(USBGenericDescriptor* _gd);
 };
 
 #endif /* USBINTERFACE_H_ */

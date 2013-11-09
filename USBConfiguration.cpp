@@ -29,14 +29,14 @@
 #include <memory.h>
 #include "USBConfiguration.h"
 
-USBConfiguration::USBConfiguration(USBDeviceProxy* proxy, int idx)
+USBConfiguration::USBConfiguration(USBDeviceProxy* proxy, int idx,bool highSpeed)
 {
 	device=NULL;
 	__u8* buf=(__u8 *)malloc(8);
 	usb_ctrlrequest setup_packet;
 	setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
 	setup_packet.bRequest=USB_REQ_GET_DESCRIPTOR;
-	setup_packet.wValue=USB_DT_CONFIG<<8;
+	setup_packet.wValue=(highSpeed?USB_DT_OTHER_SPEED_CONFIG:USB_DT_CONFIG)<<8;
 	setup_packet.wIndex=idx;
 	setup_packet.wLength=8;
 	int len=0;
@@ -78,8 +78,10 @@ USBConfiguration::USBConfiguration(usb_config_descriptor* _descriptor) {
 	interfaceGroups=(USBInterfaceGroup **)calloc(descriptor.bNumInterfaces,sizeof(*interfaceGroups));
 }
 
-USBConfiguration::USBConfiguration(__u16 wTotalLength,__u8 bNumInterfaces,__u8 bConfigurationValue,__u8 iConfiguration,__u8 bmAttributes,__u8 bMaxPower) {
+USBConfiguration::USBConfiguration(__u16 wTotalLength,__u8 bNumInterfaces,__u8 bConfigurationValue,__u8 iConfiguration,__u8 bmAttributes,__u8 bMaxPower,bool highSpeed) {
 	device=NULL;
+	descriptor.bLength=9;
+	descriptor.bDescriptorType=highSpeed?USB_DT_OTHER_SPEED_CONFIG:USB_DT_CONFIG;
 	descriptor.wTotalLength=wTotalLength;
 	descriptor.bNumInterfaces=bNumInterfaces;
 	descriptor.bConfigurationValue=bConfigurationValue;
@@ -169,4 +171,8 @@ void USBConfiguration::set_usb_device(USBDevice* _device) {
 USBString* USBConfiguration::get_config_string(__u16 languageId) {
 	if (!device||!descriptor.iConfiguration) {return NULL;}
 	return device->get_string(descriptor.iConfiguration,languageId);
+}
+
+bool USBConfiguration::is_highspeed() {
+	return descriptor.bDescriptorType=USB_DT_OTHER_SPEED_CONFIG?true:false;
 }

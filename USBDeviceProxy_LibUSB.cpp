@@ -139,7 +139,7 @@ const char* USBDeviceProxy_LibUSB::toString() {
 	return buf;
 }
 
-void USBDeviceProxy_LibUSB::control_request(usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr) {
+int USBDeviceProxy_LibUSB::control_request(usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr) {
 	if (debugLevel>1) {
 		printf("LibUSB>");
 		unsigned int i;
@@ -149,7 +149,7 @@ void USBDeviceProxy_LibUSB::control_request(usb_ctrlrequest *setup_packet, int *
 	int rc=libusb_control_transfer(device,setup_packet->bRequestType,setup_packet->bRequest,setup_packet->wValue,setup_packet->wIndex,dataptr,setup_packet->wLength,1000);
 	if (rc<0) {
 		if (debugLevel) {fprintf(stderr,"Error %d[%s] sending setup packet.\n",rc,libusb_error_name(rc));}
-		return;
+		return rc;
 	}
 	if (debugLevel>1) {
 		printf("LibUSB<");
@@ -158,4 +158,5 @@ void USBDeviceProxy_LibUSB::control_request(usb_ctrlrequest *setup_packet, int *
 		printf("\n");
 	}
 	*nbytes=rc;
+	return 0;
 }

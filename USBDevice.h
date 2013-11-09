@@ -25,13 +25,18 @@
 #include <linux/usb/ch9.h>
 #include "USBDeviceProxy.h"
 #include "USBConfiguration.h"
+#include "USBDeviceQualifier.h"
 #include "USBString.h"
 
 //TODO: 9 error checking on malloc/calloc/realloc
 //TODO: 9 leak checking on malloc/calloc/realloc
 //TODO: 9 change signatures to const where applicable
+//TODO: 9 check we aren't unnecessarily filling a buffer rather than going straight to descriptor on proxied control requests
+//TODO: 9 bound checking (or resize arrays) on add_*/get_*
+//TODO: 9 handle control_request errors
 
 class USBConfiguration;
+class USBDeviceQualifier;
 
 class USBDevice {
 private:
@@ -44,6 +49,7 @@ private:
     int maxStringIdx=0;
     USBDeviceProxy* proxy;
     void add_language(__u16);
+    USBDeviceQualifier* qualifier;
 
 public:
     USBDevice(USBDeviceProxy* _proxy);
@@ -66,6 +72,9 @@ public:
     __u16 get_language_by_index(__u8 index);
     int get_language_count();
     USBConfiguration* get_active_configuration();
+    USBDeviceQualifier* get_device_qualifier();
+    void set_device_qualifier(USBDeviceQualifier* _qualifier);
+    bool is_highspeed();
 };
 
 #endif

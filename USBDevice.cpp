@@ -70,6 +70,13 @@ USBDevice::USBDevice(USBDeviceProxy* _proxy) {
 		}
 	}
 
+	qualifier=new USBDeviceQualifier(proxy,this);
+	//not a high speed device
+	if (!(qualifier->get_descriptor()->bLength)) {
+		delete(qualifier);
+		qualifier=NULL;
+	}
+
 	setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
 	setup_packet.bRequest=USB_REQ_GET_CONFIGURATION;
 	setup_packet.wValue=0;
@@ -78,12 +85,11 @@ USBDevice::USBDevice(USBDeviceProxy* _proxy) {
 	__u8 result;
 	proxy->control_request(&setup_packet,&len,&result);
 	activeConfigurationIndex=result;
-
-	//TODO: 2 read high speed configs
 }
 
 USBDevice::USBDevice(usb_device_descriptor* _descriptor) {
 	proxy=NULL;
+	qualifier=NULL;
 	descriptor=*_descriptor;
 	configurations=(USBConfiguration **)calloc(descriptor.bNumConfigurations,sizeof(*configurations));
 	strings=(USBString ***)calloc(1,sizeof(*strings));
@@ -95,6 +101,9 @@ USBDevice::USBDevice(usb_device_descriptor* _descriptor) {
 
 USBDevice::USBDevice(__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	__u8  bDeviceProtocol,	__u8  bMaxPacketSize0,	__le16 idVendor,	__le16 idProduct,	__le16 bcdDevice,	__u8  iManufacturer,	__u8  iProduct,	__u8  iSerialNumber,	__u8  bNumConfigurations) {
 	proxy=NULL;
+	qualifier=NULL;
+	descriptor.bLength=18;
+	descriptor.bDescriptorType=USB_DT_DEVICE;
 	descriptor.bcdUSB=bcdUSB;
 	descriptor.bDeviceClass=bDeviceClass;
 	descriptor.bDeviceSubClass=bDeviceSubClass;
@@ -117,6 +126,7 @@ USBDevice::USBDevice(__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	_
 
 USBDevice::~USBDevice() {
 	int i;
+	if (qualifier) {delete(qualifier);}
 	for(i=0;i<descriptor.bNumConfigurations;i++) {delete(configurations[i]);}
 	free(configurations);
 	for(i=0;i<=maxStringIdx;i++) {
@@ -141,7 +151,8 @@ void USBDevice::add_configuration(USBConfiguration* config) {
 }
 
 USBConfiguration* USBDevice::get_configuration(__u8 index) {
-	if (index>=descriptor.bNumConfigurations) {return NULL;}
+	if (qualifier) {return qualifier->get_configuration(index);}
+	if (index>descriptor.bNumConfigurations) {return NULL;}
 	return configurations[index-1];
 }
 
@@ -180,8 +191,9 @@ void USBDevice::print(__u8 tabs) {
 		}
 	}
 	for(i=0;i<descriptor.bNumConfigurations;i++) {
-		if (configurations[i]) {configurations[i]->print(tabs+1,i==(activeConfigurationIndex-1)?true:false);}
+		if (configurations[i]) {configurations[i]->print(tabs+1,configurations[i]==get_active_configuration()?true:false);}
 	}
+	if (qualifier) {qualifier->print(tabs);}
 }
 
 void USBDevice::add_string(USBString* string) {
@@ -292,5 +304,18 @@ int USBDevice::get_language_count() {
 
 USBConfiguration* USBDevice::get_active_configuration() {
 	if (activeConfigurationIndex<0) {return NULL;}
+	if (qualifier) {return qualifier->get_configuration(activeConfigurationIndex);}
 	return get_configuration(activeConfigurationIndex);
 }
+
+USBDeviceQualifier* USBDevice::get_device_qualifier() {
+	return qualifier;
+}
+void USBDevice::set_device_qualifier(USBDeviceQualifier* _qualifier) {
+	if (qualifier) {delete(qualifier);}
+	qualifier=_qualifier;
+}
+bool USBDevice::is_highspeed() {
+	return qualifier?true:false;
+}
+

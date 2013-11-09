@@ -56,7 +56,6 @@ USBString::USBString(const usb_string_descriptor* _descriptor,__u8 _index,__u16 
 	languageId=_languageId;
 	descriptor=(usb_string_descriptor *)malloc(len);
 	memcpy(descriptor,_descriptor,len);
-	descriptor->bLength=((len+1)<<1)|0x0300;
 }
 //create from ascii string
 USBString::USBString(const char* value,__u8 _index,__u16 _languageId) {
