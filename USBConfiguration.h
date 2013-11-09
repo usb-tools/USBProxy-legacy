@@ -40,7 +40,11 @@ class USBConfiguration {
 	private:
 		usb_config_descriptor descriptor;
 		USBInterfaceGroup** interfaceGroups;
+<<<<<<< HEAD
 		USBDevice* device;
+=======
+		//TODO: USBDevice (and set upon creation)
+>>>>>>> 7a7b72cec231ba1cbb14b165e6b3ab4c5721b057
 
 	public:
 		USBConfiguration(USBDeviceProxy* proxy, int index,bool highSpeed=false);
@@ -52,10 +56,14 @@ class USBConfiguration {
 		size_t get_full_descriptor_length();
 		void add_interface(USBInterface* interface);
 		USBInterface* get_interface(__u8 number,__u8 alternate);
+<<<<<<< HEAD
 		void print(__u8 tabs=0,bool active=false);
 		void set_usb_device(USBDevice* _device);
 		USBString* get_config_string(__u16 languageId=0);
 		__u8 get_interface_alernate_count(__u8 number);
 		bool is_highspeed();
+=======
+		void print(__u8 tabs=0);
+>>>>>>> 7a7b72cec231ba1cbb14b165e6b3ab4c5721b057
 };
 #endif /* USBCONFIGURATION_H_ */

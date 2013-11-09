@@ -45,9 +45,14 @@ class USBInterface {
 	private:
 		usb_interface_descriptor descriptor;
 		USBEndpoint** endpoints;
+<<<<<<< HEAD
 		USBDevice* device;
 		USBHID* hid_descriptor;
 		USBGenericDescriptor** generic_descriptors;
+=======
+		//TODO: USBClass
+		//TODO: USBDevice (and set upon creation)
+>>>>>>> 7a7b72cec231ba1cbb14b165e6b3ab4c5721b057
 
 	public:
 		USBInterface(__u8** p,__u8* e);
@@ -61,12 +66,16 @@ class USBInterface {
 		USBEndpoint* get_endpoint_by_idx(__u8 index);
 		USBEndpoint* get_endpoint_by_address(__u8 address);
 		__u8 get_endpoint_count();
+<<<<<<< HEAD
 		void print(__u8 tabs=0,bool active=false);
 		void set_usb_device(USBDevice* _device);
 		USBString* get_interface_string(__u16 languageId=0);
 		const USBGenericDescriptor* get_generic_descriptor(__u8 index);
 		__u8 get_generic_descriptor_count(__u8 index);
 		void add_generic_descriptor(USBGenericDescriptor* _gd);
+=======
+		void print(__u8 tabs=0);
+>>>>>>> 7a7b72cec231ba1cbb14b165e6b3ab4c5721b057
 };
 
 #endif /* USBINTERFACE_H_ */

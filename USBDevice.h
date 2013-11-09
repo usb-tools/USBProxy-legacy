@@ -45,12 +45,17 @@ private:
 	int address=-1;
     usb_device_descriptor descriptor;
     USBConfiguration** configurations;
+<<<<<<< HEAD
     //this is set up like strings[stringID][array of all languages]
     USBString ***strings;
     int maxStringIdx=0;
     USBDeviceProxy* proxy;
     void add_language(__u16);
     USBDeviceQualifier* qualifier;
+=======
+    //TODO: USBVendor deviceVendor;
+    //TODO: array(of endpoints) endpoints;
+>>>>>>> 7a7b72cec231ba1cbb14b165e6b3ab4c5721b057
 
 public:
     USBDevice(USBDeviceProxy* _proxy);
@@ -61,6 +66,7 @@ public:
 	void add_configuration(USBConfiguration* config);
 	USBConfiguration* get_configuration(__u8 index);
 	void print(__u8 tabs=0);
+<<<<<<< HEAD
 	void add_string(USBString* string);
 	//adds via proxy
 	void add_string(__u8 index,__u16 languageId);
@@ -76,6 +82,8 @@ public:
     USBDeviceQualifier* get_device_qualifier();
     void set_device_qualifier(USBDeviceQualifier* _qualifier);
     bool is_highspeed();
+=======
+>>>>>>> 7a7b72cec231ba1cbb14b165e6b3ab4c5721b057
 };
 
 #endif

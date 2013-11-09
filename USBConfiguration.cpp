@@ -31,7 +31,10 @@
 
 USBConfiguration::USBConfiguration(USBDeviceProxy* proxy, int idx,bool highSpeed)
 {
+<<<<<<< HEAD
 	device=NULL;
+=======
+>>>>>>> 7a7b72cec231ba1cbb14b165e6b3ab4c5721b057
 	__u8* buf=(__u8 *)malloc(8);
 	usb_ctrlrequest setup_packet;
 	setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
@@ -53,6 +56,7 @@ USBConfiguration::USBConfiguration(USBDeviceProxy* proxy, int idx,bool highSpeed
 	__u8* p=buf+9;
 	while (p<e) {
 		add_interface(new USBInterface(&p,e));
+<<<<<<< HEAD
 	}
 
 	int i;
@@ -70,6 +74,10 @@ USBConfiguration::USBConfiguration(USBDeviceProxy* proxy, int idx,bool highSpeed
 			interfaceGroups[i]->activeAlternateIndex=result;
 		}
 	}
+=======
+	}
+	//TODO:read string descriptors
+>>>>>>> 7a7b72cec231ba1cbb14b165e6b3ab4c5721b057
 }
 
 USBConfiguration::USBConfiguration(usb_config_descriptor* _descriptor) {
@@ -125,7 +133,9 @@ const __u8* USBConfiguration::get_full_descriptor() {
 void USBConfiguration::add_interface(USBInterface* interface) {
 	__u8 number=interface->get_descriptor()->bInterfaceNumber;
 	if (!interfaceGroups[number]) {
+		fprintf(stderr,"AI%dS\n",number);
 		interfaceGroups[number]=new USBInterfaceGroup(number);
+		fprintf(stderr,"AI%dE\n",number);
 	}
 	interfaceGroups[number]->add_interface(interface);
 }
@@ -135,6 +145,7 @@ USBInterface* USBConfiguration::get_interface(__u8 number,__u8 alternate) {
 	return interfaceGroups[number]->get_interface(alternate);
 }
 
+<<<<<<< HEAD
 __u8 USBConfiguration::get_interface_alernate_count(__u8 number) {
 	if (!interfaceGroups[number]) {return NULL;}
 	return interfaceGroups[number]->get_alternate_count();
@@ -176,3 +187,15 @@ USBString* USBConfiguration::get_config_string(__u16 languageId) {
 bool USBConfiguration::is_highspeed() {
 	return descriptor.bDescriptorType=USB_DT_OTHER_SPEED_CONFIG?true:false;
 }
+=======
+void USBConfiguration::print(__u8 tabs) {
+	unsigned int i;
+	for(i=0;i<tabs;i++) {putchar('\t');}
+	printf("Config(%d):",descriptor.bConfigurationValue);
+	for(i=0;i<sizeof(descriptor);i++) {printf(" %02x",((__u8*)&descriptor)[i]);}
+	putchar('\n');
+	for(i=0;i<descriptor.bNumInterfaces;i++) {
+		interfaceGroups[i]->print(tabs+1);
+	}
+}
+>>>>>>> 7a7b72cec231ba1cbb14b165e6b3ab4c5721b057
