@@ -24,12 +24,7 @@
  * Created on: Nov 6, 2013
  */
 
-<<<<<<< HEAD
 #include <stdio.h>
-=======
-#include "USBInterfaceGroup.h"
-#include "stdio.h"
->>>>>>> 7a7b72cec231ba1cbb14b165e6b3ab4c5721b057
 #include <stdlib.h>
 #include <memory.h>
 #include "USBInterfaceGroup.h"
@@ -86,7 +81,6 @@ void USBInterfaceGroup::print(__u8 tabs) {
 	printf("Interface(%d):",number);
 	putchar('\n');
 	for(i=0;i<alternateCount;i++) {
-<<<<<<< HEAD
 		interfaces[i]->print(tabs+1,i==activeAlternateIndex?true:false);
 	}
 }
@@ -106,8 +100,3 @@ USBInterface* USBInterfaceGroup::get_active_interface() {
 	if (activeAlternateIndex<0) {return NULL;}
 	return get_interface(activeAlternateIndex);
 }
-=======
-		interfaces[i]->print(tabs+1);
-	}
-}
->>>>>>> 7a7b72cec231ba1cbb14b165e6b3ab4c5721b057

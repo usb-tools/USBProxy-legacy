@@ -38,7 +38,6 @@ class USBInterfaceGroup {
 		__u8 number;
 		__u8 alternateCount;
 		USBInterface** interfaces;
-		//TODO: USBDevice (and set upon creation)
 
 	public:
 		int activeAlternateIndex=-1;
@@ -50,12 +49,9 @@ class USBInterfaceGroup {
 		void add_interface(USBInterface* interface);
 		USBInterface* get_interface(__u8 alternate);
 		void print(__u8 tabs=0);
-<<<<<<< HEAD
 		void set_usb_device(USBDevice* _device);
 		__u8 get_alternate_count();
 		USBInterface* get_active_interface();
-=======
->>>>>>> 7a7b72cec231ba1cbb14b165e6b3ab4c5721b057
 };
 
 #endif /* USBINTERFACEGROUP_H_ */

@@ -24,22 +24,13 @@
  * Created on: Nov 6, 2013
  */
 
-<<<<<<< HEAD
 #include <stdio.h>
-=======
-#include "USBEndpoint.h"
-#include "stdio.h"
->>>>>>> 7a7b72cec231ba1cbb14b165e6b3ab4c5721b057
 #include <stdlib.h>
 #include <memory.h>
 #include "USBEndpoint.h"
 
 USBEndpoint::USBEndpoint(__u8* p) {
 	memcpy(&descriptor,p,7);
-<<<<<<< HEAD
-=======
-	fprintf(stderr,"E%02x\n",p[2]);
->>>>>>> 7a7b72cec231ba1cbb14b165e6b3ab4c5721b057
 }
 
 USBEndpoint::USBEndpoint(usb_endpoint_descriptor* _descriptor) {
@@ -72,16 +63,9 @@ void USBEndpoint::get_full_descriptor(__u8** p) {
 }
 
 void USBEndpoint::print(__u8 tabs) {
-<<<<<<< HEAD
 	unsigned int i;
 	for(i=0;i<tabs;i++) {putchar('\t');}
 	printf("EP(%02x):",descriptor.bEndpointAddress);
 	for(i=0;i<descriptor.bLength;i++) {printf(" %02x",((__u8*)&descriptor)[i]);}
-=======
-	int i;
-	for(i=0;i<tabs;i++) {putchar('\t');}
-	printf("EP(%02x):",descriptor.bEndpointAddress);
-	for(i=0;i<sizeof(descriptor);i++) {printf(" %02x",((__u8*)&descriptor)[i]);}
->>>>>>> 7a7b72cec231ba1cbb14b165e6b3ab4c5721b057
 	putchar('\n');
 }

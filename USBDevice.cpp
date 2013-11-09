@@ -25,19 +25,12 @@
 #include <memory.h>
 #include "USBDevice.h"
 
-<<<<<<< HEAD
 //TODO: 9 update active endpoints in proxied device upon set configuration request
 //TODO: 9 update active configuration for the class upon set configuration request
 //TODO: 9 handle any endpoints that become inactive upon set configuration request
 
 USBDevice::USBDevice(USBDeviceProxy* _proxy) {
 	proxy=_proxy;
-=======
-//TODO: update active endpoints upon set configuration request
-//TODO: pull current config from proxy
-
-USBDevice::USBDevice(USBDeviceProxy* proxy) {
->>>>>>> 7a7b72cec231ba1cbb14b165e6b3ab4c5721b057
 	__u8 buf[18];
 	usb_ctrlrequest setup_packet;
 	setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
@@ -50,7 +43,6 @@ USBDevice::USBDevice(USBDeviceProxy* proxy) {
 	memcpy(&descriptor,buf,len);
 	int i;
 	configurations=(USBConfiguration **)calloc(descriptor.bNumConfigurations,sizeof(*configurations));
-<<<<<<< HEAD
 
 	maxStringIdx=(descriptor.iManufacturer>maxStringIdx)?descriptor.iManufacturer:maxStringIdx;
 	maxStringIdx=(descriptor.iProduct>maxStringIdx)?descriptor.iProduct:maxStringIdx;
@@ -63,8 +55,6 @@ USBDevice::USBDevice(USBDeviceProxy* proxy) {
 	if (descriptor.iProduct) {add_string(descriptor.iProduct);}
 	if (descriptor.iSerialNumber) {add_string(descriptor.iSerialNumber);}
 
-=======
->>>>>>> 7a7b72cec231ba1cbb14b165e6b3ab4c5721b057
 	for(i=0;i<descriptor.bNumConfigurations;i++) {
 		configurations[i]=new USBConfiguration(proxy,i);
 		__u8 iConfiguration=configurations[i]->get_descriptor()->iConfiguration;
@@ -79,7 +69,6 @@ USBDevice::USBDevice(USBDeviceProxy* proxy) {
 			}
 		}
 	}
-<<<<<<< HEAD
 
 	qualifier=new USBDeviceQualifier(proxy,this);
 	//not a high speed device
@@ -96,10 +85,6 @@ USBDevice::USBDevice(USBDeviceProxy* proxy) {
 	__u8 result;
 	proxy->control_request(&setup_packet,&len,&result);
 	activeConfigurationIndex=result;
-=======
-	//TODO: read string descriptors for this and all descendants
-	//TODO: read high speed configs
->>>>>>> 7a7b72cec231ba1cbb14b165e6b3ab4c5721b057
 }
 
 USBDevice::USBDevice(usb_device_descriptor* _descriptor) {
@@ -107,14 +92,11 @@ USBDevice::USBDevice(usb_device_descriptor* _descriptor) {
 	qualifier=NULL;
 	descriptor=*_descriptor;
 	configurations=(USBConfiguration **)calloc(descriptor.bNumConfigurations,sizeof(*configurations));
-<<<<<<< HEAD
 	strings=(USBString ***)calloc(1,sizeof(*strings));
 	strings[0]=(USBString **)malloc(sizeof(**strings)*2);
 	char16_t zero[]={0x0409, 0};
 	strings[0][0]=new USBString(zero,0,0);
 	strings[0][1]=NULL;
-=======
->>>>>>> 7a7b72cec231ba1cbb14b165e6b3ab4c5721b057
 }
 
 USBDevice::USBDevice(__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	__u8  bDeviceProtocol,	__u8  bMaxPacketSize0,	__le16 idVendor,	__le16 idProduct,	__le16 bcdDevice,	__u8  iManufacturer,	__u8  iProduct,	__u8  iSerialNumber,	__u8  bNumConfigurations) {
@@ -135,14 +117,11 @@ USBDevice::USBDevice(__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	_
 	descriptor.iSerialNumber=iSerialNumber;
 	descriptor.bNumConfigurations=bNumConfigurations;
 	configurations=(USBConfiguration **)calloc(descriptor.bNumConfigurations,sizeof(*configurations));
-<<<<<<< HEAD
 	strings=(USBString ***)calloc(1,sizeof(*strings));
 	strings[0]=(USBString **)malloc(sizeof(**strings)*2);
 	char16_t zero[]={0x0409, 0};
 	strings[0][0]=new USBString(zero,0,0);
 	strings[0][1]=NULL;
-=======
->>>>>>> 7a7b72cec231ba1cbb14b165e6b3ab4c5721b057
 }
 
 USBDevice::~USBDevice() {
@@ -166,11 +145,7 @@ const usb_device_descriptor* USBDevice::get_descriptor() {
 };
 
 void USBDevice::add_configuration(USBConfiguration* config) {
-<<<<<<< HEAD
 	int value=config->get_descriptor()->bConfigurationValue-1;
-=======
-	int value=config->getDescriptor()->bConfigurationValue-1;
->>>>>>> 7a7b72cec231ba1cbb14b165e6b3ab4c5721b057
 	if (configurations[value]) {delete(configurations[value]);}
 	configurations[value]=config;
 }
@@ -187,7 +162,6 @@ void USBDevice::print(__u8 tabs) {
 	printf("Device:");
 	for(i=0;i<sizeof(descriptor);i++) {printf(" %02x",((__u8 *)&descriptor)[i]);}
 	putchar('\n');
-<<<<<<< HEAD
 	USBString* s;
 	if (descriptor.iManufacturer) {
 		s=get_manufacturer_string();
@@ -345,9 +319,3 @@ bool USBDevice::is_highspeed() {
 	return qualifier?true:false;
 }
 
-=======
-	for(i=0;i<descriptor.bNumConfigurations;i++) {
-		configurations[i]->print(tabs+1);
-	}
-}
->>>>>>> 7a7b72cec231ba1cbb14b165e6b3ab4c5721b057
