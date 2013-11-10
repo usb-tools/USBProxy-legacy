@@ -28,6 +28,7 @@
 
 #include <linux/usb/ch9.h>
 #include "USBConfiguration.h"
+#include "DefinitionErrors.h"
 
 class USBDevice;
 class USBConfiguration;
@@ -40,7 +41,7 @@ private:
 
 public:
     USBDeviceQualifier(USBDeviceProxy* _proxy,USBDevice* _device);
-    USBDeviceQualifier(usb_qualifier_descriptor* _descriptor);
+    USBDeviceQualifier(const usb_qualifier_descriptor* _descriptor);
     USBDeviceQualifier(__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	__u8  bDeviceProtocol,	__u8  bMaxPacketSize0, __u8 bNumConfigurations);
 	~USBDeviceQualifier();
 	const usb_qualifier_descriptor* get_descriptor();
@@ -48,6 +49,7 @@ public:
 	USBConfiguration* get_configuration(__u8 index);
 	void print(__u8 tabs=0);
 	void set_device(USBDevice* _device);
+	const definition_error is_defined();
 };
 
 #endif /* USBDEVICEQUALIFIER_H_ */

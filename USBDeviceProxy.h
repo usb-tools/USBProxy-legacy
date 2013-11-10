@@ -30,10 +30,12 @@ class USBDeviceProxy{
 	//recv packet
 	//reset
 	//recv setup
-	public:
-		virtual ~USBDeviceProxy() {}
-		virtual int control_request(usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr)=0;
-		virtual const char* toString() {return NULL;}
+
+public:
+	virtual ~USBDeviceProxy() {}
+	virtual int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr)=0;
+	virtual __u8 get_address()=0;
+	virtual const char* toString() {return NULL;}
 };
 
 #endif

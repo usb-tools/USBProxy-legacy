@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include "USBDevice.h"
 #include "USBInterface.h"
+#include "DefinitionErrors.h"
 
 class USBDevice;
 class USBInterface;
@@ -50,8 +51,10 @@ class USBInterfaceGroup {
 		USBInterface* get_interface(__u8 alternate);
 		void print(__u8 tabs=0);
 		void set_usb_device(USBDevice* _device);
+		__u8 get_number();
 		__u8 get_alternate_count();
 		USBInterface* get_active_interface();
+		const definition_error is_defined(__u8 configId);
 };
 
 #endif /* USBINTERFACEGROUP_H_ */

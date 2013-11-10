@@ -32,6 +32,7 @@
 #include "USBInterfaceGroup.h"
 #include "USBInterface.h"
 #include "USBString.h"
+#include "DefinitionErrors.h"
 
 class USBDevice;
 class USBInterfaceGroup;
@@ -44,7 +45,7 @@ class USBConfiguration {
 
 	public:
 		USBConfiguration(USBDeviceProxy* proxy, int index,bool highSpeed=false);
-		USBConfiguration(usb_config_descriptor* _descriptor);
+		USBConfiguration(const usb_config_descriptor* _descriptor);
 		USBConfiguration(__u16 wTotalLength,__u8 bNumInterfaces,__u8 bConfigurationValue,__u8 iConfiguration,__u8 bmAttributes,__u8 bMaxPower,bool highSpeed=false);
 		~USBConfiguration();
 		const usb_config_descriptor* get_descriptor();
@@ -57,5 +58,6 @@ class USBConfiguration {
 		USBString* get_config_string(__u16 languageId=0);
 		__u8 get_interface_alernate_count(__u8 number);
 		bool is_highspeed();
+		const definition_error is_defined(bool highSpeed=false);
 };
 #endif /* USBCONFIGURATION_H_ */

@@ -33,7 +33,7 @@
 //TODO: 9 update active endpoints in proxied device upon set interface request
 //TODO: 9 handle any endpoints that become inactive upon set interface request
 
-USBInterface::USBInterface(__u8** p,__u8* e) {
+USBInterface::USBInterface(__u8** p,const __u8* e) {
 	device=NULL;
 	hid_descriptor=NULL;
 	generic_descriptors=(USBGenericDescriptor**)calloc(1,sizeof(*generic_descriptors));
@@ -64,7 +64,7 @@ USBInterface::USBInterface(__u8** p,__u8* e) {
 	}
 }
 
-USBInterface::USBInterface(usb_interface_descriptor* _descriptor) {
+USBInterface::USBInterface(const usb_interface_descriptor* _descriptor) {
 	device=NULL;
 	hid_descriptor=NULL;
 
@@ -94,7 +94,12 @@ USBInterface::~USBInterface() {
 	for(i=0;i<descriptor.bNumEndpoints;i++) {delete(endpoints[i]);}
 	free(endpoints);
 	if (hid_descriptor) {delete(hid_descriptor);}
-}
+	i=0;
+	while (generic_descriptors[i]) {
+		free(generic_descriptors[i]);
+		i++;
+	}
+	free(generic_descriptors);}
 
 const usb_interface_descriptor* USBInterface::get_descriptor() {
 	return &descriptor;
@@ -104,6 +109,10 @@ size_t USBInterface::get_full_descriptor_length() {
 	size_t total=descriptor.bLength;
 	if (hid_descriptor) {total+=hid_descriptor->get_full_descriptor_length();}
 	int i;
+	while (generic_descriptors[i]) {
+		total+=generic_descriptors[i]->bLength;
+		i++;
+	}
 	for(i=0;i<descriptor.bNumEndpoints;i++) {total+=endpoints[i]->get_full_descriptor_length();}
 	return total;
 }
@@ -112,14 +121,12 @@ void USBInterface::get_full_descriptor(__u8** p) {
 	memcpy(*p,&descriptor,descriptor.bLength);
 	*p=*p+descriptor.bLength;
 	if (hid_descriptor) {hid_descriptor->get_full_descriptor(p);}
-	int i;
-	for(i=0;i<descriptor.bNumEndpoints;i++) {endpoints[i]->get_full_descriptor(p);}
-	i=0;
+	int i=0;
 	while (generic_descriptors[i]) {
-		free(generic_descriptors[i]);
+		memcpy(*p,generic_descriptors[i],generic_descriptors[i]->bLength);
 		i++;
 	}
-	free(generic_descriptors);
+	for(i=0;i<descriptor.bNumEndpoints;i++) {endpoints[i]->get_full_descriptor(p);}
 }
 
 void USBInterface::add_endpoint(USBEndpoint* endpoint) {
@@ -210,4 +217,25 @@ void USBInterface::add_generic_descriptor(USBGenericDescriptor* _gd) {
 	generic_descriptors[i]=d;
 	generic_descriptors=(USBGenericDescriptor**)realloc(generic_descriptors,sizeof(*generic_descriptors)*(i+1));
 	generic_descriptors[i+1]=NULL;
+}
+
+const definition_error USBInterface::is_defined(__u8 configId,__u8 interfaceNum) {
+	if (descriptor.bLength!=9) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x01, DE_OBJ_INTERFACE,configId,interfaceNum,descriptor.bAlternateSetting);}
+	if (descriptor.bDescriptorType!=USB_DT_INTERFACE) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x02, DE_OBJ_INTERFACE,configId,interfaceNum,descriptor.bAlternateSetting);}
+	//__u8  bInterfaceNumber;
+	//__u8  bAlternateSetting;
+	//__u8  bNumEndpoints;
+	//__u8  bInterfaceClass;
+	//__u8  bInterfaceSubClass;
+	//__u8  bInterfaceProtocol;
+	//__u8  iInterface;
+
+	int i;
+	for (i=0;i<descriptor.bNumEndpoints;i++) {
+		if (!endpoints[i]) {return definition_error(DE_ERR_NULL_OBJECT,0x0, DE_OBJ_ENDPOINT,configId,interfaceNum,descriptor.bAlternateSetting,i);}
+		definition_error rc=endpoints[i]->is_defined(configId,interfaceNum,descriptor.bAlternateSetting);
+		if (rc.error) {return rc;}
+	}
+	return definition_error();
+
 }

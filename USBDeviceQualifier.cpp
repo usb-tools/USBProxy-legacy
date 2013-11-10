@@ -25,6 +25,7 @@
  */
 
 #include "USBDeviceQualifier.h"
+#include "DefinitionErrors.h"
 
 USBDeviceQualifier::USBDeviceQualifier(USBDeviceProxy* proxy,USBDevice* _device) {
 	device=_device;
@@ -60,7 +61,7 @@ USBDeviceQualifier::USBDeviceQualifier(USBDeviceProxy* proxy,USBDevice* _device)
 	}
 }
 
-USBDeviceQualifier::USBDeviceQualifier(usb_qualifier_descriptor* _descriptor) {
+USBDeviceQualifier::USBDeviceQualifier(const usb_qualifier_descriptor* _descriptor) {
 	device=NULL;
 	descriptor=*_descriptor;
 	configurations=(USBConfiguration **)calloc(descriptor.bNumConfigurations,sizeof(*configurations));
@@ -116,4 +117,26 @@ void USBDeviceQualifier::print(__u8 tabs) {
 
 void USBDeviceQualifier::set_device(USBDevice* _device) {
 	device=_device;
+}
+
+const definition_error USBDeviceQualifier::is_defined() {
+	if (descriptor.bLength!=10) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x01, DE_OBJ_QUALIFIER);}
+	if (descriptor.bDescriptorType!=USB_DT_DEVICE_QUALIFIER) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x02, DE_OBJ_QUALIFIER);}
+	//__le16 bcdUSB;
+	//__u8  bDeviceClass;
+	//__u8  bDeviceSubClass;
+	//__u8  bDeviceProtocol;
+	if (descriptor.bMaxPacketSize0!=8&&descriptor.bMaxPacketSize0!=16&&descriptor.bMaxPacketSize0!=32&&descriptor.bMaxPacketSize0!=64) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x08, DE_OBJ_QUALIFIER);}
+	if (!descriptor.bNumConfigurations) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x09, DE_OBJ_QUALIFIER);}
+	//__u8  bRESERVED;
+
+	int i;
+	for (i=0;i<descriptor.bNumConfigurations;i++) {
+		if (!configurations[i]) {return definition_error(DE_ERR_NULL_OBJECT,0x0, DE_OBJ_OS_CONFIG,i+1);}
+		if (configurations[i]->get_descriptor()->bConfigurationValue!=(i+1)) {return definition_error(DE_ERR_MISPLACED_OBJECT,configurations[i]->get_descriptor()->bConfigurationValue, DE_OBJ_OS_CONFIG,i+1);}
+		definition_error rc=configurations[i]->is_defined(true);
+		if (rc.error) {return rc;}
+	}
+
+	return definition_error();
 }

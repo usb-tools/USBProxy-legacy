@@ -29,11 +29,11 @@
 #include <memory.h>
 #include "USBEndpoint.h"
 
-USBEndpoint::USBEndpoint(__u8* p) {
+USBEndpoint::USBEndpoint(const __u8* p) {
 	memcpy(&descriptor,p,7);
 }
 
-USBEndpoint::USBEndpoint(usb_endpoint_descriptor* _descriptor) {
+USBEndpoint::USBEndpoint(const usb_endpoint_descriptor* _descriptor) {
 	descriptor=*_descriptor;
 }
 
@@ -68,4 +68,19 @@ void USBEndpoint::print(__u8 tabs) {
 	printf("EP(%02x):",descriptor.bEndpointAddress);
 	for(i=0;i<descriptor.bLength;i++) {printf(" %02x",((__u8*)&descriptor)[i]);}
 	putchar('\n');
+}
+
+const definition_error USBEndpoint::is_defined(__u8 configId,__u8 interfaceNum,__u8 interfaceAlternate) {
+	if (descriptor.bLength!=7) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x01, DE_OBJ_ENDPOINT,configId,interfaceNum,interfaceAlternate,descriptor.bEndpointAddress);}
+	if (descriptor.bDescriptorType!=USB_DT_ENDPOINT) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x02, DE_OBJ_ENDPOINT,configId,interfaceNum,interfaceAlternate,descriptor.bEndpointAddress);}
+	if (descriptor.bEndpointAddress&0x70) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x03, DE_OBJ_ENDPOINT,configId,interfaceNum,interfaceAlternate,descriptor.bEndpointAddress);}
+	if ( (descriptor.bmAttributes&0xC0) ||
+		(((descriptor.bmAttributes&0x03)!=1) && (descriptor.bmAttributes&0xFC))
+			) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x04, DE_OBJ_ENDPOINT,configId,interfaceNum,interfaceAlternate,descriptor.bEndpointAddress);}
+	//__u8 wMaxPacketSize
+	if (
+			(((descriptor.bmAttributes&0x03)==1) && descriptor.bInterval!=1) ||
+			(((descriptor.bmAttributes&0x03)==3) && descriptor.bInterval==1)
+		) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x05, DE_OBJ_ENDPOINT,configId,interfaceNum,interfaceAlternate,descriptor.bEndpointAddress);}
+	return definition_error();
 }

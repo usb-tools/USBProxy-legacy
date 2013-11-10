@@ -31,12 +31,12 @@
 
 
 
-USBHID::USBHID(__u8* p) {
+USBHID::USBHID(const __u8* p) {
 	descriptor=(usb_hid_descriptor *)malloc(p[0]);
 	memcpy(descriptor,p,p[0]);
 }
 
-USBHID::USBHID(usb_hid_descriptor* _descriptor) {
+USBHID::USBHID(const usb_hid_descriptor* _descriptor) {
 	descriptor=(usb_hid_descriptor *)malloc(_descriptor->bLength);
 	memcpy(descriptor,_descriptor,_descriptor->bLength);
 }

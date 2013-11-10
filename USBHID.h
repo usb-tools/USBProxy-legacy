@@ -28,6 +28,7 @@
 
 #include <linux/types.h>
 #include <stdlib.h>
+#include "DefinitionErrors.h"
 
 struct usb_hid_descriptor_record  {
 	__u8 bDescriptorType;
@@ -48,14 +49,15 @@ private:
 	usb_hid_descriptor* descriptor;
 
 public:
-	USBHID(__u8* p);
-	USBHID(usb_hid_descriptor* _descriptor);
+	USBHID(const __u8* p);
+	USBHID(const usb_hid_descriptor* _descriptor);
 	USBHID(__u16 bcdHID,__u8 bCountryCode,__u8 bNumDescriptors,usb_hid_descriptor_record* descriptors);
 	~USBHID();
 	const usb_hid_descriptor* get_descriptor();
 	size_t get_full_descriptor_length();
 	void get_full_descriptor(__u8** p);
 	void print(__u8 tabs=0);
+	const definition_error is_defined();
 };
 
 #endif /* USBHID_H_ */

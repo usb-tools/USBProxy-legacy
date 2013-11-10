@@ -32,6 +32,7 @@
 #include "USBEndpoint.h"
 #include "USBHID.h"
 #include "USBString.h"
+#include "DefinitionErrors.h"
 
 class USBDevice;
 
@@ -50,8 +51,8 @@ class USBInterface {
 		USBGenericDescriptor** generic_descriptors;
 
 	public:
-		USBInterface(__u8** p,__u8* e);
-		USBInterface(usb_interface_descriptor* _descriptor);
+		USBInterface(__u8** p,const __u8* e);
+		USBInterface(const usb_interface_descriptor* _descriptor);
 		USBInterface(__u8 bInterfaceNumber,__u8 bAlternateSetting,__u8 bNumEndpoints,__u8 bInterfaceClass,__u8 bInterfaceSubClass,__u8 bInterfaceProtocol,__u8 iInterface);
 		~USBInterface();
 		const usb_interface_descriptor* get_descriptor();
@@ -67,6 +68,7 @@ class USBInterface {
 		const USBGenericDescriptor* get_generic_descriptor(__u8 index);
 		__u8 get_generic_descriptor_count(__u8 index);
 		void add_generic_descriptor(USBGenericDescriptor* _gd);
+		const definition_error is_defined(__u8 configId,__u8 interfaceNum);
 };
 
 #endif /* USBINTERFACE_H_ */

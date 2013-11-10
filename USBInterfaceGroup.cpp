@@ -92,6 +92,10 @@ void USBInterfaceGroup::set_usb_device(USBDevice* _device) {
 	}
 }
 
+__u8 USBInterfaceGroup::get_number() {
+	return number;
+}
+
 __u8 USBInterfaceGroup::get_alternate_count() {
 	return alternateCount;
 }
@@ -99,4 +103,17 @@ __u8 USBInterfaceGroup::get_alternate_count() {
 USBInterface* USBInterfaceGroup::get_active_interface() {
 	if (activeAlternateIndex<0) {return NULL;}
 	return get_interface(activeAlternateIndex);
+}
+
+const definition_error USBInterfaceGroup::is_defined(__u8 configId) {
+	if (!alternateCount) {return definition_error(DE_ERR_NULL_OBJECT,0x0, DE_OBJ_INTERFACE,configId,number,0);}
+	int i;
+	for(i=0;i<alternateCount;i++) {
+		if (!interfaces[i]) {return definition_error(DE_ERR_NULL_OBJECT,0x0, DE_OBJ_INTERFACE,configId,number,i);}
+		if (interfaces[i]->get_descriptor()->bInterfaceNumber!=number) {return definition_error(DE_ERR_MISPLACED_IF_NUM,interfaces[i]->get_descriptor()->bAlternateSetting, DE_OBJ_INTERFACE,configId,number,i);}
+		if (interfaces[i]->get_descriptor()->bAlternateSetting!=i) {return definition_error(DE_ERR_MISPLACED_OBJECT,interfaces[i]->get_descriptor()->bAlternateSetting, DE_OBJ_INTERFACE,configId,number,i);}
+		definition_error rc=interfaces[i]->is_defined(configId,number);
+		if (rc.error) {return rc;}
+	}
+	return definition_error();
 }

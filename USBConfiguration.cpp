@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <memory.h>
 #include "USBConfiguration.h"
+#include "DefinitionErrors.h"
 
 USBConfiguration::USBConfiguration(USBDeviceProxy* proxy, int idx,bool highSpeed)
 {
@@ -72,7 +73,7 @@ USBConfiguration::USBConfiguration(USBDeviceProxy* proxy, int idx,bool highSpeed
 	}
 }
 
-USBConfiguration::USBConfiguration(usb_config_descriptor* _descriptor) {
+USBConfiguration::USBConfiguration(const usb_config_descriptor* _descriptor) {
 	device=NULL;
 	descriptor=*_descriptor;
 	interfaceGroups=(USBInterfaceGroup **)calloc(descriptor.bNumInterfaces,sizeof(*interfaceGroups));
@@ -175,4 +176,24 @@ USBString* USBConfiguration::get_config_string(__u16 languageId) {
 
 bool USBConfiguration::is_highspeed() {
 	return descriptor.bDescriptorType=USB_DT_OTHER_SPEED_CONFIG?true:false;
+}
+
+const definition_error USBConfiguration::is_defined(bool highSpeed) {
+	if (descriptor.bLength!=9) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x01, (highSpeed?DE_OBJ_OS_CONFIG:DE_OBJ_CONFIG),(highSpeed?0x80:0x0)|descriptor.bConfigurationValue);}
+	if (descriptor.bDescriptorType!=(highSpeed?USB_DT_OTHER_SPEED_CONFIG:USB_DT_CONFIG)) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x02, (highSpeed?DE_OBJ_OS_CONFIG:DE_OBJ_CONFIG),(highSpeed?0x80:0x0)|descriptor.bConfigurationValue);}
+	if (descriptor.wTotalLength!=get_full_descriptor_length()) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x03, (highSpeed?DE_OBJ_OS_CONFIG:DE_OBJ_CONFIG),(highSpeed?0x80:0x0)|descriptor.bConfigurationValue);}
+	if (!descriptor.bNumInterfaces) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x05, (highSpeed?DE_OBJ_OS_CONFIG:DE_OBJ_CONFIG),(highSpeed?0x80:0x0)|descriptor.bConfigurationValue);}
+	//__u8  bConfigurationValue;
+	//__u8  iConfiguration;
+	if ((descriptor.bmAttributes&0x9f)!=0x80) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x08, (highSpeed?DE_OBJ_OS_CONFIG:DE_OBJ_CONFIG),(highSpeed?0x80:0x0)|descriptor.bConfigurationValue);}
+	//__u8  bMaxPower;
+
+	int i;
+	for (i=0;i<descriptor.bNumInterfaces;i++) {
+		if (!interfaceGroups[i]) {return definition_error(DE_ERR_NULL_OBJECT,0x0, DE_OBJ_INTERFACEGROUP,(highSpeed?0x80:0x0)|descriptor.bConfigurationValue,i);}
+		if (interfaceGroups[i]->get_number()!=i) {return definition_error(DE_ERR_MISPLACED_OBJECT,interfaceGroups[i]->get_number(), DE_OBJ_INTERFACEGROUP,(highSpeed?0x80:0x0)|descriptor.bConfigurationValue,i);}
+		definition_error rc=interfaceGroups[i]->is_defined((highSpeed?0x80:0x0)|descriptor.bConfigurationValue);
+		if (rc.error) {return rc;}
+	}
+	return definition_error();
 }

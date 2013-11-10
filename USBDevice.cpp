@@ -24,10 +24,13 @@
 #include <stdio.h>
 #include <memory.h>
 #include "USBDevice.h"
+#include "DefinitionErrors.h"
 
 //TODO: 9 update active endpoints in proxied device upon set configuration request
 //TODO: 9 update active configuration for the class upon set configuration request
 //TODO: 9 handle any endpoints that become inactive upon set configuration request
+//TODO: 9 what happends if device is HS but host is not, in terms of correct config to use,etc.
+
 
 USBDevice::USBDevice(USBDeviceProxy* _proxy) {
 	proxy=_proxy;
@@ -77,19 +80,33 @@ USBDevice::USBDevice(USBDeviceProxy* _proxy) {
 		qualifier=NULL;
 	}
 
-	setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
-	setup_packet.bRequest=USB_REQ_GET_CONFIGURATION;
-	setup_packet.wValue=0;
-	setup_packet.wIndex=0;
-	setup_packet.wLength=1;
-	__u8 result;
-	proxy->control_request(&setup_packet,&len,&result);
-	activeConfigurationIndex=result;
+	deviceState=USB_STATE_DEFAULT;
+	deviceAddress=proxy->get_address();
+	if (deviceAddress) {
+		setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
+		setup_packet.bRequest=USB_REQ_GET_CONFIGURATION;
+		setup_packet.wValue=0;
+		setup_packet.wIndex=0;
+		setup_packet.wLength=1;
+		__u8 result;
+		proxy->control_request(&setup_packet,&len,&result);
+		deviceConfigurationIndex=result;
+		deviceState=deviceConfigurationIndex?USB_STATE_CONFIGURED:USB_STATE_ADDRESS;
+	} else {
+		deviceState=USB_STATE_ADDRESS;
+		deviceConfigurationIndex=0;
+	}
+
+
 }
 
-USBDevice::USBDevice(usb_device_descriptor* _descriptor) {
+USBDevice::USBDevice(const usb_device_descriptor* _descriptor) {
 	proxy=NULL;
 	qualifier=NULL;
+	deviceAddress=0;
+	deviceConfigurationIndex=-1;
+	deviceState=USB_STATE_NOTATTACHED;
+
 	descriptor=*_descriptor;
 	configurations=(USBConfiguration **)calloc(descriptor.bNumConfigurations,sizeof(*configurations));
 	strings=(USBString ***)calloc(1,sizeof(*strings));
@@ -102,6 +119,10 @@ USBDevice::USBDevice(usb_device_descriptor* _descriptor) {
 USBDevice::USBDevice(__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	__u8  bDeviceProtocol,	__u8  bMaxPacketSize0,	__le16 idVendor,	__le16 idProduct,	__le16 bcdDevice,	__u8  iManufacturer,	__u8  iProduct,	__u8  iSerialNumber,	__u8  bNumConfigurations) {
 	proxy=NULL;
 	qualifier=NULL;
+	deviceAddress=0;
+	deviceConfigurationIndex=-1;
+	deviceState=USB_STATE_NOTATTACHED;
+
 	descriptor.bLength=18;
 	descriptor.bDescriptorType=USB_DT_DEVICE;
 	descriptor.bcdUSB=bcdUSB;
@@ -303,9 +324,9 @@ int USBDevice::get_language_count() {
 }
 
 USBConfiguration* USBDevice::get_active_configuration() {
-	if (activeConfigurationIndex<0) {return NULL;}
-	if (qualifier) {return qualifier->get_configuration(activeConfigurationIndex);}
-	return get_configuration(activeConfigurationIndex);
+	if (deviceConfigurationIndex<0) {return NULL;}
+	if (qualifier) {return qualifier->get_configuration(deviceConfigurationIndex);}
+	return get_configuration(deviceConfigurationIndex);
 }
 
 USBDeviceQualifier* USBDevice::get_device_qualifier() {
@@ -319,3 +340,86 @@ bool USBDevice::is_highspeed() {
 	return qualifier?true:false;
 }
 
+const definition_error USBDevice::is_string_defined(__u8 index) {
+	if (!index) {return definition_error();}
+	if (!strings[index]) {
+		return definition_error(DE_ERR_NULL_OBJECT,0x0, DE_OBJ_STRING,index);
+	} else {
+		int lc=get_language_count();
+		int lngidx;
+		for(lngidx=0;lngidx<lc;lngidx++) {
+			__u16 langId=get_language_by_index(lngidx);
+			bool found=false;
+			int slidx=0;
+			while (strings[index][slidx] && !found) {
+				if (strings[index][slidx]->get_languageId()==langId) {found=true;}
+				slidx++;
+			}
+			if (!found) {return definition_error(DE_ERR_MISSING_LANGUAGE,langId, DE_OBJ_STRING,index);}
+		}
+	}
+	return definition_error();
+}
+
+const definition_error USBDevice::is_defined() {
+	if (descriptor.bLength!=18) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x01, DE_OBJ_DEVICE);}
+	if (descriptor.bDescriptorType!=USB_DT_DEVICE) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x02, DE_OBJ_DEVICE);}
+	//__le16 bcdUSB;
+	//__u8  bDeviceClass;
+	//__u8  bDeviceSubClass;
+	//__u8  bDeviceProtocol;
+	if (descriptor.bMaxPacketSize0!=8&&descriptor.bMaxPacketSize0!=16&&descriptor.bMaxPacketSize0!=32&&descriptor.bMaxPacketSize0!=64) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x08, DE_OBJ_DEVICE);}
+	//__le16 idVendor;
+	//__le16 idProduct;
+	//__le16 bcdDevice;
+	//__u8  iManufacturer;
+	//__u8  iProduct;
+	//__u8  iSerialNumber;
+	if (!descriptor.bNumConfigurations) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x12, DE_OBJ_DEVICE);}
+
+	definition_error rc=definition_error();
+	int i;
+	for (i=0;i<descriptor.bNumConfigurations;i++) {
+		if (!configurations[i]) {return definition_error(DE_ERR_NULL_OBJECT,0x0, DE_OBJ_CONFIG,i+1);}
+		if (configurations[i]->get_descriptor()->bConfigurationValue!=(i+1)) {return definition_error(DE_ERR_MISPLACED_OBJECT,configurations[i]->get_descriptor()->bConfigurationValue, DE_OBJ_CONFIG,i+1);}
+		rc=configurations[i]->is_defined(false);
+		if (rc.error) {return rc;}
+	}
+
+	if (!strings[0]||!strings[0][0]) {return definition_error(DE_ERR_NULL_OBJECT,0x0, DE_OBJ_STRING,0);}
+	int lc=get_language_count();
+	if (!lc) {return definition_error(DE_ERR_MISSING_LANGUAGE,0x0, DE_OBJ_STRING,0);}
+
+	rc=is_string_defined(descriptor.iManufacturer);
+	if (rc.error) {return rc;}
+
+	rc=is_string_defined(descriptor.iProduct);
+	if (rc.error) {return rc;}
+
+	rc=is_string_defined(descriptor.iSerialNumber);
+	if (rc.error) {return rc;}
+
+	for(i=0;i<descriptor.bNumConfigurations;i++) {
+		rc=is_string_defined(configurations[i]->get_descriptor()->iConfiguration);
+		if (rc.error) {return rc;}
+		int j;
+		for (j=0;j<configurations[i]->get_descriptor()->bNumInterfaces;j++) {
+			int k;
+			for (k=0;k<configurations[i]->get_interface_alernate_count(j);k++) {
+				rc=is_string_defined(configurations[i]->get_interface(j,k)->get_descriptor()->iInterface);
+				if (rc.error) {return rc;}
+			}
+		}
+	}
+
+	if (qualifier) {
+		rc=qualifier->is_defined();
+		if (rc.error) {return rc;}
+		for(i=0;i<qualifier->get_descriptor()->bNumConfigurations;i++) {
+			rc=is_string_defined(qualifier->get_configuration(i)->get_descriptor()->iConfiguration);
+			if (rc.error) {return rc;}
+		}
+	}
+
+	return definition_error();
+}

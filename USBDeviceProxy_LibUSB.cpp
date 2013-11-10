@@ -67,10 +67,10 @@ USBDeviceProxy_LibUSB::USBDeviceProxy_LibUSB(int vendorId,int productId,bool inc
 		libusb_free_device_list(list,1);
 		return;
 	} else {
-		rc=libusb_open(found,&device);
+		rc=libusb_open(found,&dev_handle);
 		if (rc) {
 			if (debugLevel) {fprintf(stderr,"Error %d opening device handle.\n",rc);}
-			device=NULL;
+			dev_handle=NULL;
 			libusb_free_device_list(list,1);
 			return;
 		}
@@ -82,8 +82,8 @@ USBDeviceProxy_LibUSB::USBDeviceProxy_LibUSB(int vendorId,int productId,bool inc
 USBDeviceProxy_LibUSB::USBDeviceProxy_LibUSB(libusb_context* _context,libusb_device* dvc) {
 	privateContext=false;
 	context=_context;
-	libusb_open(dvc,&device);
-	libusb_set_auto_detach_kernel_driver(device,1);
+	libusb_open(dvc,&dev_handle);
+	libusb_set_auto_detach_kernel_driver(dev_handle,1);
 	if (debugLevel) {fprintf(stdout,"Connected to device: %s\n",toString());}
 
 }
@@ -91,24 +91,24 @@ USBDeviceProxy_LibUSB::USBDeviceProxy_LibUSB(libusb_context* _context,libusb_dev
 	privateContext=false;
 	privateDevice=false;
 	context=_context;
-	device=devh;
+	dev_handle=devh;
 	if (debugLevel) {fprintf(stdout,"Connected to device: %s\n",toString());}
 }
 
 USBDeviceProxy_LibUSB::~USBDeviceProxy_LibUSB() {
-	 if (privateDevice && device) {libusb_close(device);}
+	 if (privateDevice && dev_handle) {libusb_close(dev_handle);}
 	 if (privateContext && context) {libusb_exit(context);}
 }
 
 bool USBDeviceProxy_LibUSB::is_open() {
-	return device?true:false;
+	return dev_handle?true:false;
 }
 
 const char* USBDeviceProxy_LibUSB::toString() {
 	unsigned char* str_mfr=NULL;
 	unsigned char* str_prd=NULL;
 	struct libusb_device_descriptor desc;
-	libusb_device* dvc=libusb_get_device(device);
+	libusb_device* dvc=libusb_get_device(dev_handle);
 	int rc=libusb_get_device_descriptor (dvc,&desc);
 	if (rc) {
 		if (debugLevel) {fprintf(stderr,"Error %d retrieving device descriptor.\n",rc);}
@@ -117,7 +117,7 @@ const char* USBDeviceProxy_LibUSB::toString() {
 	uint8_t address=libusb_get_device_address(dvc);
 	if (desc.iManufacturer) {
 		str_mfr=(unsigned char  *)malloc(126);
-		rc=libusb_get_string_descriptor_ascii(device,desc.iManufacturer,str_mfr,126);
+		rc=libusb_get_string_descriptor_ascii(dev_handle,desc.iManufacturer,str_mfr,126);
 		if (rc<0) {
 			if (debugLevel) {fprintf(stderr,"Error %d retrieving string descriptor.\n",rc);}
 			return NULL;
@@ -125,7 +125,7 @@ const char* USBDeviceProxy_LibUSB::toString() {
 	}
 	if (desc.iProduct) {
 		str_prd=(unsigned char  *)malloc(126);
-		rc=libusb_get_string_descriptor_ascii(device,desc.iProduct,str_prd,126);
+		rc=libusb_get_string_descriptor_ascii(dev_handle,desc.iProduct,str_prd,126);
 		if (rc<0) {
 			if (debugLevel) {fprintf(stderr,"Error %d retrieving string descriptor.\n",rc);}
 			return NULL;
@@ -139,14 +139,14 @@ const char* USBDeviceProxy_LibUSB::toString() {
 	return buf;
 }
 
-int USBDeviceProxy_LibUSB::control_request(usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr) {
+int USBDeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr) {
 	if (debugLevel>1) {
 		printf("LibUSB>");
 		unsigned int i;
 		for(i=0;i<sizeof(*setup_packet);i++) {printf("%02x",((uint8_t *)setup_packet)[i]);}
 		printf("\n");
 	}
-	int rc=libusb_control_transfer(device,setup_packet->bRequestType,setup_packet->bRequest,setup_packet->wValue,setup_packet->wIndex,dataptr,setup_packet->wLength,1000);
+	int rc=libusb_control_transfer(dev_handle,setup_packet->bRequestType,setup_packet->bRequest,setup_packet->wValue,setup_packet->wIndex,dataptr,setup_packet->wLength,1000);
 	if (rc<0) {
 		if (debugLevel) {fprintf(stderr,"Error %d[%s] sending setup packet.\n",rc,libusb_error_name(rc));}
 		return rc;
@@ -159,4 +159,9 @@ int USBDeviceProxy_LibUSB::control_request(usb_ctrlrequest *setup_packet, int *n
 	}
 	*nbytes=rc;
 	return 0;
+}
+
+__u8 USBDeviceProxy_LibUSB::get_address() {
+	libusb_device* dvc=libusb_get_device(dev_handle);
+	return libusb_get_device_address(dvc);
 }

@@ -28,16 +28,17 @@
 class USBDeviceProxy_LibUSB:public USBDeviceProxy {
 private:
 	libusb_context* context;
-	libusb_device_handle* device;
+	libusb_device_handle* dev_handle;
 	bool privateContext=true;
 	bool privateDevice=true;
 public:
 	static int debugLevel;
 	USBDeviceProxy_LibUSB(int vendorId=LIBUSB_HOTPLUG_MATCH_ANY,int productId=LIBUSB_HOTPLUG_MATCH_ANY,bool includeHubs=false);
-	USBDeviceProxy_LibUSB(libusb_context* _context,libusb_device* dvc);
-	USBDeviceProxy_LibUSB(libusb_context* _context,libusb_device_handle* devh);
+	USBDeviceProxy_LibUSB( libusb_context* _context,libusb_device* dvc);
+	USBDeviceProxy_LibUSB( libusb_context* _context,libusb_device_handle* devh);
 	~USBDeviceProxy_LibUSB();
-	int control_request(usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr);
+	int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr);
+	__u8 get_address();
 	bool is_open();
 	const char* toString();
 };

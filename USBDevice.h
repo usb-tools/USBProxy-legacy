@@ -27,10 +27,10 @@
 #include "USBConfiguration.h"
 #include "USBDeviceQualifier.h"
 #include "USBString.h"
+#include "DefinitionErrors.h"
 
 //TODO: 9 error checking on malloc/calloc/realloc
 //TODO: 9 leak checking on malloc/calloc/realloc
-//TODO: 9 change signatures to const where applicable
 //TODO: 9 check we aren't unnecessarily filling a buffer rather than going straight to descriptor on proxied control requests
 //TODO: 9 bound checking (or resize arrays) on add_*/get_*
 //TODO: 9 handle control_request errors
@@ -41,9 +41,15 @@ class USBDeviceQualifier;
 
 class USBDevice {
 private:
-	int activeConfigurationIndex=-1;
-	int address=-1;
-    usb_device_descriptor descriptor;
+	int hostAddress=-1;
+	int deviceAddress;
+	usb_device_state hostState=USB_STATE_NOTATTACHED;
+	usb_device_state deviceState;
+
+	int hostConfigurationIndex=-1;
+	int deviceConfigurationIndex;
+
+	usb_device_descriptor descriptor;
     USBConfiguration** configurations;
     //this is set up like strings[stringID][array of all languages]
     USBString ***strings;
@@ -51,10 +57,11 @@ private:
     USBDeviceProxy* proxy;
     void add_language(__u16);
     USBDeviceQualifier* qualifier;
+    const definition_error is_string_defined(__u8 index);
 
 public:
     USBDevice(USBDeviceProxy* _proxy);
-	USBDevice(usb_device_descriptor* _descriptor);
+	USBDevice(const usb_device_descriptor* _descriptor);
 	USBDevice(__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	__u8  bDeviceProtocol,	__u8  bMaxPacketSize0,	__le16 idVendor,	__le16 idProduct,	__le16 bcdDevice,	__u8  iManufacturer,	__u8  iProduct,	__u8  iSerialNumber,	__u8  bNumConfigurations);
 	~USBDevice();
 	const usb_device_descriptor* get_descriptor();
@@ -76,6 +83,7 @@ public:
     USBDeviceQualifier* get_device_qualifier();
     void set_device_qualifier(USBDeviceQualifier* _qualifier);
     bool is_highspeed();
+    const definition_error is_defined();
 };
 
 #endif

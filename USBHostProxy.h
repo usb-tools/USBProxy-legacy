@@ -19,32 +19,24 @@
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
  *
- * USBEndpoint.h
+ * USBHostProxy.h
  *
- * Created on: Nov 6, 2013
+ * Created on: Nov 10, 2013
  */
-#ifndef USBENDPOINT_H_
-#define USBENDPOINT_H_
+#ifndef USBHOSTPROXY_H_
+#define USBHOSTPROXY_H_
 
 #include <linux/usb/ch9.h>
-#include <stdlib.h>
-#include "USBDeviceProxy.h"
-#include "DefinitionErrors.h"
 
-class USBEndpoint {
-	private:
-		usb_endpoint_descriptor descriptor;
-
-	public:
-		USBEndpoint(const __u8* p);
-		USBEndpoint(const usb_endpoint_descriptor* _descriptor);
-		USBEndpoint(__u8 bEndpointAddress,__u8 bmAttributes,__u16 wMaxPacketSize,__u8 bInterval);
-		~USBEndpoint();
-		const usb_endpoint_descriptor* get_descriptor();
-		size_t get_full_descriptor_length();
-		void get_full_descriptor(__u8** p);
-		void print(__u8 tabs=0);
-		const definition_error is_defined(__u8 configId,__u8 interfaceNum,__u8 interfaceAlternate);
+class USBHostProxy {
+public:
+	virtual ~USBHostProxy();
+	virtual int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr)=0;
+	virtual int send_ep0(__u8* dataptr,int *nbytes);
+	virtual int connect()=0;
+	virtual void disconnect()=0;
+	virtual void reset()=0;
+	virtual const char* toString() {return NULL;}
 };
 
-#endif /* USBENDPOINT_H_ */
+#endif /* USBHOSTPROXY_H_ */
