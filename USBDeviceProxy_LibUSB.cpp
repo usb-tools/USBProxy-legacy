@@ -100,7 +100,7 @@ USBDeviceProxy_LibUSB::~USBDeviceProxy_LibUSB() {
 	 if (privateContext && context) {libusb_exit(context);}
 }
 
-bool USBDeviceProxy_LibUSB::is_open() {
+bool USBDeviceProxy_LibUSB::is_connected() {
 	return dev_handle?true:false;
 }
 

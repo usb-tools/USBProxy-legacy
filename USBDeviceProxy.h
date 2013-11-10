@@ -25,17 +25,35 @@
 
 #include <linux/usb/ch9.h>
 
+//TODO: 1 fill out these functions.
+
+typedef void (*statusCallback)();
+
 class USBDeviceProxy{
-	//send packet
-	//recv packet
-	//reset
-	//recv setup
+private:
+	statusCallback cb_connect=NULL;
+	statusCallback cb_disconnect=NULL;
 
 public:
 	virtual ~USBDeviceProxy() {}
+
+	//virtual int connect()=0;
+	//virtual void disconnect()=0;
+	//virtual void reset()=0;
+
 	virtual int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr)=0;
+	//virtual void transfer_data(__u8 endpoint,__u8* dataptr,int length, int* transferred);
+
 	virtual __u8 get_address()=0;
+	bool is_connected();
 	virtual const char* toString() {return NULL;}
+
+	//this should be called on a hotplug connect, device should reconnect. how do we verify we can use the same strucutre?
+	//or alternately how do we save and restore and filtering settings on the EPs?
+	virtual void set_callback_connect(statusCallback cb) {cb_connect=cb;}
+
+	//this should be called on a hotplug disconnect, device will stop all endpoint loops
+	virtual void set_callback_disconnect(statusCallback cb) {cb_disconnect=cb;}
 };
 
 #endif
