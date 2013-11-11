@@ -96,4 +96,12 @@ public:
 	void set_packet_filter(__u8 header[4],__u8 mask[4]);
 };
 
+class USBPacketFilter_Callback : public USBPacketFilter {
+private:
+	void (*cb)(USBPacket*,usb_ctrlrequest*);
+public:
+	USBPacketFilter_Callback(void (*_cb)(USBPacket*,usb_ctrlrequest*)) {cb=_cb;}
+	void filter_packet(USBPacket* packet,usb_ctrlrequest *setup_packet=NULL) {cb(packet,setup_packet);}
+};
+
 #endif /* USBPACKETFILTER_H_ */
