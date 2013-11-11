@@ -44,9 +44,9 @@ class USBConfiguration {
 		USBDevice* device;
 
 	public:
-		USBConfiguration(USBDeviceProxy* proxy, int index,bool highSpeed=false);
-		USBConfiguration(const usb_config_descriptor* _descriptor);
-		USBConfiguration(__u16 wTotalLength,__u8 bNumInterfaces,__u8 bConfigurationValue,__u8 iConfiguration,__u8 bmAttributes,__u8 bMaxPower,bool highSpeed=false);
+		USBConfiguration(USBDevice* _device,USBDeviceProxy* proxy, int index,bool highSpeed=false);
+		USBConfiguration(USBDevice* _device,const usb_config_descriptor* _descriptor);
+		USBConfiguration(USBDevice* _device,__u16 wTotalLength,__u8 bNumInterfaces,__u8 bConfigurationValue,__u8 iConfiguration,__u8 bmAttributes,__u8 bMaxPower,bool highSpeed=false);
 		~USBConfiguration();
 		const usb_config_descriptor* get_descriptor();
 		const __u8* get_full_descriptor();
@@ -54,10 +54,10 @@ class USBConfiguration {
 		void add_interface(USBInterface* interface);
 		USBInterface* get_interface(__u8 number,__u8 alternate);
 		void print(__u8 tabs=0,bool active=false);
-		void set_usb_device(USBDevice* _device);
 		USBString* get_config_string(__u16 languageId=0);
 		__u8 get_interface_alernate_count(__u8 number);
 		bool is_highspeed();
 		const definition_error is_defined(bool highSpeed=false);
+		USBDevice* get_device();
 };
 #endif /* USBCONFIGURATION_H_ */

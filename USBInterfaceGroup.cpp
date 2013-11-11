@@ -85,13 +85,6 @@ void USBInterfaceGroup::print(__u8 tabs) {
 	}
 }
 
-void USBInterfaceGroup::set_usb_device(USBDevice* _device) {
-	if (interfaces) {
-		int i;
-		for(i=0;i<alternateCount;i++) {interfaces[i]->set_usb_device(_device);}
-	}
-}
-
 __u8 USBInterfaceGroup::get_number() {
 	return number;
 }

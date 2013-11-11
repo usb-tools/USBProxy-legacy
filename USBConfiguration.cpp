@@ -30,9 +30,9 @@
 #include "USBConfiguration.h"
 #include "DefinitionErrors.h"
 
-USBConfiguration::USBConfiguration(USBDeviceProxy* proxy, int idx,bool highSpeed)
+USBConfiguration::USBConfiguration(USBDevice* _device,USBDeviceProxy* proxy, int idx,bool highSpeed)
 {
-	device=NULL;
+	device=_device;
 	__u8* buf=(__u8 *)malloc(8);
 	usb_ctrlrequest setup_packet;
 	setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
@@ -53,7 +53,7 @@ USBConfiguration::USBConfiguration(USBDeviceProxy* proxy, int idx,bool highSpeed
 	__u8* e=buf+len;
 	__u8* p=buf+9;
 	while (p<e) {
-		add_interface(new USBInterface(&p,e));
+		add_interface(new USBInterface(this,&p,e));
 	}
 
 	int i;
@@ -73,14 +73,14 @@ USBConfiguration::USBConfiguration(USBDeviceProxy* proxy, int idx,bool highSpeed
 	}
 }
 
-USBConfiguration::USBConfiguration(const usb_config_descriptor* _descriptor) {
-	device=NULL;
+USBConfiguration::USBConfiguration(USBDevice* _device,const usb_config_descriptor* _descriptor) {
+	device=_device;
 	descriptor=*_descriptor;
 	interfaceGroups=(USBInterfaceGroup **)calloc(descriptor.bNumInterfaces,sizeof(*interfaceGroups));
 }
 
-USBConfiguration::USBConfiguration(__u16 wTotalLength,__u8 bNumInterfaces,__u8 bConfigurationValue,__u8 iConfiguration,__u8 bmAttributes,__u8 bMaxPower,bool highSpeed) {
-	device=NULL;
+USBConfiguration::USBConfiguration(USBDevice* _device,__u16 wTotalLength,__u8 bNumInterfaces,__u8 bConfigurationValue,__u8 iConfiguration,__u8 bmAttributes,__u8 bMaxPower,bool highSpeed) {
+	device=_device;
 	descriptor.bLength=9;
 	descriptor.bDescriptorType=highSpeed?USB_DT_OTHER_SPEED_CONFIG:USB_DT_CONFIG;
 	descriptor.wTotalLength=wTotalLength;
@@ -163,12 +163,6 @@ void USBConfiguration::print(__u8 tabs,bool active) {
 	}
 }
 
-void USBConfiguration::set_usb_device(USBDevice* _device) {
-	device=_device;
-	int i;
-	for(i=0;i<descriptor.bNumInterfaces;i++) {interfaceGroups[i]->set_usb_device(_device);}
-}
-
 USBString* USBConfiguration::get_config_string(__u16 languageId) {
 	if (!device||!descriptor.iConfiguration) {return NULL;}
 	return device->get_string(descriptor.iConfiguration,languageId);
@@ -197,3 +191,5 @@ const definition_error USBConfiguration::is_defined(bool highSpeed) {
 	}
 	return definition_error();
 }
+
+USBDevice* USBConfiguration::get_device() {return device;}

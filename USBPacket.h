@@ -19,29 +19,19 @@
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
  *
- * USBHostProxy.h
+ * Packet.h
  *
- * Created on: Nov 10, 2013
+ * Created on: Nov 11, 2013
  */
-#ifndef USBHOSTPROXY_H_
-#define USBHOSTPROXY_H_
+#ifndef PACKET_H_
+#define PACKET_H_
 
-#include <linux/usb/ch9.h>
-
-class USBHostProxy {
-public:
-	virtual ~USBHostProxy();
-
-	virtual int connect()=0;
-	virtual void disconnect()=0;
-	virtual void reset()=0;
-	virtual bool is_connected()=0;
-
-	virtual int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr)=0;
-	virtual void send_data(__u8 endpoint,__u8* dataptr,int length)=0;
-	virtual void receive_data(__u8 endpoint,__u8** dataptr, int* length)=0;
-
-	virtual const char* toString() {return NULL;}
+struct USBPacket {
+	__u8	bEndpoint;
+	__u16	wLength;
+	bool	filter;
+	bool	transmit;
+	__u8	data[0];
 };
 
-#endif /* USBHOSTPROXY_H_ */
+#endif /* PACKET_H_ */

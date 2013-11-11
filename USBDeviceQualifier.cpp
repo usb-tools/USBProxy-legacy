@@ -27,7 +27,7 @@
 #include "USBDeviceQualifier.h"
 #include "DefinitionErrors.h"
 
-USBDeviceQualifier::USBDeviceQualifier(USBDeviceProxy* proxy,USBDevice* _device) {
+USBDeviceQualifier::USBDeviceQualifier(USBDevice* _device,USBDeviceProxy* proxy) {
 	device=_device;
 
 	usb_ctrlrequest setup_packet;
@@ -46,10 +46,9 @@ USBDeviceQualifier::USBDeviceQualifier(USBDeviceProxy* proxy,USBDevice* _device)
 	configurations=(USBConfiguration **)calloc(descriptor.bNumConfigurations,sizeof(*configurations));
 
 	for(i=0;i<descriptor.bNumConfigurations;i++) {
-		configurations[i]=new USBConfiguration(proxy,i,true);
+		configurations[i]=new USBConfiguration(device,proxy,i,true);
 		__u8 iConfiguration=configurations[i]->get_descriptor()->iConfiguration;
 		if (iConfiguration) {device->add_string(iConfiguration);}
-		configurations[i]->set_usb_device(device);
 		int j;
 		for (j=0;j<configurations[i]->get_descriptor()->bNumInterfaces;j++) {
 			int k;
@@ -61,14 +60,14 @@ USBDeviceQualifier::USBDeviceQualifier(USBDeviceProxy* proxy,USBDevice* _device)
 	}
 }
 
-USBDeviceQualifier::USBDeviceQualifier(const usb_qualifier_descriptor* _descriptor) {
-	device=NULL;
+USBDeviceQualifier::USBDeviceQualifier(USBDevice* _device,const usb_qualifier_descriptor* _descriptor) {
+	device=_device;
 	descriptor=*_descriptor;
 	configurations=(USBConfiguration **)calloc(descriptor.bNumConfigurations,sizeof(*configurations));
 }
 
-USBDeviceQualifier::USBDeviceQualifier(__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	__u8  bDeviceProtocol,	__u8  bMaxPacketSize0, __u8 bNumConfigurations) {
-	device=NULL;
+USBDeviceQualifier::USBDeviceQualifier(USBDevice* _device,__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	__u8  bDeviceProtocol,	__u8  bMaxPacketSize0, __u8 bNumConfigurations) {
+	device=_device;
 	descriptor.bLength=10;
 	descriptor.bDescriptorType=USB_DT_DEVICE_QUALIFIER;
 	descriptor.bcdUSB=bcdUSB;

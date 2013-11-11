@@ -40,9 +40,9 @@ private:
     USBDevice* device;
 
 public:
-    USBDeviceQualifier(USBDeviceProxy* _proxy,USBDevice* _device);
-    USBDeviceQualifier(const usb_qualifier_descriptor* _descriptor);
-    USBDeviceQualifier(__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	__u8  bDeviceProtocol,	__u8  bMaxPacketSize0, __u8 bNumConfigurations);
+    USBDeviceQualifier(USBDevice* _device,USBDeviceProxy* _proxy);
+    USBDeviceQualifier(USBDevice* _device,const usb_qualifier_descriptor* _descriptor);
+    USBDeviceQualifier(USBDevice* _device,__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	__u8  bDeviceProtocol,	__u8  bMaxPacketSize0, __u8 bNumConfigurations);
 	~USBDeviceQualifier();
 	const usb_qualifier_descriptor* get_descriptor();
 	void add_configuration(USBConfiguration* config);

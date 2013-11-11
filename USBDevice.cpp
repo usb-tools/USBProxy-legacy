@@ -59,10 +59,9 @@ USBDevice::USBDevice(USBDeviceProxy* _proxy) {
 	if (descriptor.iSerialNumber) {add_string(descriptor.iSerialNumber);}
 
 	for(i=0;i<descriptor.bNumConfigurations;i++) {
-		configurations[i]=new USBConfiguration(proxy,i);
+		configurations[i]=new USBConfiguration(this,proxy,i);
 		__u8 iConfiguration=configurations[i]->get_descriptor()->iConfiguration;
 		if (iConfiguration) {add_string(iConfiguration);}
-		configurations[i]->set_usb_device(this);
 		int j;
 		for (j=0;j<configurations[i]->get_descriptor()->bNumInterfaces;j++) {
 			int k;
@@ -73,7 +72,7 @@ USBDevice::USBDevice(USBDeviceProxy* _proxy) {
 		}
 	}
 
-	qualifier=new USBDeviceQualifier(proxy,this);
+	qualifier=new USBDeviceQualifier(this,proxy);
 	//not a high speed device
 	if (!(qualifier->get_descriptor()->bLength)) {
 		delete(qualifier);

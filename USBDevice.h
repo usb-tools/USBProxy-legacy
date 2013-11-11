@@ -35,6 +35,7 @@
 //TODO: 9 bound checking (or resize arrays) on add_*/get_*
 //TODO: 9 handle control_request errors
 //TODO: 9 null terminated arrays, vs ones where the count is stored vs ones where count is stored in descriptor, should some of these be changed to different types
+//TODO: 1 Move proxy based init out of constructor
 
 class USBConfiguration;
 class USBDeviceQualifier;

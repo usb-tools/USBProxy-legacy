@@ -28,7 +28,8 @@
 
 #include <linux/usb/ch9.h>
 #include "USBDeviceProxy.h"
-#include "USBDevice.h"
+
+#include "USBConfiguration.h"
 #include "USBEndpoint.h"
 #include "USBHID.h"
 #include "USBString.h"
@@ -42,18 +43,21 @@ struct USBGenericDescriptor {
 	__u8 bData[0];
 } __attribute__ ((packed));
 
+class USBConfiguration;
+class USBEndpoint;
+
 class USBInterface {
 	private:
 		usb_interface_descriptor descriptor;
 		USBEndpoint** endpoints;
-		USBDevice* device;
+		USBConfiguration* configuration;
 		USBHID* hid_descriptor;
 		USBGenericDescriptor** generic_descriptors;
 
 	public:
-		USBInterface(__u8** p,const __u8* e);
-		USBInterface(const usb_interface_descriptor* _descriptor);
-		USBInterface(__u8 bInterfaceNumber,__u8 bAlternateSetting,__u8 bNumEndpoints,__u8 bInterfaceClass,__u8 bInterfaceSubClass,__u8 bInterfaceProtocol,__u8 iInterface);
+		USBInterface(USBConfiguration* _configuration,__u8** p,const __u8* e);
+		USBInterface(USBConfiguration* _configuration,const usb_interface_descriptor* _descriptor);
+		USBInterface(USBConfiguration* _configuration,__u8 bInterfaceNumber,__u8 bAlternateSetting,__u8 bNumEndpoints,__u8 bInterfaceClass,__u8 bInterfaceSubClass,__u8 bInterfaceProtocol,__u8 iInterface);
 		~USBInterface();
 		const usb_interface_descriptor* get_descriptor();
 		size_t get_full_descriptor_length();
@@ -63,12 +67,12 @@ class USBInterface {
 		USBEndpoint* get_endpoint_by_address(__u8 address);
 		__u8 get_endpoint_count();
 		void print(__u8 tabs=0,bool active=false);
-		void set_usb_device(USBDevice* _device);
 		USBString* get_interface_string(__u16 languageId=0);
 		const USBGenericDescriptor* get_generic_descriptor(__u8 index);
 		__u8 get_generic_descriptor_count(__u8 index);
 		void add_generic_descriptor(USBGenericDescriptor* _gd);
 		const definition_error is_defined(__u8 configId,__u8 interfaceNum);
+		USBConfiguration* get_configuration();
 };
 
 #endif /* USBINTERFACE_H_ */

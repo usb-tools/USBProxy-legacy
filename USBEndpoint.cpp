@@ -29,15 +29,18 @@
 #include <memory.h>
 #include "USBEndpoint.h"
 
-USBEndpoint::USBEndpoint(const __u8* p) {
+USBEndpoint::USBEndpoint(USBInterface* _interface,const __u8* p) {
+	interface=_interface;
 	memcpy(&descriptor,p,7);
 }
 
-USBEndpoint::USBEndpoint(const usb_endpoint_descriptor* _descriptor) {
+USBEndpoint::USBEndpoint(USBInterface* _interface,const usb_endpoint_descriptor* _descriptor) {
+	interface=_interface;
 	descriptor=*_descriptor;
 }
 
-USBEndpoint::USBEndpoint(__u8 bEndpointAddress,__u8 bmAttributes,__u16 wMaxPacketSize,__u8 bInterval) {
+USBEndpoint::USBEndpoint(USBInterface* _interface,__u8 bEndpointAddress,__u8 bmAttributes,__u16 wMaxPacketSize,__u8 bInterval) {
+	interface=_interface;
 	descriptor.bLength=7;
 	descriptor.bDescriptorType=USB_DT_ENDPOINT;
 	descriptor.bEndpointAddress=bEndpointAddress;
@@ -84,3 +87,5 @@ const definition_error USBEndpoint::is_defined(__u8 configId,__u8 interfaceNum,_
 		) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x05, DE_OBJ_ENDPOINT,configId,interfaceNum,interfaceAlternate,descriptor.bEndpointAddress);}
 	return definition_error();
 }
+
+USBInterface* USBEndpoint::get_interface() {return interface;}

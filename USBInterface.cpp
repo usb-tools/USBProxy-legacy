@@ -33,8 +33,8 @@
 //TODO: 9 update active endpoints in proxied device upon set interface request
 //TODO: 9 handle any endpoints that become inactive upon set interface request
 
-USBInterface::USBInterface(__u8** p,const __u8* e) {
-	device=NULL;
+USBInterface::USBInterface(USBConfiguration* _configuration,__u8** p,const __u8* e) {
+	configuration=_configuration;
 	hid_descriptor=NULL;
 	generic_descriptors=(USBGenericDescriptor**)calloc(1,sizeof(*generic_descriptors));
 
@@ -45,7 +45,7 @@ USBInterface::USBInterface(__u8** p,const __u8* e) {
 	while (*p<e && (*(*p+1))!=4) {
 		switch (*(*p+1)) {
 			case 5:
-				*(ep++)=new USBEndpoint(*p);
+				*(ep++)=new USBEndpoint(this,*p);
 				break;
 			case 0x21:
 				hid_descriptor=new USBHID(*p);
@@ -64,8 +64,8 @@ USBInterface::USBInterface(__u8** p,const __u8* e) {
 	}
 }
 
-USBInterface::USBInterface(const usb_interface_descriptor* _descriptor) {
-	device=NULL;
+USBInterface::USBInterface(USBConfiguration* _configuration,const usb_interface_descriptor* _descriptor) {
+	configuration=_configuration;
 	hid_descriptor=NULL;
 
 	descriptor=*_descriptor;
@@ -73,8 +73,8 @@ USBInterface::USBInterface(const usb_interface_descriptor* _descriptor) {
 	generic_descriptors=(USBGenericDescriptor**)calloc(1,sizeof(*generic_descriptors));
 }
 
-USBInterface::USBInterface(__u8 bInterfaceNumber,__u8 bAlternateSetting,__u8 bNumEndpoints,__u8 bInterfaceClass,__u8 bInterfaceSubClass,__u8 bInterfaceProtocol,__u8 iInterface) {
-	device=NULL;
+USBInterface::USBInterface(USBConfiguration* _configuration,__u8 bInterfaceNumber,__u8 bAlternateSetting,__u8 bNumEndpoints,__u8 bInterfaceClass,__u8 bInterfaceSubClass,__u8 bInterfaceProtocol,__u8 iInterface) {
+	configuration=_configuration;
 	hid_descriptor=NULL;
 	descriptor.bLength=9;
 	descriptor.bDescriptorType=USB_DT_INTERFACE;
@@ -192,11 +192,9 @@ void USBInterface::print(__u8 tabs,bool active) {
 	}
 }
 
-void USBInterface::set_usb_device(USBDevice* _device) {device=_device;}
-
 USBString* USBInterface::get_interface_string(__u16 languageId) {
-	if (!device||!descriptor.iInterface) {return NULL;}
-	return device->get_string(descriptor.iInterface,languageId);
+	if (!descriptor.iInterface) {return NULL;}
+	return configuration->get_device()->get_string(descriptor.iInterface,languageId);
 }
 
 const USBGenericDescriptor* USBInterface::get_generic_descriptor(__u8 index) {
@@ -239,3 +237,5 @@ const definition_error USBInterface::is_defined(__u8 configId,__u8 interfaceNum)
 	return definition_error();
 
 }
+
+USBConfiguration* USBInterface::get_configuration() {return configuration;}
