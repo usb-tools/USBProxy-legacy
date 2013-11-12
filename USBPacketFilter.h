@@ -102,6 +102,8 @@ private:
 public:
 	USBPacketFilter_Callback(void (*_cb)(USBPacket*,usb_ctrlrequest*)) {cb=_cb;}
 	void filter_packet(USBPacket* packet,usb_ctrlrequest *setup_packet=NULL) {cb(packet,setup_packet);}
+	virtual char* toString() {return "Filter";}
+
 };
 
 #endif /* USBPACKETFILTER_H_ */

@@ -18,33 +18,41 @@
  * along with this program; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
+ *
+ * USBRelayer.h
+ *
+ * Created on: Nov 11, 2013
  */
+#ifndef USBRELAYER_H_
+#define USBRELAYER_H_
 
-#ifndef _USBDeviceProxy_
-#define _USBDeviceProxy_
+#include "linux/types.h"
+#include <unistd.h>
+#include <stdio.h>
 
-#include <linux/usb/ch9.h>
+class USBRelayer {
+private:
+	//TODO PacketQueue** injectionQueueus;
 
-//TODO: 1 fill out these functions.
-
-typedef void (*statusCallback)();
-
-class USBDeviceProxy{
 public:
-	virtual ~USBDeviceProxy() {}
+	bool halt;
+	__u8 endpoint;
 
-	//TODO: 1 virtual int connect()=0;
-	//TODO: 1 virtual void disconnect()=0;
-	//TODO: 1 virtual void reset()=0;
-	virtual bool is_connected()=0;
+	USBRelayer();
+	virtual ~USBRelayer();
 
-	//this should be done synchronously
-	virtual int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr)=0;
-	//TODO: 1 virtual void send_data(__u8 endpoint,__u8* dataptr,int length)=0;
-	//TODO: 1 virtual void receive_data(__u8 endpoint,__u8** dataptr, int* length)=0;
+	void relay() {
+		int i=0;
+		while (!halt) {
+			sleep(1);
+			printf("%d: %d\n",endpoint,i++);
+		}
+	}
 
-	virtual __u8 get_address()=0;
-	virtual const char* toString() {return NULL;}
+	static void *relay_helper(void* context) {
+		((USBRelayer*)context)->relay();
+		return 0;
+	}
 };
 
-#endif
+#endif /* USBRELAYER_H_ */

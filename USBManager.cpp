@@ -18,33 +18,30 @@
  * along with this program; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
+ *
+ * USBManager.cpp
+ *
+ * Created on: Nov 12, 2013
  */
+#include "USBManager.h"
 
-#ifndef _USBDeviceProxy_
-#define _USBDeviceProxy_
+USBManager::USBManager() {
+	// TODO Auto-generated constructor stub
 
-#include <linux/usb/ch9.h>
+}
 
-//TODO: 1 fill out these functions.
+USBManager::~USBManager() {
+	// TODO Auto-generated destructor stub
+}
 
-typedef void (*statusCallback)();
+int USBManager::inject_packet(USBPacket *packet) {
+	//TODO 1 stub
+}
 
-class USBDeviceProxy{
-public:
-	virtual ~USBDeviceProxy() {}
+int USBManager::inject_setup_in(usb_ctrlrequest request,__u8** data,__u16 *transferred, bool filter) {
+	//TODO 1 stub
+}
 
-	//TODO: 1 virtual int connect()=0;
-	//TODO: 1 virtual void disconnect()=0;
-	//TODO: 1 virtual void reset()=0;
-	virtual bool is_connected()=0;
-
-	//this should be done synchronously
-	virtual int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr)=0;
-	//TODO: 1 virtual void send_data(__u8 endpoint,__u8* dataptr,int length)=0;
-	//TODO: 1 virtual void receive_data(__u8 endpoint,__u8** dataptr, int* length)=0;
-
-	virtual __u8 get_address()=0;
-	virtual const char* toString() {return NULL;}
-};
-
-#endif
+int USBManager::inject_setup_out(usb_ctrlrequest request,__u8* data,bool filter) {
+	//TODO 1 stub
+}

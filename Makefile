@@ -40,7 +40,7 @@ else
 	LIBUSB = usb-1.0
 endif
 
-LDFLAGS += -l$(LIBUSB) -ludev -lstdc++
+LDFLAGS += -l$(LIBUSB) -ludev -lstdc++ -lpthread
 
 C_FILES := $(wildcard *.c) 
 CPP_FILES := $(wildcard *.cpp) 

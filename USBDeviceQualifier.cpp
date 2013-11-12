@@ -92,7 +92,8 @@ const usb_qualifier_descriptor* USBDeviceQualifier::get_descriptor() {
 }
 
 void USBDeviceQualifier::add_configuration(USBConfiguration* config) {
-	int value=config->get_descriptor()->bConfigurationValue-1;
+	int value=config->get_descriptor()->bConfigurationValue;
+	if (value>descriptor.bNumConfigurations) {return;} else {value--;}
 	if (configurations[value]) {delete(configurations[value]);}
 	configurations[value]=config;
 }

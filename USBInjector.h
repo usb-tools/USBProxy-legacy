@@ -18,33 +18,37 @@
  * along with this program; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
+ *
+ * USBInjector.h
+ *
+ * Created on: Nov 12, 2013
  */
+#ifndef USBINJECTOR_H_
+#define USBINJECTOR_H_
 
-#ifndef _USBDeviceProxy_
-#define _USBDeviceProxy_
+#include "USBManager.h"
+#include "USBPacket.h"
 
-#include <linux/usb/ch9.h>
+class USBManager;
 
-//TODO: 1 fill out these functions.
-
-typedef void (*statusCallback)();
-
-class USBDeviceProxy{
+class USBInjector {
+private:
+	USBManager* manager;
 public:
-	virtual ~USBDeviceProxy() {}
+	bool halt;
 
-	//TODO: 1 virtual int connect()=0;
-	//TODO: 1 virtual void disconnect()=0;
-	//TODO: 1 virtual void reset()=0;
-	virtual bool is_connected()=0;
+	USBInjector(USBManager* _manager);
+	virtual ~USBInjector();
+	virtual USBPacket* get_packets()=0;
 
-	//this should be done synchronously
-	virtual int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr)=0;
-	//TODO: 1 virtual void send_data(__u8 endpoint,__u8* dataptr,int length)=0;
-	//TODO: 1 virtual void receive_data(__u8 endpoint,__u8** dataptr, int* length)=0;
+	void listen();
 
-	virtual __u8 get_address()=0;
-	virtual const char* toString() {return NULL;}
+	static void *listen_helper(void* context) {
+		((USBInjector*)context)->listen();
+		return 0;
+	}
+
+	virtual char* toString() {return "Injector";}
 };
 
-#endif
+#endif /* USBINJECTOR_H_ */
