@@ -108,7 +108,7 @@ const usb_interface_descriptor* USBInterface::get_descriptor() {
 size_t USBInterface::get_full_descriptor_length() {
 	size_t total=descriptor.bLength;
 	if (hid_descriptor) {total+=hid_descriptor->get_full_descriptor_length();}
-	int i;
+	int i=0;
 	while (generic_descriptors[i]) {
 		total+=generic_descriptors[i]->bLength;
 		i++;

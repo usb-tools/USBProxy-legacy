@@ -169,7 +169,7 @@ USBString* USBConfiguration::get_config_string(__u16 languageId) {
 }
 
 bool USBConfiguration::is_highspeed() {
-	return descriptor.bDescriptorType=USB_DT_OTHER_SPEED_CONFIG?true:false;
+	return descriptor.bDescriptorType==USB_DT_OTHER_SPEED_CONFIG?true:false;
 }
 
 const definition_error USBConfiguration::is_defined(bool highSpeed) {

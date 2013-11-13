@@ -31,7 +31,9 @@ struct USBPacket {
 	__u16	wLength;
 	bool	filter;
 	bool	transmit;
-	__u8	data[0];
+	__u8*	data;
+
+	USBPacket(__u8 _endpoint,__u8* _data,__u16 _length,bool _filter=true) : bEndpoint(_endpoint),wLength(_length),data(_data),filter(_filter),transmit(true) {}
 };
 
 #endif /* PACKET_H_ */

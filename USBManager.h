@@ -46,39 +46,43 @@ private:
 	USBHostProxy* hostProxy;
 	USBDevice* device;
 
+	USBPacketFilter** filters;
+	__u8 filterCount;
+
 	USBInjector** injectors;
+	__u8 injectorCount;
+
 	pthread_t* injectorThreads;
 
-	USBRelayer** relayers;
-	pthread_t* relayerThreads;
+	USBEndpoint* in_endpoints[16];
+	USBRelayer* in_relayers[16];
+	pthread_t in_relayerThreads[16];
+	boost::lockfree::queue<USBPacket*>* in_queue[16];
 
-	USBEndpoint** endpoints;
-	USBPacketFilter** filters;
-
-	//TODO PacketQueue** injectionQueueus;
+	USBEndpoint* out_endpoints[16];
+	USBRelayer* out_relayers[16];
+	pthread_t out_relayerThreads[16];
+	boost::lockfree::queue<USBPacket*>* out_queue[16];
 
 public:
-	USBManager();
+	USBManager(USBDeviceProxy* _deviceProxy,USBHostProxy* _hostProxy);
 	virtual ~USBManager();
 	int inject_packet(USBPacket *packet);
 	int inject_setup_in(usb_ctrlrequest request,__u8** data,__u16 *transferred, bool filter);
 	int inject_setup_out(usb_ctrlrequest request,__u8* data,bool filter);
 
-	//add/remove_injector();
+	void add_injector(USBInjector* _injector);
+	void remove_injector(__u8 index);
+	USBInjector* get_injector(__u8 index);
+	__u8 get_injector_count();
 
-	//connect device proxy, populate device model, enumerate endpoints
-	//set up relayers for each endpoint, apply filters to each relayer
-	//don't forget to include EP0
-	//connect to host proxy
-	//start relayer threads, start injector threads
-	//start_relaying();
+	void add_filter(USBPacketFilter* _filter);
+	void remove_filter(__u8 index);
+	USBPacketFilter* get_filter(__u8 index);
+	__u8 get_filter_count();
 
-	//stop & join injector/relayer threads
-	//disconnect from host
-	//clean up relayers
-	//disconnect device proxy, clean up device model & endpoints
-	//don't forget to include EP0
-	//stop_relaying();
+	void start_relaying();
+	void stop_relaying();
 };
 
 #endif /* USBMANAGER_H_ */

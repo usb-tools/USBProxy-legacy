@@ -38,9 +38,16 @@ public:
 	USBDeviceProxy_LibUSB( libusb_context* _context,libusb_device_handle* devh);
 	~USBDeviceProxy_LibUSB();
 
-	int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr);
-	__u8 get_address();
+	int connect();
+	void disconnect();
+	void reset();
 	bool is_connected();
+
+	int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr);
+	void send_data(__u8 endpoint,__u8* dataptr,int length);
+	void receive_data(__u8 endpoint,__u8** dataptr, int* length);
+
+	__u8 get_address();
 	const char* toString();
 };
 

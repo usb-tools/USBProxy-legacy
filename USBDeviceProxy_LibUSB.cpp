@@ -100,6 +100,19 @@ USBDeviceProxy_LibUSB::~USBDeviceProxy_LibUSB() {
 	 if (privateContext && context) {libusb_exit(context);}
 }
 
+int USBDeviceProxy_LibUSB::connect() {
+	//TODO: 1
+	return 0;
+}
+
+void USBDeviceProxy_LibUSB::disconnect() {
+	//TODO: 1
+}
+
+void USBDeviceProxy_LibUSB::reset() {
+	//TODO: 1
+}
+
 bool USBDeviceProxy_LibUSB::is_connected() {
 	return dev_handle?true:false;
 }
@@ -165,3 +178,12 @@ __u8 USBDeviceProxy_LibUSB::get_address() {
 	libusb_device* dvc=libusb_get_device(dev_handle);
 	return libusb_get_device_address(dvc);
 }
+
+void USBDeviceProxy_LibUSB::send_data(__u8 endpoint,__u8* dataptr,int length) {
+	//TODO: 1
+}
+
+void USBDeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8** dataptr, int* length) {
+	//TODO: 1
+}
+

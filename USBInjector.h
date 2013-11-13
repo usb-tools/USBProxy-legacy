@@ -43,12 +43,10 @@ public:
 
 	void listen();
 
-	static void *listen_helper(void* context) {
-		((USBInjector*)context)->listen();
-		return 0;
-	}
+	static void *listen_helper(void* context);
 
-	virtual char* toString() {return "Injector";}
+	virtual const char* toString() {return "Injector";}
+
 };
 
 #endif /* USBINJECTOR_H_ */

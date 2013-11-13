@@ -25,12 +25,86 @@
  */
 #include "USBRelayer.h"
 
-USBRelayer::USBRelayer() {
-	// TODO Auto-generated constructor stub
-
+USBRelayer::USBRelayer(USBEndpoint* _endpoint,USBDeviceProxy* _device,USBHostProxy* _host,boost::lockfree::queue<USBPacket*>* _queue) {
+	endpoint=_endpoint;
+	device=_device;
+	host=_host;
+	queue=_queue;
+	filters=NULL;
+	filterCount=0;
+	halt=false;
 }
 
 USBRelayer::~USBRelayer() {
-	// TODO Auto-generated destructor stub
+	if (filters) {free(filters);}
 }
 
+void USBRelayer::add_filter(USBPacketFilter* filter) {
+	if (filterCount) {
+		filters=(USBPacketFilter**)realloc(filters,(filterCount+1)*sizeof(USBPacketFilter*));
+	} else {
+		filters=(USBPacketFilter**)malloc(sizeof(USBPacketFilter*));
+	}
+	filters[filterCount]=filter;
+	filterCount++;
+}
+
+void USBRelayer::relay() {
+	__u8 epAddress=endpoint->get_descriptor()->bEndpointAddress;
+	__u8* buf;
+	int length;
+	USBPacket* p;
+	USBPacketFilter* f;
+	if (epAddress&0x80) { //device->host
+		while (!halt) {
+			device->receive_data(epAddress,&buf,&length);
+			if (length) {
+				p=new USBPacket(epAddress,buf,length);
+				__u8 i=0;
+				while (i<filterCount && p->filter) {
+					filters[i]->filter_packet(p,NULL);
+					i++;
+				}
+				if (p->transmit) {host->send_data(epAddress,p->data,p->wLength);}
+				delete(p);
+			}
+			if (queue->pop(p)) {
+				__u8 i=0;
+				while (i<filterCount && p->filter) {
+					filters[i]->filter_packet(p,NULL);
+					i++;
+				}
+				if (p->transmit) {host->send_data(epAddress,p->data,p->wLength);}
+				delete(p);
+			}
+		}
+	} else {
+		while (!halt) { //host->device
+			host->receive_data(epAddress,&buf,&length);
+			if (length) {
+				p=new USBPacket(epAddress,buf,length);
+				__u8 i=0;
+				while (i<filterCount && p->filter) {
+					filters[i]->filter_packet(p,NULL);
+					i++;
+				}
+				if (p->transmit) {device->send_data(epAddress,p->data,p->wLength);}
+				delete(p);
+			}
+			if (queue->pop(p)) {
+				__u8 i=0;
+				while (i<filterCount && p->filter) {
+					filters[i]->filter_packet(p,NULL);
+					i++;
+				}
+				if (p->transmit) {device->send_data(epAddress,p->data,p->wLength);}
+				delete(p);
+			}
+		}
+	}
+}
+
+void* USBRelayer::relay_helper(void* context) {
+	((USBRelayer*)context)->relay();
+	return 0;
+};

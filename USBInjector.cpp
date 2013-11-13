@@ -27,6 +27,7 @@
 
 USBInjector::USBInjector(USBManager* _manager) {
 	manager=_manager;
+	halt=false;
 }
 
 USBInjector::~USBInjector() {
@@ -39,4 +40,9 @@ void USBInjector::listen() {
 		USBPacket* p=get_packets();
 		if (p) {manager->inject_packet(p);}
 	}
+}
+
+void* USBInjector::listen_helper(void* context) {
+	((USBInjector*)context)->listen();
+	return 0;
 }

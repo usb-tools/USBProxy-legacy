@@ -29,30 +29,31 @@
 #include "linux/types.h"
 #include <unistd.h>
 #include <stdio.h>
+#include <boost/lockfree/queue.hpp>
+#include "USBDeviceProxy.h"
+#include "USBHostProxy.h"
+#include "USBEndpoint.h"
+#include "USBPacket.h"
+#include "USBPacketFilter.h"
 
 class USBRelayer {
 private:
-	//TODO PacketQueue** injectionQueueus;
+	boost::lockfree::queue<USBPacket*>* queue;
+	USBEndpoint* endpoint;
+	USBDeviceProxy* device;
+	USBHostProxy* host;
+	USBPacketFilter** filters;
+	__u8 filterCount;
 
 public:
 	bool halt;
-	__u8 endpoint;
 
-	USBRelayer();
+	USBRelayer(USBEndpoint* _endpoint,USBDeviceProxy* _device,USBHostProxy* _host,boost::lockfree::queue<USBPacket*>* _queue);
 	virtual ~USBRelayer();
+	void relay();
+	void add_filter(USBPacketFilter* filter);
 
-	void relay() {
-		int i=0;
-		while (!halt) {
-			sleep(1);
-			printf("%d: %d\n",endpoint,i++);
-		}
-	}
-
-	static void *relay_helper(void* context) {
-		((USBRelayer*)context)->relay();
-		return 0;
-	}
+	static void* relay_helper(void* context);
 };
 
 #endif /* USBRELAYER_H_ */

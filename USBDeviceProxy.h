@@ -33,15 +33,15 @@ class USBDeviceProxy{
 public:
 	virtual ~USBDeviceProxy() {}
 
-	//TODO: 1 virtual int connect()=0;
-	//TODO: 1 virtual void disconnect()=0;
-	//TODO: 1 virtual void reset()=0;
+	virtual int connect()=0;
+	virtual void disconnect()=0;
+	virtual void reset()=0;
 	virtual bool is_connected()=0;
 
 	//this should be done synchronously
 	virtual int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr)=0;
-	//TODO: 1 virtual void send_data(__u8 endpoint,__u8* dataptr,int length)=0;
-	//TODO: 1 virtual void receive_data(__u8 endpoint,__u8** dataptr, int* length)=0;
+	virtual void send_data(__u8 endpoint,__u8* dataptr,int length)=0;
+	virtual void receive_data(__u8 endpoint,__u8** dataptr, int* length)=0;
 
 	virtual __u8 get_address()=0;
 	virtual const char* toString() {return NULL;}
