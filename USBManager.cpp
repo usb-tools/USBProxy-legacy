@@ -36,7 +36,7 @@ USBManager::USBManager(USBDeviceProxy* _deviceProxy,USBHostProxy* _hostProxy) {
 	injectors=NULL;
 	injectorCount=0;
 	injectorThreads=NULL;
-	in_queue_ep0=NULL;
+	out_queue_ep0=NULL;
 	//out_queue_ep0=NULL;
 	int i;
 	for(i=0;i<16;i++) {
@@ -85,14 +85,14 @@ void USBManager::inject_packet(USBPacket *packet) {
 void USBManager::inject_setup_in(usb_ctrlrequest request,__u8** data,__u16 *transferred, bool filter) {
 	if (status!=USBM_RELAYING) {fprintf(stderr,"Can't inject packets unless manager is relaying.\n");}
 	USBSetupPacket* p=new USBSetupPacket(request,NULL,filter);
-	in_queue_ep0->push(p);
+	out_queue_ep0->push(p);
 	//TODO handle returned data...somehow..can use 2nd queue for replies, but would need to poll it or something
 }
 
 void USBManager::inject_setup_out(usb_ctrlrequest request,__u8* data,bool filter) {
 	if (status!=USBM_RELAYING) {fprintf(stderr,"Can't inject packets unless manager is relaying.\n");}
 	USBSetupPacket* p=new USBSetupPacket(request,data,filter);
-	in_queue_ep0->push(p);
+	out_queue_ep0->push(p);
 }
 
 
@@ -170,19 +170,153 @@ __u8 USBManager::get_filter_count(){
 
 
 void USBManager::start_relaying(){
-	//connect device proxy, populate device model, enumerate endpoints
-	//set up relayers for each endpoint, apply filters to each relayer
-	//don't forget to include EP0
-	//connect to host proxy
-	//start relayer threads, start injector threads
-	//FINISH
+	status=USBM_SETUP;
+
+	//connect device proxy
+	if (deviceProxy->connect()!=0) {fprintf(stderr,"Unable to connect to device proxy.\n");}
+
+	//populate device model
+	device=new USBDevice(deviceProxy);
+
+	//enumerate endpoints
+	USBConfiguration* cfg=device->get_active_configuration();
+	int ifc_idx;
+	int ifc_cnt=cfg->get_descriptor()->bNumInterfaces;
+	for (ifc_idx=0;ifc_idx<ifc_cnt;ifc_idx++) {
+		USBInterface* ifc=cfg->get_interface(ifc_idx);
+		int ep_idx;
+		int ep_cnt=ifc->get_endpoint_count();
+		for(ep_idx=0;ep_idx<ep_cnt;ep_idx++) {
+			USBEndpoint* ep=ifc->get_endpoint_by_idx(ep_idx);
+			const usb_endpoint_descriptor* epd=ep->get_descriptor();
+			if (epd->bEndpointAddress & 0x80) { //IN EP
+				in_endpoints[epd->bEndpointAddress&0x0f]=ep;
+			} else { //OUT EP
+				out_endpoints[epd->bEndpointAddress&0x0f]=ep;
+			}
+		}
+	}
+
+	//create EP0 endpoint object
+	usb_endpoint_descriptor desc_ep0;
+	desc_ep0.bLength=7;
+	desc_ep0.bDescriptorType=USB_DT_ENDPOINT;
+	desc_ep0.bEndpointAddress=0;
+	desc_ep0.bmAttributes=0;
+	desc_ep0.wMaxPacketSize=device->get_descriptor()->bMaxPacketSize0;
+	desc_ep0.bInterval=0;
+	out_endpoints[0]=new USBEndpoint((USBInterface*)NULL,&desc_ep0);
+
+	//set up queues,relayers,and filters
+	int i,j;
+	for (i=0;i<16;i++) {
+		if (in_endpoints[i]) {
+			//USBRelayer(USBEndpoint* _endpoint,USBDeviceProxy* _device,USBHostProxy* _host,boost::lockfree::queue<USBSetupPacket*>* _queue);
+			in_queue[i]=new boost::lockfree::queue<USBPacket*>(16);
+			in_relayers[i]=new USBRelayer(in_endpoints[i],deviceProxy,hostProxy,in_queue[i]);
+
+		}
+
+		if (out_endpoints[i]) {
+			//USBRelayer(USBEndpoint* _endpoint,USBDeviceProxy* _device,USBHostProxy* _host,boost::lockfree::queue<USBSetupPacket*>* _queue);
+			if (i) {
+				out_queue[i]=new boost::lockfree::queue<USBPacket*>(16);
+				out_relayers[i]=new USBRelayer(out_endpoints[i],deviceProxy,hostProxy,out_queue[i]);
+			} else {
+				out_queue_ep0=new boost::lockfree::queue<USBSetupPacket*>(16);
+				out_relayers[i]=new USBRelayer(out_endpoints[i],deviceProxy,hostProxy,out_queue_ep0);
+			}
+		}
+	}
+
+	//apply filters to relayers
+	for(i=0;i<filterCount;i++) {
+		if (filters[i]->test_device(device) && filters[i]->test_configuration(cfg)) {
+			for (j=0;j<16;j++) {
+				if (in_endpoints[j] && filters[i]->test_endpoint(in_endpoints[j]) && filters[i]->test_interface(in_endpoints[j]->get_interface())) {
+					in_relayers[j]->add_filter(filters[i]);
+				}
+				if (out_endpoints[j] && filters[i]->test_endpoint(out_endpoints[j]) && filters[i]->test_interface(out_endpoints[j]->get_interface())) {
+					out_relayers[j]->add_filter(filters[i]);
+				}
+			}
+		}
+	}
+
+	hostProxy->connect(device);
+	for(i=0;i<injectorCount;i++) {
+		pthread_create(&injectorThreads[i],NULL,&USBInjector::listen_helper,injectors[i]);
+	}
+
+	for(i=0;i<16;i++) {
+		if (in_relayers[i]) {
+			pthread_create(&in_relayerThreads[i],NULL,&USBRelayer::relay_helper,in_relayers[i]);
+		}
+		if (out_relayers[i]) {
+			pthread_create(&out_relayerThreads[i],NULL,&USBRelayer::relay_helper,out_relayers[i]);
+		}
+	}
+
+	status=USBM_RELAYING;
 }
 
 void USBManager::stop_relaying(){
-	//stop & join injector/relayer threads
+	status=USBM_STOPPING;
+
+	int i;
+	//signal all injector threads to stop ASAP
+	for(i=0;i<injectorCount;i++) {injectors[i]->halt=true;}
+
+	//signal all relayer threads to stop ASAP
+	for(i=0;i<16;i++) {
+		if (in_relayers[i]) {in_relayers[i]->halt=true;}
+		if (out_relayers[i]) {out_relayers[i]->halt=true;}
+	}
+
+	//wait for all injector threads to stop
+	for(i=0;i<injectorCount;i++) {pthread_join(injectorThreads[i],NULL);}
+
+	//wait for all relayer threads to stop, then delete relayer objects
+	for(i=0;i<16;i++) {
+		if (in_endpoints[i]) {in_endpoints[i]=NULL;}
+		if (in_relayers[i]) {
+			pthread_join(in_relayerThreads[i],NULL);
+			delete(in_relayers[i]);
+			in_relayers[i]=NULL;
+		}
+
+		if (out_endpoints[i]) {
+			//we created EP0 object, all others are under USBDevice control
+			if (!i) {delete(out_endpoints[i]);}
+			out_endpoints[i]=NULL;
+		}
+		if (out_relayers[i]) {
+			pthread_join(out_relayerThreads[i],NULL);
+			delete(out_relayers[i]);
+			out_relayers[i]=NULL;
+		}
+		if (in_queue[i]) {
+			delete(in_queue[i]);
+			in_queue[i]=NULL;
+		}
+		if (out_queue[i]) {
+			delete(out_queue[i]);
+			out_queue[i]=NULL;
+		}
+	}
+	if (out_queue_ep0) {
+		delete(out_queue_ep0);
+		out_queue_ep0=NULL;
+	}
+
 	//disconnect from host
-	//clean up relayers
-	//disconnect device proxy, clean up device model & endpoints
-	//don't forget to include EP0
-	//FINISH
+	hostProxy->disconnect();
+
+	//disconnect device proxy
+	deviceProxy->disconnect();
+
+	//clean up device model & endpoints
+	delete(device);
+
+	status=USBM_IDLE;
 }

@@ -99,6 +99,29 @@ public:
 	virtual char* toString() {return (char*)"Filter";}
 };
 
+//writes all traffic to a stream
+class USBPacketFilter_streamlog : public USBPacketFilter {
+private:
+	FILE* file;
+public:
+	USBPacketFilter_streamlog(FILE* _file) {file=_file;}
+	void filter_packet(USBPacket* packet) {
+		fprintf(file,"%02x[%d]:",packet->bEndpoint,packet->wLength);
+		int i;
+		for(i=0;i<packet->wLength;i++) {fprintf(file," %02x",packet->data[i]);}
+		fprintf(file,"\n");
+	}
+	void filter_setup_packet(USBSetupPacket* packet) {
+		__u8* req=(__u8*)&(packet->ctrl_req);
+		fprintf(file,"SETUP[%02x%02x%02x%02x%02x%02x%02x%02x]:",req[0],req[1],req[2],req[3],req[4],req[5],req[6],req[7]);
+		int i;
+		for(i=0;i<packet->ctrl_req.wLength;i++) {fprintf(file," %02x",packet->data[i]);}
+		fprintf(file,"\n");
+	}
+	virtual char* toString() {return (char*)"Stream Log Filter";}
+};
+
+//uses function pointers to filter packets
 class USBPacketFilter_Callback : public USBPacketFilter {
 private:
 	void (*cb)(USBPacket*);

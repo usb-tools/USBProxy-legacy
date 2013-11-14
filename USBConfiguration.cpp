@@ -131,9 +131,14 @@ void USBConfiguration::add_interface(USBInterface* interface) {
 	interfaceGroups[number]->add_interface(interface);
 }
 
-USBInterface* USBConfiguration::get_interface(__u8 number,__u8 alternate) {
+USBInterface* USBConfiguration::get_interface_alternate(__u8 number,__u8 alternate) {
 	if (!interfaceGroups[number]) {return NULL;}
 	return interfaceGroups[number]->get_interface(alternate);
+}
+
+USBInterface* USBConfiguration::get_interface(__u8 number) {
+	if (!interfaceGroups[number]) {return NULL;}
+	return interfaceGroups[number]->get_active_interface();
 }
 
 __u8 USBConfiguration::get_interface_alernate_count(__u8 number) {

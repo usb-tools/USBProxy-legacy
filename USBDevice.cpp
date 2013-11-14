@@ -66,7 +66,7 @@ USBDevice::USBDevice(USBDeviceProxy* _proxy) {
 		for (j=0;j<configurations[i]->get_descriptor()->bNumInterfaces;j++) {
 			int k;
 			for (k=0;k<configurations[i]->get_interface_alernate_count(j);k++) {
-				__u8 iInterface=configurations[i]->get_interface(j,k)->get_descriptor()->iInterface;
+				__u8 iInterface=configurations[i]->get_interface_alternate(j,k)->get_descriptor()->iInterface;
 				if (iInterface) {add_string(iInterface);}
 			}
 		}
@@ -406,7 +406,7 @@ const definition_error USBDevice::is_defined() {
 		for (j=0;j<configurations[i]->get_descriptor()->bNumInterfaces;j++) {
 			int k;
 			for (k=0;k<configurations[i]->get_interface_alernate_count(j);k++) {
-				rc=is_string_defined(configurations[i]->get_interface(j,k)->get_descriptor()->iInterface);
+				rc=is_string_defined(configurations[i]->get_interface_alternate(j,k)->get_descriptor()->iInterface);
 				if (rc.error) {return rc;}
 			}
 		}

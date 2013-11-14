@@ -52,7 +52,8 @@ class USBConfiguration {
 		const __u8* get_full_descriptor();
 		size_t get_full_descriptor_length();
 		void add_interface(USBInterface* interface);
-		USBInterface* get_interface(__u8 number,__u8 alternate);
+		USBInterface* get_interface_alternate(__u8 number,__u8 alternate);
+		USBInterface* get_interface(__u8 number);
 		void print(__u8 tabs=0,bool active=false);
 		USBString* get_config_string(__u16 languageId=0);
 		__u8 get_interface_alernate_count(__u8 number);

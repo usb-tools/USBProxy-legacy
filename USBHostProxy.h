@@ -27,12 +27,13 @@
 #define USBHOSTPROXY_H_
 
 #include <linux/usb/ch9.h>
+#include "USBDevice.h"
 
 class USBHostProxy {
 public:
 	virtual ~USBHostProxy();
 
-	virtual int connect()=0;
+	virtual int connect(USBDevice* device)=0;
 	virtual void disconnect()=0;
 	virtual void reset()=0;
 	virtual bool is_connected()=0;

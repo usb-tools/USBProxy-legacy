@@ -53,7 +53,7 @@ USBDeviceQualifier::USBDeviceQualifier(USBDevice* _device,USBDeviceProxy* proxy)
 		for (j=0;j<configurations[i]->get_descriptor()->bNumInterfaces;j++) {
 			int k;
 			for (k=0;k<configurations[i]->get_interface_alernate_count(j);k++) {
-				__u8 iInterface=configurations[i]->get_interface(j,k)->get_descriptor()->iInterface;
+				__u8 iInterface=configurations[i]->get_interface_alternate(j,k)->get_descriptor()->iInterface;
 				if (iInterface) {device->add_string(iInterface);}
 			}
 		}

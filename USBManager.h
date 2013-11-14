@@ -66,13 +66,13 @@ private:
 	USBRelayer* in_relayers[16];
 	pthread_t in_relayerThreads[16];
 	boost::lockfree::queue<USBPacket*>* in_queue[16];
-	boost::lockfree::queue<USBSetupPacket*>* in_queue_ep0;
+	//boost::lockfree::queue<USBSetupPacket*>* in_queue_ep0;
 
 	USBEndpoint* out_endpoints[16];
 	USBRelayer* out_relayers[16];
 	pthread_t out_relayerThreads[16];
 	boost::lockfree::queue<USBPacket*>* out_queue[16];
-	//boost::lockfree::queue<USBSetupPacket*>* out_queue_ep0;
+	boost::lockfree::queue<USBSetupPacket*>* out_queue_ep0;
 
 public:
 	USBManager(USBDeviceProxy* _deviceProxy,USBHostProxy* _hostProxy);
