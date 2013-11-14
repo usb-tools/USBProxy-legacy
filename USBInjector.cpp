@@ -30,13 +30,9 @@ USBInjector::USBInjector(USBManager* _manager) {
 	halt=false;
 }
 
-USBInjector::~USBInjector() {
-	// TODO Auto-generated destructor stub
-}
-
 void USBInjector::listen() {
 	while (!halt) {
-		//TODO: 2 we also need to handle setup packets and getting the response back
+		//TODO we also need to handle setup packets and getting the response back
 		USBPacket* p=get_packets();
 		if (p) {manager->inject_packet(p);}
 	}

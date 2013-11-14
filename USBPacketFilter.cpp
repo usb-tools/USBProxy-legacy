@@ -42,7 +42,7 @@ bool USBPacketFilter::test_configuration(USBConfiguration* _configuration) {
 	const usb_config_descriptor* desc=_configuration->get_descriptor();
 	if (configuration.number!=-1 && configuration.number!=desc->bConfigurationValue) {return false;}
 	if (configuration.highSpeed!=-255 && (configuration.highSpeed?USB_DT_OTHER_SPEED_CONFIG:USB_DT_CONFIG)!=desc->bDescriptorType) {return false;}
-	if (configuration.attributesMask&configuration.attributes!=configuration.attributesMask&desc->bmAttributes) {return false;}
+	if ((configuration.attributesMask&configuration.attributes)!=(configuration.attributesMask&desc->bmAttributes)) {return false;}
 	return true;
 }
 
@@ -58,8 +58,8 @@ bool USBPacketFilter::test_interface(USBInterface* _interface) {
 
 bool USBPacketFilter::test_endpoint(USBEndpoint* _endpoint) {
 	const usb_endpoint_descriptor* desc=_endpoint->get_descriptor();
-	if (endpoint.addressMask&endpoint.address!=endpoint.addressMask&desc->bEndpointAddress) {return false;}
-	if (endpoint.attributesMask&endpoint.attributes!=endpoint.attributesMask&desc->bmAttributes) {return false;}
+	if ((endpoint.addressMask&endpoint.address)!=(endpoint.addressMask&desc->bEndpointAddress)) {return false;}
+	if ((endpoint.attributesMask&endpoint.attributes)!=(endpoint.attributesMask&desc->bmAttributes)) {return false;}
 	if (endpoint.packetSizeMin>desc->wMaxPacketSize || endpoint.packetSizeMax<desc->wMaxPacketSize) {return false;}
 	if (endpoint.intervalMin>desc->bInterval || endpoint.intervalMax<desc->bInterval) {return false;}
 	return true;
@@ -73,17 +73,23 @@ void USBPacketFilter::set_packet_filter(__u8 header[8],__u8 mask[8]) {
 	}
 }
 
-bool USBPacketFilter::test_packet(USBPacket* packet,usb_ctrlrequest *setup_packet) {
+bool USBPacketFilter::test_packet(USBPacket* packet) {
 	__u8* data;
-	if (((packet->bEndpoint)&0x7f) == 0) {
-		data=(__u8 *)setup_packet;
-	} else {
-		if (packet->wLength<packetHeaderMaskLength) {return false;}
-		data=packet->data;
-	}
+	if (packet->wLength<packetHeaderMaskLength) {return false;}
+	data=packet->data;
 	int i;
 	for(i=0;i<packetHeaderMaskLength;i++) {
-		if (packetHeaderMask[i] && (packetHeaderMask[i]&data[i]!=packetHeaderMask[i]&packetHeader[i])) {return false;}
+		if (packetHeaderMask[i] && ((packetHeaderMask[i]&data[i])!=(packetHeaderMask[i]&packetHeader[i]))) {return false;}
+	}
+	return true;
+}
+
+bool USBPacketFilter::test_setup_packet(USBSetupPacket* packet) {
+	__u8* data;
+	data=(__u8*)&(packet->ctrl_req);
+	int i;
+	for(i=0;i<packetHeaderMaskLength;i++) {
+		if (packetHeaderMask[i] && ((packetHeaderMask[i]&data[i])!=(packetHeaderMask[i]&packetHeader[i]))) {return false;}
 	}
 	return true;
 }

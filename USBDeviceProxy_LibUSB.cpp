@@ -27,17 +27,49 @@
 
 int USBDeviceProxy_LibUSB::debugLevel=0;
 
-//TODO: 9 hotplug support
+//CLEANUP hotplug support
+USBDeviceProxy_LibUSB::~USBDeviceProxy_LibUSB() {
+	 if (privateDevice && dev_handle) {libusb_close(dev_handle);}
+	 if (privateContext && context) {libusb_exit(context);}
+}
 
-USBDeviceProxy_LibUSB::USBDeviceProxy_LibUSB(int vendorId,int productId,bool includeHubs) {
+int USBDeviceProxy_LibUSB::connect(libusb_device* dvc, libusb_context* _context) {
+	if (dev_handle) {fprintf(stderr,"LibUSB already connected.\n"); return 0;}
+	privateContext=false;
+	context=_context;
+	int rc=libusb_open(dvc,&dev_handle);
+	if (rc) {
+		if (debugLevel) {fprintf(stderr,"Error %d opening device handle.\n",rc);}
+		dev_handle=NULL;
+		return rc;
+	}
+	libusb_set_auto_detach_kernel_driver(dev_handle,1);
+	if (debugLevel) {fprintf(stdout,"Connected to device: %s\n",toString());}
+	return 0;
+}
+
+int USBDeviceProxy_LibUSB::connect(libusb_device_handle* devh,libusb_context* _context) {
+	if (dev_handle) {fprintf(stderr,"LibUSB already connected.\n"); return 0;}
+	privateContext=false;
+	privateDevice=false;
+	context=_context;
+	dev_handle=devh;
+	if (debugLevel) {fprintf(stdout,"Connected to device: %s\n",toString());}
+	return 0;
+}
+
+int USBDeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) {
+	if (dev_handle) {fprintf(stderr,"LibUSB already connected.\n"); return 0;}
+	privateContext=true;
+	privateDevice=true;
 	libusb_init(&context);
 	libusb_device **list=NULL;
 	libusb_device *found=NULL;
 
-	ssize_t cnt=libusb_get_device_list(NULL,&list);
+	ssize_t cnt=libusb_get_device_list(context,&list);
 	if (cnt<0) {
 		if (debugLevel) {fprintf(stderr,"Error %d retrieving device list.\n",cnt);}
-		return;
+		return cnt;
 	}
 
 	ssize_t i=0;
@@ -65,52 +97,33 @@ USBDeviceProxy_LibUSB::USBDeviceProxy_LibUSB(int vendorId,int productId,bool inc
 	if (found==NULL) {
 		if (debugLevel) {fprintf(stderr,"No devices found.\n");}
 		libusb_free_device_list(list,1);
-		return;
+		return rc;
 	} else {
 		rc=libusb_open(found,&dev_handle);
 		if (rc) {
 			if (debugLevel) {fprintf(stderr,"Error %d opening device handle.\n",rc);}
 			dev_handle=NULL;
 			libusb_free_device_list(list,1);
-			return;
+			return rc;
 		}
+
 	}
 	libusb_free_device_list(list,1);
 	if (debugLevel) {fprintf(stdout,"Connected to device: %s\n",toString());}
-}
-
-USBDeviceProxy_LibUSB::USBDeviceProxy_LibUSB(libusb_context* _context,libusb_device* dvc) {
-	privateContext=false;
-	context=_context;
-	libusb_open(dvc,&dev_handle);
-	libusb_set_auto_detach_kernel_driver(dev_handle,1);
-	if (debugLevel) {fprintf(stdout,"Connected to device: %s\n",toString());}
-
-}
-USBDeviceProxy_LibUSB::USBDeviceProxy_LibUSB(libusb_context* _context,libusb_device_handle* devh) {
-	privateContext=false;
-	privateDevice=false;
-	context=_context;
-	dev_handle=devh;
-	if (debugLevel) {fprintf(stdout,"Connected to device: %s\n",toString());}
-}
-
-USBDeviceProxy_LibUSB::~USBDeviceProxy_LibUSB() {
-	 if (privateDevice && dev_handle) {libusb_close(dev_handle);}
-	 if (privateContext && context) {libusb_exit(context);}
-}
-
-int USBDeviceProxy_LibUSB::connect() {
-	//TODO: 1
 	return 0;
 }
 
 void USBDeviceProxy_LibUSB::disconnect() {
-	//TODO: 1
+	 if (privateDevice && dev_handle) {libusb_close(dev_handle);}
+	 dev_handle=NULL;
+	 if (privateContext && context) {libusb_exit(context);}
+	 context=NULL;
 }
 
 void USBDeviceProxy_LibUSB::reset() {
-	//TODO: 1
+	int rc=libusb_reset_device(dev_handle);
+	if (rc==LIBUSB_ERROR_NOT_FOUND) {disconnect();}
+	if (rc) {fprintf(stderr,"Error %d resetting device.\n",rc);}
 }
 
 bool USBDeviceProxy_LibUSB::is_connected() {
@@ -179,11 +192,56 @@ __u8 USBDeviceProxy_LibUSB::get_address() {
 	return libusb_get_device_address(dvc);
 }
 
-void USBDeviceProxy_LibUSB::send_data(__u8 endpoint,__u8* dataptr,int length) {
-	//TODO: 1
+void USBDeviceProxy_LibUSB::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length) {
+	int transferred;
+	int rc;
+	switch (attributes & USB_ENDPOINT_XFERTYPE_MASK) {
+		case USB_ENDPOINT_XFER_CONTROL:
+			fprintf(stderr,"Can't send on a control endpoint.");
+			return;
+			break;
+		case USB_ENDPOINT_XFER_ISOC:
+			//TODO handle isochronous
+			fprintf(stderr,"Isochronous endpoints unhandled.");
+			return;
+			break;
+		case USB_ENDPOINT_XFER_BULK:
+			rc=libusb_bulk_transfer(dev_handle,endpoint,dataptr,length,&transferred,0);
+			if (rc) {fprintf(stderr,"Transfer error on Device EP%d\n",endpoint);}
+			//TODO retry transfer if incomplete
+			if (transferred!=length) {fprintf(stderr,"Incomplete Bulk transfer on EP%d\n",endpoint);}
+			break;
+		case USB_ENDPOINT_XFER_INT:
+			rc=libusb_interrupt_transfer(dev_handle,endpoint,dataptr,length,&transferred,0);
+			if (rc) {fprintf(stderr,"Transfer error on Device EP%d\n",endpoint);}
+			//TODO retry transfer if incomplete
+			if (transferred!=length) {fprintf(stderr,"Incomplete Interrupt transfer on EP%d\n",endpoint);}
+			break;
+	}
 }
 
-void USBDeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8** dataptr, int* length) {
-	//TODO: 1
+void USBDeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length) {
+	int rc;
+	switch (attributes & USB_ENDPOINT_XFERTYPE_MASK) {
+		case USB_ENDPOINT_XFER_CONTROL:
+			fprintf(stderr,"Can't send on a control endpoint.");
+			return;
+			break;
+		case USB_ENDPOINT_XFER_ISOC:
+			//TODO handle isochronous
+			fprintf(stderr,"Isochronous endpoints unhandled.");
+			return;
+			break;
+		case USB_ENDPOINT_XFER_BULK:
+			*dataptr=(__u8*)malloc(maxPacketSize);
+			rc=libusb_bulk_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,0);
+			if (rc) {fprintf(stderr,"Transfer error on Device EP%d\n",endpoint);}
+			break;
+		case USB_ENDPOINT_XFER_INT:
+			*dataptr=(__u8*)malloc(maxPacketSize);
+			rc=libusb_interrupt_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,0);
+			if (rc) {fprintf(stderr,"Transfer error on Device EP%d\n",endpoint);}
+			break;
+	}
 }
 

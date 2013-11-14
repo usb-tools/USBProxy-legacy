@@ -29,13 +29,12 @@
 #include "USBString.h"
 #include "DefinitionErrors.h"
 
-//TODO: 9 error checking on malloc/calloc/realloc
-//TODO: 9 leak checking on malloc/calloc/realloc
-//TODO: 9 check we aren't unnecessarily filling a buffer rather than going straight to descriptor on proxied control requests
-//TODO: 9 bound checking (or resize arrays) on add_*/get_*
-//TODO: 9 handle control_request errors
-//TODO: 9 null terminated arrays, vs ones where the count is stored vs ones where count is stored in descriptor, should some of these be changed to different types
-//TODO: 1 Move proxy based init out of constructor
+//CLEANUP error checking on malloc/calloc/realloc
+//CLEANUP leak checking on malloc/calloc/realloc
+//CLEANUP bound checking (or resize arrays) on add_*/get_*
+//CLEANUP handle control_request errors
+//CLEANUP null terminated arrays, vs ones where the count is stored vs ones where count is stored in descriptor, should some of these be changed to different types
+//TODO Move proxy based init out of constructor
 
 class USBConfiguration;
 class USBDeviceQualifier;

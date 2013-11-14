@@ -38,7 +38,7 @@ public:
 	bool halt;
 
 	USBInjector(USBManager* _manager);
-	virtual ~USBInjector();
+	virtual ~USBInjector() {}
 	virtual USBPacket* get_packets()=0;
 
 	void listen();

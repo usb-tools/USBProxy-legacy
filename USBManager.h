@@ -40,8 +40,16 @@
 
 class USBInjector;
 
+enum USBManager_status {
+	USBM_IDLE=0,
+	USBM_SETUP=1,
+	USBM_RELAYING=2,
+	USBM_STOPPING=3
+};
+
 class USBManager {
 private:
+	USBManager_status status;
 	USBDeviceProxy* deviceProxy;
 	USBHostProxy* hostProxy;
 	USBDevice* device;
@@ -58,26 +66,28 @@ private:
 	USBRelayer* in_relayers[16];
 	pthread_t in_relayerThreads[16];
 	boost::lockfree::queue<USBPacket*>* in_queue[16];
+	boost::lockfree::queue<USBSetupPacket*>* in_queue_ep0;
 
 	USBEndpoint* out_endpoints[16];
 	USBRelayer* out_relayers[16];
 	pthread_t out_relayerThreads[16];
 	boost::lockfree::queue<USBPacket*>* out_queue[16];
+	//boost::lockfree::queue<USBSetupPacket*>* out_queue_ep0;
 
 public:
 	USBManager(USBDeviceProxy* _deviceProxy,USBHostProxy* _hostProxy);
 	virtual ~USBManager();
-	int inject_packet(USBPacket *packet);
-	int inject_setup_in(usb_ctrlrequest request,__u8** data,__u16 *transferred, bool filter);
-	int inject_setup_out(usb_ctrlrequest request,__u8* data,bool filter);
+	void inject_packet(USBPacket *packet);
+	void inject_setup_in(usb_ctrlrequest request,__u8** data,__u16 *transferred, bool filter);
+	void inject_setup_out(usb_ctrlrequest request,__u8* data,bool filter);
 
 	void add_injector(USBInjector* _injector);
-	void remove_injector(__u8 index);
+	void remove_injector(__u8 index,bool freeMemory=true);
 	USBInjector* get_injector(__u8 index);
 	__u8 get_injector_count();
 
 	void add_filter(USBPacketFilter* _filter);
-	void remove_filter(__u8 index);
+	void remove_filter(__u8 index,bool freeMemory=true);
 	USBPacketFilter* get_filter(__u8 index);
 	__u8 get_filter_count();
 

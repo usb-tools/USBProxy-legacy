@@ -27,25 +27,25 @@
 
 class USBDeviceProxy_LibUSB:public USBDeviceProxy {
 private:
-	libusb_context* context;
-	libusb_device_handle* dev_handle;
+	libusb_context* context=NULL;
+	libusb_device_handle* dev_handle=NULL;
 	bool privateContext=true;
 	bool privateDevice=true;
 public:
 	static int debugLevel;
-	USBDeviceProxy_LibUSB(int vendorId=LIBUSB_HOTPLUG_MATCH_ANY,int productId=LIBUSB_HOTPLUG_MATCH_ANY,bool includeHubs=false);
-	USBDeviceProxy_LibUSB( libusb_context* _context,libusb_device* dvc);
-	USBDeviceProxy_LibUSB( libusb_context* _context,libusb_device_handle* devh);
+	USBDeviceProxy_LibUSB() {}
 	~USBDeviceProxy_LibUSB();
 
-	int connect();
+	int connect(int vendorId=LIBUSB_HOTPLUG_MATCH_ANY,int productId=LIBUSB_HOTPLUG_MATCH_ANY,bool includeHubs=false);
+	int connect(libusb_device* dvc, libusb_context* _context=NULL);
+	int connect(libusb_device_handle* devh,libusb_context* _context=NULL);
 	void disconnect();
 	void reset();
 	bool is_connected();
 
 	int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr);
-	void send_data(__u8 endpoint,__u8* dataptr,int length);
-	void receive_data(__u8 endpoint,__u8** dataptr, int* length);
+	void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length);
+	void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length);
 
 	__u8 get_address();
 	const char* toString();

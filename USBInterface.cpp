@@ -29,9 +29,9 @@
 #include <stdio.h>
 #include "USBInterface.h"
 
-//TODO: 9 update active interface in interfacegroup upon set interface request
-//TODO: 9 update active endpoints in proxied device upon set interface request
-//TODO: 9 handle any endpoints that become inactive upon set interface request
+//CLEANUP update active interface in interfacegroup upon set interface request
+//CLEANUP update active endpoints in proxied device upon set interface request
+//CLEANUP handle any endpoints that become inactive upon set interface request
 
 USBInterface::USBInterface(USBConfiguration* _configuration,__u8** p,const __u8* e) {
 	configuration=_configuration;

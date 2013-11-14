@@ -39,6 +39,7 @@
 class USBRelayer {
 private:
 	boost::lockfree::queue<USBPacket*>* queue;
+	boost::lockfree::queue<USBSetupPacket*>* queue_ep0;
 	USBEndpoint* endpoint;
 	USBDeviceProxy* device;
 	USBHostProxy* host;
@@ -49,8 +50,10 @@ public:
 	bool halt;
 
 	USBRelayer(USBEndpoint* _endpoint,USBDeviceProxy* _device,USBHostProxy* _host,boost::lockfree::queue<USBPacket*>* _queue);
+	USBRelayer(USBEndpoint* _endpoint,USBDeviceProxy* _device,USBHostProxy* _host,boost::lockfree::queue<USBSetupPacket*>* _queue);
 	virtual ~USBRelayer();
 	void relay();
+	void relay_ep0();
 	void add_filter(USBPacketFilter* filter);
 
 	static void* relay_helper(void* context);

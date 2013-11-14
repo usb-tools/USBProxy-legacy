@@ -27,9 +27,23 @@
 
 USBRelayer::USBRelayer(USBEndpoint* _endpoint,USBDeviceProxy* _device,USBHostProxy* _host,boost::lockfree::queue<USBPacket*>* _queue) {
 	endpoint=_endpoint;
+	if (endpoint->get_descriptor()->bEndpointAddress) {fprintf(stderr,"Wrong queue type for EP%d relayer.\n",endpoint->get_descriptor()->bEndpointAddress);}
 	device=_device;
 	host=_host;
+	queue_ep0=NULL;
 	queue=_queue;
+	filters=NULL;
+	filterCount=0;
+	halt=false;
+}
+
+USBRelayer::USBRelayer(USBEndpoint* _endpoint,USBDeviceProxy* _device,USBHostProxy* _host,boost::lockfree::queue<USBSetupPacket*>* _queue) {
+	endpoint=_endpoint;
+	if (endpoint->get_descriptor()->bEndpointAddress) {fprintf(stderr,"Wrong queue type for EP0 relayer.\n");}
+	device=_device;
+	host=_host;
+	queue_ep0=_queue;
+	queue=NULL;
 	filters=NULL;
 	filterCount=0;
 	halt=false;
@@ -49,55 +63,117 @@ void USBRelayer::add_filter(USBPacketFilter* filter) {
 	filterCount++;
 }
 
+void USBRelayer::relay_ep0() {
+	__u8 bmAttributes=endpoint->get_descriptor()->bmAttributes;
+	__u16 maxPacketSize=endpoint->get_descriptor()->wMaxPacketSize;
+	__u8* buf;
+	int response_length=0;
+	USBSetupPacket* p;
+	usb_ctrlrequest ctrl_req;
+	while (!halt) {
+		if (host->control_request(&ctrl_req,&response_length,&buf)) {
+			p=new USBSetupPacket(ctrl_req,buf);
+			__u8 i=0;
+			while (i<filterCount && p->filter) {
+				if (filters[i]->test_setup_packet(p)) {filters[i]->filter_setup_packet(p);}
+				i++;
+			}
+			if (p->transmit) {
+				if (ctrl_req.bRequest&0x80) { //device->host
+					p->data=(__u8*)malloc(ctrl_req.wLength);
+					device->control_request(&(p->ctrl_req),&response_length,p->data);
+				} else { //host->device
+					response_length=ctrl_req.wLength;
+					device->control_request(&(p->ctrl_req),&response_length,p->data);
+					response_length=0;
+				}
+			}
+			if (response_length) {
+				host->send_data(0,bmAttributes,maxPacketSize,p->data,response_length);
+			} else {
+				host->send_data(0,bmAttributes,maxPacketSize,NULL,0);
+			}
+			delete(p);
+		}
+		if (queue->pop(p)) {
+			__u8 i=0;
+			while (i<filterCount && p->filter) {
+				if (filters[i]->test_setup_packet(p)) {filters[i]->filter_setup_packet(p);}
+				i++;
+			}
+			if (p->transmit) {
+				if (ctrl_req.bRequest&0x80) { //device->host
+					p->data=(__u8*)malloc(ctrl_req.wLength);
+					device->control_request(&(p->ctrl_req),&response_length,p->data);
+				} else { //host->device
+					response_length=ctrl_req.wLength;
+					device->control_request(&(p->ctrl_req),&response_length,p->data);
+					response_length=0;
+				}
+			}
+			if (response_length) {
+				host->send_data(0,bmAttributes,maxPacketSize,p->data,response_length);
+			} else {
+				host->send_data(0,bmAttributes,maxPacketSize,NULL,0);
+			}
+
+			//TODO send this data back to the injector somehow
+			delete(p);
+		}
+	}
+}
+
 void USBRelayer::relay() {
 	__u8 epAddress=endpoint->get_descriptor()->bEndpointAddress;
+	if (!epAddress) {relay_ep0();return;}
+	__u8 bmAttributes=endpoint->get_descriptor()->bmAttributes;
+	__u16 maxPacketSize=endpoint->get_descriptor()->wMaxPacketSize;
 	__u8* buf;
 	int length;
 	USBPacket* p;
-	USBPacketFilter* f;
 	if (epAddress&0x80) { //device->host
 		while (!halt) {
-			device->receive_data(epAddress,&buf,&length);
+			device->receive_data(epAddress,bmAttributes,maxPacketSize,&buf,&length);
 			if (length) {
 				p=new USBPacket(epAddress,buf,length);
 				__u8 i=0;
 				while (i<filterCount && p->filter) {
-					filters[i]->filter_packet(p,NULL);
+					if (filters[i]->test_packet(p)) {filters[i]->filter_packet(p);}
 					i++;
 				}
-				if (p->transmit) {host->send_data(epAddress,p->data,p->wLength);}
+				if (p->transmit) {host->send_data(epAddress,bmAttributes,maxPacketSize,p->data,p->wLength);}
 				delete(p);
 			}
 			if (queue->pop(p)) {
 				__u8 i=0;
 				while (i<filterCount && p->filter) {
-					filters[i]->filter_packet(p,NULL);
+					if (filters[i]->test_packet(p)) {filters[i]->filter_packet(p);}
 					i++;
 				}
-				if (p->transmit) {host->send_data(epAddress,p->data,p->wLength);}
+				if (p->transmit) {host->send_data(epAddress,bmAttributes,maxPacketSize,p->data,p->wLength);}
 				delete(p);
 			}
 		}
 	} else {
 		while (!halt) { //host->device
-			host->receive_data(epAddress,&buf,&length);
+			host->receive_data(epAddress,bmAttributes,maxPacketSize,&buf,&length);
 			if (length) {
 				p=new USBPacket(epAddress,buf,length);
 				__u8 i=0;
 				while (i<filterCount && p->filter) {
-					filters[i]->filter_packet(p,NULL);
+					if (filters[i]->test_packet(p)) {filters[i]->filter_packet(p);}
 					i++;
 				}
-				if (p->transmit) {device->send_data(epAddress,p->data,p->wLength);}
+				if (p->transmit) {device->send_data(epAddress,bmAttributes,maxPacketSize,p->data,p->wLength);}
 				delete(p);
 			}
 			if (queue->pop(p)) {
 				__u8 i=0;
 				while (i<filterCount && p->filter) {
-					filters[i]->filter_packet(p,NULL);
+					if (filters[i]->test_packet(p)) {filters[i]->filter_packet(p);}
 					i++;
 				}
-				if (p->transmit) {device->send_data(epAddress,p->data,p->wLength);}
+				if (p->transmit) {device->send_data(epAddress,bmAttributes,maxPacketSize,p->data,p->wLength);}
 				delete(p);
 			}
 		}

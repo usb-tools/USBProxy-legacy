@@ -26,6 +26,8 @@
 #ifndef PACKET_H_
 #define PACKET_H_
 
+#include <linux/usb/ch9.h>
+
 struct USBPacket {
 	__u8	bEndpoint;
 	__u16	wLength;
@@ -33,7 +35,18 @@ struct USBPacket {
 	bool	transmit;
 	__u8*	data;
 
-	USBPacket(__u8 _endpoint,__u8* _data,__u16 _length,bool _filter=true) : bEndpoint(_endpoint),wLength(_length),data(_data),filter(_filter),transmit(true) {}
+	USBPacket(__u8 _endpoint,__u8* _data,__u16 _length,bool _filter=true) : bEndpoint(_endpoint),wLength(_length),filter(_filter),transmit(true),data(_data) {}
+	~USBPacket() {if (data) {free(data);}}
+};
+
+struct USBSetupPacket {
+	usb_ctrlrequest ctrl_req;
+	bool	filter;
+	bool	transmit;
+	__u8*	data;
+
+	USBSetupPacket(usb_ctrlrequest _ctrl_req,__u8* _data,bool _filter=true) : ctrl_req(_ctrl_req),filter(_filter),transmit(true),data(_data) {}
+	~USBSetupPacket() {if (data) {free(data);}}
 };
 
 #endif /* PACKET_H_ */

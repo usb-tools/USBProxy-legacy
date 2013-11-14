@@ -26,10 +26,10 @@
 #include "USBDevice.h"
 #include "DefinitionErrors.h"
 
-//TODO: 9 update active endpoints in proxied device upon set configuration request
-//TODO: 9 update active configuration for the class upon set configuration request
-//TODO: 9 handle any endpoints that become inactive upon set configuration request
-//TODO: 9 what happends if device is HS but host is not, in terms of correct config to use,etc.
+//CLEANUP update active endpoints in proxied device upon set configuration request
+//CLEANUP update active configuration for the class upon set configuration request
+//CLEANUP handle any endpoints that become inactive upon set configuration request
+//CLEANUP what happends if device is HS but host is not, in terms of correct config to use,etc.
 
 
 USBDevice::USBDevice(USBDeviceProxy* _proxy) {

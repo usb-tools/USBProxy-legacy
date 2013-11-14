@@ -86,23 +86,28 @@ public:
 	USBPacketFilter();
 	virtual ~USBPacketFilter();
 
-	virtual void filter_packet(USBPacket* packet,usb_ctrlrequest *setup_packet=NULL)=0;
+	virtual void filter_packet(USBPacket* packet)=0;
+	virtual void filter_setup_packet(USBSetupPacket* packet)=0;
 
 	bool test_device(USBDevice* _device);
 	bool test_configuration(USBConfiguration* _configuration);
 	bool test_interface(USBInterface* _interface);
 	bool test_endpoint(USBEndpoint* _endpoint);
-	bool test_packet(USBPacket* packet,usb_ctrlrequest *setup_packet=NULL);
+	bool test_packet(USBPacket* packet);
+	bool test_setup_packet(USBSetupPacket* packet);
 	void set_packet_filter(__u8 header[4],__u8 mask[4]);
+	virtual char* toString() {return (char*)"Filter";}
 };
 
 class USBPacketFilter_Callback : public USBPacketFilter {
 private:
-	void (*cb)(USBPacket*,usb_ctrlrequest*);
+	void (*cb)(USBPacket*);
+	void (*cb_setup)(USBSetupPacket*);
 public:
-	USBPacketFilter_Callback(void (*_cb)(USBPacket*,usb_ctrlrequest*)) {cb=_cb;}
-	void filter_packet(USBPacket* packet,usb_ctrlrequest *setup_packet=NULL) {cb(packet,setup_packet);}
-	virtual char* toString() {return "Filter";}
+	USBPacketFilter_Callback(void (*_cb)(USBPacket*),void (*_cb_setup)(USBSetupPacket*)) {cb=_cb;cb_setup=_cb_setup;}
+	void filter_packet(USBPacket* packet) {cb(packet);}
+	void filter_setup_packet(USBSetupPacket* packet) {cb_setup(packet);}
+	virtual char* toString() {return (char*)"Filter";}
 
 };
 
