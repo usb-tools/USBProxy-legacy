@@ -71,7 +71,8 @@ void USBRelayer::relay_ep0() {
 	USBSetupPacket* p;
 	usb_ctrlrequest ctrl_req;
 	while (!halt) {
-		if (host->control_request(&ctrl_req,&response_length,&buf)) {
+		host->control_request(&ctrl_req,&response_length,&buf);
+		if (ctrl_req.bRequest) {
 			p=new USBSetupPacket(ctrl_req,buf);
 			__u8 i=0;
 			while (i<filterCount && p->filter) {

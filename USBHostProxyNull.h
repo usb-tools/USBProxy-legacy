@@ -19,32 +19,32 @@
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
  *
- * USBHostProxy.h
+ * USBHostProxyNull.h
  *
- * Created on: Nov 10, 2013
+ * Created on: Nov 15, 2013
  */
-#ifndef USBHOSTPROXY_H_
-#define USBHOSTPROXY_H_
+#ifndef USBHOSTPROXYNULL_H_
+#define USBHOSTPROXYNULL_H_
 
-#include <linux/usb/ch9.h>
-#include "USBDevice.h"
+#include "USBHostProxy.h"
 
-class USBHostProxy {
+class USBHostProxy_Null: public USBHostProxy {
+private:
+	bool connected=false;
 public:
-	virtual ~USBHostProxy();
+	USBHostProxy_Null() {}
+	virtual ~USBHostProxy_Null() {}
 
-	virtual int connect(USBDevice* device)=0;
-	virtual void disconnect()=0;
-	virtual void reset()=0;
-	virtual bool is_connected()=0;
+	int connect(USBDevice* device) {connected=true;return 0;}
+	void disconnect() {connected=false;}
+	void reset() {}
+	bool is_connected() {return connected;}
 
-	//CLEANUP is this the best way to indicate whether there was a request?
-	//return 0 in usb_ctrlrequest->brequest if there is no request
-	virtual int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8** dataptr)=0;
-	virtual void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length)=0;
-	virtual void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length)=0;
+	int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8** dataptr) {setup_packet->bRequestType=0;return 0;}
+	void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length) {}
+	void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length) {*length=0;}
 
-	virtual const char* toString() {return NULL;}
+	const char* toString() {return (char*)"Null Host";}
 };
 
-#endif /* USBHOSTPROXY_H_ */
+#endif /* USBHOSTPROXYNULL_H_ */

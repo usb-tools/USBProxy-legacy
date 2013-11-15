@@ -31,12 +31,17 @@ private:
 	libusb_device_handle* dev_handle=NULL;
 	bool privateContext=true;
 	bool privateDevice=true;
+	int desired_vid;
+	int desired_pid;
+	bool desired_hubs;
+
 public:
 	static int debugLevel;
-	USBDeviceProxy_LibUSB() {}
+	USBDeviceProxy_LibUSB(int vendorId=LIBUSB_HOTPLUG_MATCH_ANY,int productId=LIBUSB_HOTPLUG_MATCH_ANY,bool includeHubs=false);
 	~USBDeviceProxy_LibUSB();
 
-	int connect(int vendorId=LIBUSB_HOTPLUG_MATCH_ANY,int productId=LIBUSB_HOTPLUG_MATCH_ANY,bool includeHubs=false);
+	int connect();
+	int connect(int vendorId,int productId,bool includeHubs);
 	int connect(libusb_device* dvc, libusb_context* _context=NULL);
 	int connect(libusb_device_handle* devh,libusb_context* _context=NULL);
 	void disconnect();

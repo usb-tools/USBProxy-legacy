@@ -28,9 +28,21 @@
 int USBDeviceProxy_LibUSB::debugLevel=0;
 
 //CLEANUP hotplug support
+
+USBDeviceProxy_LibUSB::USBDeviceProxy_LibUSB(int vendorId,int productId,bool includeHubs)
+{
+	desired_vid=vendorId;
+	desired_pid=productId;
+	desired_hubs=includeHubs;
+}
+
 USBDeviceProxy_LibUSB::~USBDeviceProxy_LibUSB() {
 	 if (privateDevice && dev_handle) {libusb_close(dev_handle);}
 	 if (privateContext && context) {libusb_exit(context);}
+}
+
+int USBDeviceProxy_LibUSB::connect() {
+	return connect(desired_vid,desired_pid,desired_hubs);
 }
 
 int USBDeviceProxy_LibUSB::connect(libusb_device* dvc, libusb_context* _context) {
