@@ -18,31 +18,33 @@
  * along with this program; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
+ *
+ * USBHostProxy.h
+ *
+ * Created on: Nov 10, 2013
  */
-
-#ifndef _USBDeviceProxy_
-#define _USBDeviceProxy_
+#ifndef USBHOSTPROXY_H_
+#define USBHOSTPROXY_H_
 
 #include <linux/usb/ch9.h>
+#include "USBDevice.h"
 
-typedef void (*statusCallback)();
-
-class USBDeviceProxy{
+class USBHostProxy {
 public:
-	virtual ~USBDeviceProxy() {}
+	virtual ~USBHostProxy();
 
-	virtual int connect()=0;
+	virtual int connect(USBDevice* device)=0;
 	virtual void disconnect()=0;
 	virtual void reset()=0;
 	virtual bool is_connected()=0;
 
-	//this should be done synchronously
-	virtual int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr)=0;
+	//CLEANUP is this the best way to indicate whether there was a request?
+	//return 0 in usb_ctrlrequest->brequest if there is no request
+	virtual int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8** dataptr)=0;
 	virtual void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length)=0;
 	virtual void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length)=0;
 
-	virtual __u8 get_address()=0;
 	virtual const char* toString() {return NULL;}
 };
 
-#endif
+#endif /* USBHOSTPROXY_H_ */

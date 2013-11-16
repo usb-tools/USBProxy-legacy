@@ -18,32 +18,42 @@
  * along with this program; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
+ *
+ * USBInterfaceGroup.h
+ *
+ * Created on: Nov 6, 2013
  */
-#ifndef _MITM_Device_Enumeration_
-#define _MITM_Device_Enumeration_
+#ifndef USBINTERFACEGROUP_H_
+#define USBINTERFACEGROUP_H_
 
-#include <errno.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <pthread.h>
-#include <signal.h>
-#include <stdio.h>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/ioctl.h>
-#include <sys/poll.h>
-#include <libusb-1.0/libusb.h>
-
-#include <linux/types.h>
-#include <linux/usb/gadgetfs.h>
-#include <stdio.h>
-#include <memory.h>
-#include <asm/byteorder.h>
 #include <stdlib.h>
+#include "USBDevice.h"
+#include "USBInterface.h"
+#include "DefinitionErrors.h"
 
-int open_single_nonhub_device(libusb_device_handle** devh);
-void print_device_info(libusb_device_handle* devh);
-libusb_device_handle* get_device_handle(__u16 vendorID,__u16 productID);
+class USBDevice;
+class USBInterface;
 
-#endif
+class USBInterfaceGroup {
+	private:
+		__u8 number;
+		__u8 alternateCount;
+		USBInterface** interfaces;
+
+	public:
+		int activeAlternateIndex=-1;
+
+		USBInterfaceGroup(__u8 number);
+		~USBInterfaceGroup();
+		size_t get_full_descriptor_length();
+		void get_full_descriptor(__u8** p);
+		void add_interface(USBInterface* interface);
+		USBInterface* get_interface(__u8 alternate);
+		void print(__u8 tabs=0);
+		__u8 get_number();
+		__u8 get_alternate_count();
+		USBInterface* get_active_interface();
+		const definition_error is_defined(__u8 configId);
+};
+
+#endif /* USBINTERFACEGROUP_H_ */

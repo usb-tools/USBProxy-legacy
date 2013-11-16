@@ -1,26 +1,129 @@
-#include <linux/types.h>
-#include "USBDevice.h"
-#include "Packets.h"
-#include <memory.h>
+/*
+ * Copyright 2013 Dominic Spill
+ * Copyright 2013 Adam Stasiak
+ *
+ * This file is part of USB-MitM.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; see the file COPYING.  If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street,
+ * Boston, MA 02110-1301, USA.
+ */
 
-USBDevice::USBDevice(USBDeviceProxy* proxy) {
+#include <stdlib.h>
+#include <stdio.h>
+#include <memory.h>
+#include "USBDevice.h"
+#include "DefinitionErrors.h"
+
+//CLEANUP update active endpoints in proxied device upon set configuration request
+//CLEANUP update active configuration for the class upon set configuration request
+//CLEANUP handle any endpoints that become inactive upon set configuration request
+//CLEANUP what happends if device is HS but host is not, in terms of correct config to use,etc.
+
+
+USBDevice::USBDevice(USBDeviceProxy* _proxy) {
+	proxy=_proxy;
 	__u8 buf[18];
-	SETUP_PACKET setup_packet;
-	setup_packet.bmRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
+	usb_ctrlrequest setup_packet;
+	setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
 	setup_packet.bRequest=USB_REQ_GET_DESCRIPTOR;
-	setup_packet.wValue=USB_DT_DEVICE;
+	setup_packet.wValue=USB_DT_DEVICE<<8;
 	setup_packet.wIndex=0;
 	setup_packet.wLength=18;
-	__u16 len=0;
+	int len=0;
 	proxy->control_request(&setup_packet,&len,buf);
 	memcpy(&descriptor,buf,len);
+	int i;
+	configurations=(USBConfiguration **)calloc(descriptor.bNumConfigurations,sizeof(*configurations));
+
+	maxStringIdx=(descriptor.iManufacturer>maxStringIdx)?descriptor.iManufacturer:maxStringIdx;
+	maxStringIdx=(descriptor.iProduct>maxStringIdx)?descriptor.iProduct:maxStringIdx;
+	maxStringIdx=(descriptor.iSerialNumber>maxStringIdx)?descriptor.iSerialNumber:maxStringIdx;
+	strings=(USBString ***)calloc(maxStringIdx+1,sizeof(*strings));
+
+	add_string(0,0);
+
+	if (descriptor.iManufacturer) {add_string(descriptor.iManufacturer);}
+	if (descriptor.iProduct) {add_string(descriptor.iProduct);}
+	if (descriptor.iSerialNumber) {add_string(descriptor.iSerialNumber);}
+
+	for(i=0;i<descriptor.bNumConfigurations;i++) {
+		configurations[i]=new USBConfiguration(this,proxy,i);
+		__u8 iConfiguration=configurations[i]->get_descriptor()->iConfiguration;
+		if (iConfiguration) {add_string(iConfiguration);}
+		int j;
+		for (j=0;j<configurations[i]->get_descriptor()->bNumInterfaces;j++) {
+			int k;
+			for (k=0;k<configurations[i]->get_interface_alernate_count(j);k++) {
+				__u8 iInterface=configurations[i]->get_interface_alternate(j,k)->get_descriptor()->iInterface;
+				if (iInterface) {add_string(iInterface);}
+			}
+		}
+	}
+
+	qualifier=new USBDeviceQualifier(this,proxy);
+	//not a high speed device
+	if (!(qualifier->get_descriptor()->bLength)) {
+		delete(qualifier);
+		qualifier=NULL;
+	}
+
+	deviceState=USB_STATE_DEFAULT;
+	deviceAddress=proxy->get_address();
+	if (deviceAddress) {
+		setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
+		setup_packet.bRequest=USB_REQ_GET_CONFIGURATION;
+		setup_packet.wValue=0;
+		setup_packet.wIndex=0;
+		setup_packet.wLength=1;
+		__u8 result;
+		proxy->control_request(&setup_packet,&len,&result);
+		deviceConfigurationIndex=result;
+		deviceState=deviceConfigurationIndex?USB_STATE_CONFIGURED:USB_STATE_ADDRESS;
+	} else {
+		deviceState=USB_STATE_ADDRESS;
+		deviceConfigurationIndex=0;
+	}
+
+
 }
 
-USBDevice::USBDevice(usb_device_descriptor _descriptor) {
-	descriptor=_descriptor;
+USBDevice::USBDevice(const usb_device_descriptor* _descriptor) {
+	proxy=NULL;
+	qualifier=NULL;
+	deviceAddress=0;
+	deviceConfigurationIndex=-1;
+	deviceState=USB_STATE_NOTATTACHED;
+
+	descriptor=*_descriptor;
+	configurations=(USBConfiguration **)calloc(descriptor.bNumConfigurations,sizeof(*configurations));
+	strings=(USBString ***)calloc(1,sizeof(*strings));
+	strings[0]=(USBString **)malloc(sizeof(**strings)*2);
+	char16_t zero[]={0x0409, 0};
+	strings[0][0]=new USBString(zero,0,0);
+	strings[0][1]=NULL;
 }
 
 USBDevice::USBDevice(__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	__u8  bDeviceProtocol,	__u8  bMaxPacketSize0,	__le16 idVendor,	__le16 idProduct,	__le16 bcdDevice,	__u8  iManufacturer,	__u8  iProduct,	__u8  iSerialNumber,	__u8  bNumConfigurations) {
+	proxy=NULL;
+	qualifier=NULL;
+	deviceAddress=0;
+	deviceConfigurationIndex=-1;
+	deviceState=USB_STATE_NOTATTACHED;
+
+	descriptor.bLength=18;
+	descriptor.bDescriptorType=USB_DT_DEVICE;
 	descriptor.bcdUSB=bcdUSB;
 	descriptor.bDeviceClass=bDeviceClass;
 	descriptor.bDeviceSubClass=bDeviceSubClass;
@@ -33,394 +136,290 @@ USBDevice::USBDevice(__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	_
 	descriptor.iProduct=iProduct;
 	descriptor.iSerialNumber=iSerialNumber;
 	descriptor.bNumConfigurations=bNumConfigurations;
+	configurations=(USBConfiguration **)calloc(descriptor.bNumConfigurations,sizeof(*configurations));
+	strings=(USBString ***)calloc(1,sizeof(*strings));
+	strings[0]=(USBString **)malloc(sizeof(**strings)*2);
+	char16_t zero[]={0x0409, 0};
+	strings[0][0]=new USBString(zero,0,0);
+	strings[0][1]=NULL;
 }
 
-usb_device_descriptor USBDevice::getDescriptor() {
-	return descriptor;
+USBDevice::~USBDevice() {
+	int i;
+	if (qualifier) {delete(qualifier);}
+	for(i=0;i<descriptor.bNumConfigurations;i++) {delete(configurations[i]);}
+	free(configurations);
+	for(i=0;i<=maxStringIdx;i++) {
+		int j=0;
+		while (strings[i][j]) {
+			if (strings[i][j]) {delete(strings[i][j]);}
+			j++;
+		}
+		free(strings[i]);
+	}
+	free(strings);
+}
+
+const usb_device_descriptor* USBDevice::get_descriptor() {
+	return &descriptor;
 };
 
-/*
+void USBDevice::add_configuration(USBConfiguration* config) {
+	int value=config->get_descriptor()->bConfigurationValue;
+	if (value>descriptor.bNumConfigurations) {return;} else {value--;}
+	if (configurations[value]) {delete(configurations[value]);}
+	configurations[value]=config;
+}
 
-    Public ReadOnly Property get_request_handlers As Dictionary(Of Byte, Action(Of USBDeviceRequest)) Implements IRequest_Handler.get_request_handlers
-        Get
-            Return request_handlers
-        End Get
-    End Property
+USBConfiguration* USBDevice::get_configuration(__u8 index) {
+	if (qualifier) {return qualifier->get_configuration(index);}
+	if (index>descriptor.bNumConfigurations) {return NULL;}
+	return configurations[index-1];
+}
 
-    Public name As String = "generic_device"
-    Public maxusb_app As MAXUSBApp
-    Public verbose As Byte
-    Public strings As New List(Of String)
+void USBDevice::print(__u8 tabs) {
+	int i;
+	for(i=0;i<tabs;i++) {putchar('\t');}
+	printf("Device:");
+	for(i=0;i<sizeof(descriptor);i++) {printf(" %02x",((__u8 *)&descriptor)[i]);}
+	putchar('\n');
+	USBString* s;
+	if (descriptor.iManufacturer) {
+		s=get_manufacturer_string();
+		if (s) {
+			for(i=0;i<tabs;i++) {putchar('\t');}
+			printf("  Manufacturer: ");
+			s->print_ascii(stdout);
+			putchar('\n');
+		}
+	}
+	if (descriptor.iProduct) {
+		s=get_product_string();
+		if (s) {
+			for(i=0;i<tabs;i++) {putchar('\t');}
+			printf("  Product:      ");
+			s->print_ascii(stdout);
+			putchar('\n');
+		}
+	}
+	if (descriptor.iSerialNumber) {
+		s=get_serial_string();
+		if (s) {
+			for(i=0;i<tabs;i++) {putchar('\t');}
+			printf("  Serial:       ");
+			s->print_ascii(stdout);
+			putchar('\n');
+		}
+	}
+	for(i=0;i<descriptor.bNumConfigurations;i++) {
+		if (configurations[i]) {configurations[i]->print(tabs+1,configurations[i]==get_active_configuration()?true:false);}
+	}
+	if (qualifier) {qualifier->print(tabs);}
+}
 
-    Public usb_spec_version As UInt16
-    Public device_class As Byte
-    Public device_subclass As Byte
-    Public protocol_rel_num As Byte
-    Public max_packet_size_ep0 As Byte
-    Public vendor_id As UInt16
-    Public product_id As UInt16
-    Public device_rev As UInt16
-    Public manufacturer_string_id As UInt16
-    Public product_string_id As UInt16
-    Public serial_number_string_id As UInt16
+void USBDevice::add_string(USBString* string) {
+	__u8 index=string->get_index();
+	__u16 languageId=string->get_languageId();
+	if (index||languageId) add_language(languageId);
+	if (index>maxStringIdx) {
+		USBString*** newStrings=(USBString ***)calloc(index+1,sizeof(*newStrings));
+		if (strings) {
+			memcpy(newStrings,strings,sizeof(*newStrings)*(maxStringIdx+1));
+			free(strings);
+		}
+		strings=newStrings;
+		maxStringIdx=index;
+	}
+	if (strings[index]) {
+		int i=0;
+		while (true) {
+			if (strings[index][i]) {
+				if (strings[index][i]->get_languageId()==languageId) {
+					delete(strings[index][i]);
+					strings[index][i]=string;
+				}
+			} else {
+				strings[index]=(USBString**)realloc(strings[index],sizeof(USBString*)*(i+2));
+				strings[index][i]=string;
+				strings[index][i+1]=NULL;
+				break;
+			}
+			i++;
+		}
+	} else {
+		strings[index]=(USBString**)malloc(sizeof(USBString*)*2);
+		strings[index][0]=string;
+		strings[index][1]=NULL;
+	}
+}
 
-    Public config_num As Short
-    Public configuration As USBConfiguration
-    Public state As USB.state
-    Public ready As Boolean
-    Public address As Byte
-    Public device_vendor As USBVendor
+//adds via proxy
+void USBDevice::add_string(__u8 index,__u16 languageId) {
+	if (!proxy) {fprintf(stderr,"Can't automatically add string, no device proxy defined.\n");return;}
+	add_string(new USBString(proxy,index,languageId));
+}
 
-    Public configurations As New Dictionary(Of Byte, USBConfiguration)
-    Public endpoints As New Dictionary(Of Byte, USBEndpoint)
+//adds for all languages
+void USBDevice::add_string(__u8 index) {
+	if (!strings[0]) {return;}
+	if (!strings[0][0]) {return;}
+	const usb_string_descriptor* p=strings[0][0]->get_descriptor();
+	__u8 length=(p->bLength)>>1;
+	int i;
+	for(i=0;i<(length-1);i++) {
+		add_string(index,p->wData[i]);
+	}
+}
 
-    Public request_handlers As New Dictionary(Of Byte, Action(Of USBDeviceRequest))
-    Public descriptors As New Dictionary(Of USB.desc_type, Func(Of USBDeviceRequest, Byte()))
+USBString* USBDevice::get_string(__u8 index,__u16 languageId) {
+	if (!strings[index]) {return NULL;}
+	if (!languageId&&index) {languageId=strings[0][0]->get_descriptor()->wData[0];}
+	int i=0;
+	i=0;
+	while (true) {
+		if (strings[index][i]) {
+			if (strings[index][i]->get_languageId()==languageId) {
+				return strings[index][i];
+			}
+		} else {
+			return NULL;
+		}
+		i++;
+	}
+	return NULL;
+}
 
-    Public Sub New()
-    End Sub
+USBString* USBDevice::get_manufacturer_string(__u16 languageId) {
+	if (!descriptor.iManufacturer) {return NULL;}
+	return get_string(descriptor.iManufacturer,languageId?languageId:strings[0][0]->get_descriptor()->wData[0]);
+}
 
+USBString* USBDevice::get_product_string(__u16 languageId) {
+	if (!descriptor.iProduct) {return NULL;}
+	return get_string(descriptor.iProduct,languageId?languageId:strings[0][0]->get_descriptor()->wData[0]);
+}
 
-    Public Overridable ReadOnly Property get_device_class As USBClass Implements IRequest_Recipient.get_device_class
-        Get
-            Return Nothing
-        End Get
-    End Property
+USBString* USBDevice::get_serial_string(__u16 languageId) {
+	if (!descriptor.iSerialNumber) {return NULL;}
+	return get_string(descriptor.iSerialNumber,languageId?languageId:strings[0][0]->get_descriptor()->wData[0]);
+}
 
-    Public Overridable ReadOnly Property get_device_vendor As USBVendor Implements IRequest_Recipient.get_device_vendor
-        Get
-            Return device_vendor
-        End Get
-    End Property
+void USBDevice::add_language(__u16 languageId) {
+	int count=get_language_count();
+	int i;
+	const usb_string_descriptor* list=strings[0][0]->get_descriptor();
+	for (i=0;i<count;i++) {
+		if (languageId==list->wData[i]) {return;}
+	}
+	strings[0][0]->append_char(languageId);
+}
 
-    Public Sub New(maxusb_app As MAXUSBApp, device_class As Byte, device_subclass As Byte, protocol_rel_num As Byte, max_packet_size_ep0 As Byte, _
-                   vendor_id As UInt16, product_id As UInt16, device_rev As UInt16, manufacturer_string As String, product_string As String, _
-                   serial_number_string As String, Optional configurations() As USBConfiguration = Nothing, Optional descriptors As Dictionary(Of USB.desc_type, Func(Of USBDeviceRequest, Byte())) = Nothing, _
-                   Optional verbose As Byte = 0)
-        Me.maxusb_app = maxusb_app
-        Me.verbose = verbose
-        Me.strings = New List(Of String)
-        Me.usb_spec_version = &H1
-        Me.device_class = device_class
-        Me.device_subclass = device_subclass
-        Me.protocol_rel_num = protocol_rel_num
-        Me.max_packet_size_ep0 = max_packet_size_ep0
-        Me.vendor_id = vendor_id
-        Me.product_id = product_id
-        Me.device_rev = device_rev
-        Me.device_vendor = Nothing
+__u16 USBDevice::get_language_by_index(__u8 index) {
+	if (index>=get_language_count()) {return 0;}
+	return strings[0][0]->get_descriptor()->wData[index];
+}
 
-        Me.manufacturer_string_id = Me.get_string_id(manufacturer_string)
-        Me.product_string_id = Me.get_string_id(product_string)
-        Me.serial_number_string_id = Me.get_string_id(serial_number_string)
-        If Not descriptors Is Nothing Then Me.descriptors = descriptors
-        If Me.descriptors.ContainsKey(USB.desc_type._device) Then Me.descriptors(USB.desc_type._device) = AddressOf Me.get_descriptor Else Me.descriptors.Add(USB.desc_type._device, AddressOf Me.get_descriptor)
-        If Me.descriptors.ContainsKey(USB.desc_type._configuration) Then Me.descriptors(USB.desc_type._configuration) = AddressOf Me.handle_get_configuration_descriptor_request Else Me.descriptors.Add(USB.desc_type._configuration, AddressOf Me.handle_get_configuration_descriptor_request)
-        If Me.descriptors.ContainsKey(USB.desc_type._string) Then Me.descriptors(USB.desc_type._string) = AddressOf Me.handle_get_string_descriptor_request Else Me.descriptors.Add(USB.desc_type._string, AddressOf Me.handle_get_string_descriptor_request)
+int USBDevice::get_language_count() {
+	return strings[0][0]->get_char_count();
+}
 
-        Me.config_num = -1
-        Me.configuration = Nothing
-        If Not configurations Is Nothing Then
-            For Each c As USBConfiguration In configurations
-                Me.configurations.Add(c.configuration_index, c)
-            Next
-        End If
+USBConfiguration* USBDevice::get_active_configuration() {
+	if (deviceConfigurationIndex<0) {return NULL;}
+	if (qualifier) {return qualifier->get_configuration(deviceConfigurationIndex);}
+	return get_configuration(deviceConfigurationIndex);
+}
 
-        For Each c As USBConfiguration In configurations
-            Dim csi As UInt16 = Me.get_string_id(c.configuration_string)
-            c.set_configuration_string_index(csi)
-            c.set_device(Me)
-        Next c
+USBDeviceQualifier* USBDevice::get_device_qualifier() {
+	return qualifier;
+}
+void USBDevice::set_device_qualifier(USBDeviceQualifier* _qualifier) {
+	if (qualifier) {delete(qualifier);}
+	qualifier=_qualifier;
+}
+bool USBDevice::is_highspeed() {
+	return qualifier?true:false;
+}
 
-        Me.state = USB.state._detached
-        Me.ready = False
-        Me.address = 0
-        Me.setup_request_handlers()
-    End Sub
+const definition_error USBDevice::is_string_defined(__u8 index) {
+	if (!index) {return definition_error();}
+	if (!strings[index]) {
+		return definition_error(DE_ERR_NULL_OBJECT,0x0, DE_OBJ_STRING,index);
+	} else {
+		int lc=get_language_count();
+		int lngidx;
+		for(lngidx=0;lngidx<lc;lngidx++) {
+			__u16 langId=get_language_by_index(lngidx);
+			bool found=false;
+			int slidx=0;
+			while (strings[index][slidx] && !found) {
+				if (strings[index][slidx]->get_languageId()==langId) {found=true;}
+				slidx++;
+			}
+			if (!found) {return definition_error(DE_ERR_MISSING_LANGUAGE,langId, DE_OBJ_STRING,index);}
+		}
+	}
+	return definition_error();
+}
 
-    Public Function get_string_id(s As String)
-        If strings.Contains(s) Then
-            Return strings.IndexOf(s) + 1
-        Else
-            strings.Add(s)
-            Return strings.Count
-        End If
-    End Function
+const definition_error USBDevice::is_defined() {
+	if (descriptor.bLength!=18) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x01, DE_OBJ_DEVICE);}
+	if (descriptor.bDescriptorType!=USB_DT_DEVICE) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x02, DE_OBJ_DEVICE);}
+	//__le16 bcdUSB;
+	//__u8  bDeviceClass;
+	//__u8  bDeviceSubClass;
+	//__u8  bDeviceProtocol;
+	if (descriptor.bMaxPacketSize0!=8&&descriptor.bMaxPacketSize0!=16&&descriptor.bMaxPacketSize0!=32&&descriptor.bMaxPacketSize0!=64) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x08, DE_OBJ_DEVICE);}
+	//__le16 idVendor;
+	//__le16 idProduct;
+	//__le16 bcdDevice;
+	//__u8  iManufacturer;
+	//__u8  iProduct;
+	//__u8  iSerialNumber;
+	if (!descriptor.bNumConfigurations) {return definition_error(DE_ERR_INVALID_DESCRIPTOR,0x12, DE_OBJ_DEVICE);}
 
-    Public Sub setup_request_handlers()
-        request_handlers.Add(0, AddressOf handle_get_status_request)
-        request_handlers.Add(1, AddressOf handle_clear_feature_request)
-        request_handlers.Add(3, AddressOf handle_set_feature_request)
-        request_handlers.Add(5, AddressOf handle_set_address_request)
-        request_handlers.Add(6, AddressOf handle_get_descriptor_request)
-        request_handlers.Add(7, AddressOf handle_set_descriptor_request)
-        request_handlers.Add(8, AddressOf handle_get_configuration_request)
-        request_handlers.Add(9, AddressOf handle_set_configuration_request)
-        request_handlers.Add(10, AddressOf handle_get_interface_request)
-        request_handlers.Add(11, AddressOf handle_set_interface_request)
-        request_handlers.Add(12, AddressOf handle_synch_frame_request)
-    End Sub
+	definition_error rc=definition_error();
+	int i;
+	for (i=0;i<descriptor.bNumConfigurations;i++) {
+		if (!configurations[i]) {return definition_error(DE_ERR_NULL_OBJECT,0x0, DE_OBJ_CONFIG,i+1);}
+		if (configurations[i]->get_descriptor()->bConfigurationValue!=(i+1)) {return definition_error(DE_ERR_MISPLACED_OBJECT,configurations[i]->get_descriptor()->bConfigurationValue, DE_OBJ_CONFIG,i+1);}
+		rc=configurations[i]->is_defined(false);
+		if (rc.error) {return rc;}
+	}
 
-    Public Sub connect()
-        Me.maxusb_app.connect(Me)
-        Me.state = USB.state._powered
-    End Sub
+	if (!strings[0]||!strings[0][0]) {return definition_error(DE_ERR_NULL_OBJECT,0x0, DE_OBJ_STRING,0);}
+	int lc=get_language_count();
+	if (!lc) {return definition_error(DE_ERR_MISSING_LANGUAGE,0x0, DE_OBJ_STRING,0);}
 
-    Public Overridable Sub disconnect()
-        Me.maxusb_app.disconnect()
-        Me.state = USB.state._detached
-    End Sub
+	rc=is_string_defined(descriptor.iManufacturer);
+	if (rc.error) {return rc;}
 
-    Public Sub run()
-        Me.maxusb_app.service_irqs()
-    End Sub
+	rc=is_string_defined(descriptor.iProduct);
+	if (rc.error) {return rc;}
 
-    Public Sub ack_status_stage()
-        Me.maxusb_app.ack_status_stage()
-    End Sub
+	rc=is_string_defined(descriptor.iSerialNumber);
+	if (rc.error) {return rc;}
 
-    Public Function get_descriptor(req As USBDeviceRequest) As Byte()
-        Dim d() As Byte = New Byte() { _
-            18, _
-            1, _
-            Me.usb_spec_version \ 256 And 255, _
-            Me.usb_spec_version And 255, _
-            Me.device_class, _
-            Me.device_subclass, _
-            Me.protocol_rel_num, _
-            Me.max_packet_size_ep0, _
-            Me.vendor_id And 255, _
-            Me.vendor_id \ 256 And 255, _
-            Me.product_id And 255, _
-            Me.product_id \ 256 And 255, _
-            Me.device_rev And 255, _
-            Me.device_rev \ 256 And 255, _
-            Me.manufacturer_string_id, _
-            Me.product_string_id, _
-            Me.serial_number_string_id, _
-            Me.configurations.Count}
-        Return d
-    End Function
+	for(i=0;i<descriptor.bNumConfigurations;i++) {
+		rc=is_string_defined(configurations[i]->get_descriptor()->iConfiguration);
+		if (rc.error) {return rc;}
+		int j;
+		for (j=0;j<configurations[i]->get_descriptor()->bNumInterfaces;j++) {
+			int k;
+			for (k=0;k<configurations[i]->get_interface_alernate_count(j);k++) {
+				rc=is_string_defined(configurations[i]->get_interface_alternate(j,k)->get_descriptor()->iInterface);
+				if (rc.error) {return rc;}
+			}
+		}
+	}
 
-    Public Sub handle_request(req As USBDeviceRequest)
-        Dim recipient As IRequest_Recipient = Nothing
-        Dim handler_entity As IRequest_Handler = Nothing
-        Dim handler As Action(Of USBDeviceRequest) = Nothing
-        Dim req_type As USB.request_type = req.get_type()
+	if (qualifier) {
+		rc=qualifier->is_defined();
+		if (rc.error) {return rc;}
+		for(i=0;i<qualifier->get_descriptor()->bNumConfigurations;i++) {
+			rc=is_string_defined(qualifier->get_configuration(i)->get_descriptor()->iConfiguration);
+			if (rc.error) {return rc;}
+		}
+	}
 
-        If Me.verbose > 3 Then Debug.Print(Me.name & " received request " & req.ToString())
-        Dim recipient_type As USB.request_recipient = req.get_recipient()
-        Dim index As UInt16 = req.get_index() And &HFF
-        Select Case recipient_type
-            Case USB.request_recipient._device
-                recipient = Me
-            Case USB.request_recipient._interface
-                If Me.configuration.interfaces.ContainsKey(index) Then recipient = Me.configuration.interfaces(index)
-            Case USB.request_recipient._endpoint
-                recipient = endpoints(index)
-        End Select
-
-        Select Case req_type
-            Case USB.request_type._standard
-                handler_entity = recipient
-            Case USB.request_type._class
-                handler_entity = recipient.get_device_class
-            Case USB.request_type._vendor
-                handler_entity = recipient.get_device_vendor
-        End Select
-
-        If recipient Is Nothing Then
-            Debug.Print(Me.name & " invalid recipient, stalling")
-            Me.maxusb_app.stall_ep0()
-            Exit Sub
-        End If
-
-        If handler_entity Is Nothing Then
-            Debug.Print(Me.name & " invalid handler entity, stalling")
-            Me.maxusb_app.stall_ep0()
-            Exit Sub
-        End If
-        handler_entity.get_request_handlers.TryGetValue(req.request, handler)
-
-
-        If handler Is Nothing Then
-            Debug.Print(Me.name & " invalid handler, stalling")
-            Me.maxusb_app.stall_ep0()
-            Exit Sub
-        End If
-
-        handler(req)
-    End Sub
-
-    Sub handle_data_available(ep_num As Byte, data() As Byte)
-        If Me.state = USB.state._configured AndAlso Me.endpoints.ContainsKey(ep_num) Then
-            Dim endpoint As USBEndpoint = Me.endpoints(ep_num)
-            If Not endpoint.handler Is Nothing Then endpoint.handler(data)
-        End If
-    End Sub
-
-    Sub handle_buffer_available(ep_num As Byte)
-        If Me.state = USB.state._configured AndAlso Me.endpoints.ContainsKey(ep_num) Then
-            Dim endpoint As USBEndpoint = Me.endpoints(ep_num)
-            If Not endpoint.handler Is Nothing Then endpoint.handler(Nothing)
-        End If
-    End Sub
-
-    Sub handle_get_status_request(req As USBDeviceRequest)
-        Debug.Print(Me.name & " received GET_STATUS request")
-        Dim response() As Byte = New Byte() {&H3, &H0}
-        Me.maxusb_app.send_on_endpoint(0, response, Me.max_packet_size_ep0)
-    End Sub
-
-    Sub handle_clear_feature_request(req As USBDeviceRequest)
-        Debug.Print(Me.name & " received CLEAR_FEATURE request with type 0x" & req.request_type.ToString("X2") & " and value 0x" & req.value.ToString("X2"))
-        Me.ack_status_stage()
-    End Sub
-
-    Sub handle_set_feature_request(req As USBDeviceRequest)
-        Debug.Print(Me.name & " received SET_FEATURE request")
-    End Sub
-
-    Sub handle_set_address_request(req As USBDeviceRequest)
-        Me.address = req.value
-        Me.state = USB.state._address
-        Me.ack_status_stage()
-        If Me.verbose > 2 Then Debug.Print(Me.name & " received SET_ADDRESS request for address " & Me.address)
-    End Sub
-
-    Sub handle_get_descriptor_request(req As USBDeviceRequest)
-        Dim dtype As USB.desc_type = req.value \ 256 And 255
-        Dim dindex As Byte = req.value And 255
-        Dim lang As UInt16 = req.index
-        Dim n As UInt16 = req.length
-        Dim response() As Byte = Nothing
-        If Me.vendor_id > 2 Then Debug.Print(Me.name & " received GET_DESCRIPTOR req " & dtype & ", index " & dindex & ", language 0x" & lang.ToString("X4") & ", length " & n)
-
-        Dim responseFunc As Func(Of USBDeviceRequest, Byte()) = Nothing
-        Me.descriptors.TryGetValue(dtype, responseFunc)
-        If Not responseFunc Is Nothing Then response = responseFunc(req)
-
-        If response Is Nothing Then
-            Me.maxusb_app.stall_ep0()
-        Else
-            n = Math.Min(n, response.Length)
-            Dim tmp(n - 1) As Byte
-            Array.Copy(response, 0, tmp, 0, n)
-            Me.maxusb_app.verbose = Me.maxusb_app.verbose + 1
-            Me.maxusb_app.send_on_endpoint(0, tmp, Me.max_packet_size_ep0)
-            Me.maxusb_app.verbose = Me.maxusb_app.verbose - 1
-            If Me.verbose > 5 Then Debug.Print(Me.name & " sent " & n & " bytes in response")
-        End If
-    End Sub
-
-    Function handle_get_configuration_descriptor_request(req As USBDeviceRequest) As Byte()
-        Return Me.configurations((req.value And 255) + 1).get_descriptor(0)
-    End Function
-
-    Function handle_get_string_descriptor_request(req As USBDeviceRequest) As Byte()
-        Dim num As Byte = req.value And 255
-        If num = 0 Then
-            '# HACK: hard-coding baaaaad
-            Return New Byte() {4, 3, 9, 4}
-        Else
-            Dim s() As Byte = Unicode.GetBytes(Me.strings(num - 1))
-            Dim d(s.Length + 1) As Byte
-            d(0) = d.Length
-            d(1) = 3
-            Array.Copy(s, 0, d, 2, s.Length)
-            Return d
-        End If
-    End Function
-
-    Sub handle_set_descriptor_request(req As USBDeviceRequest)
-        Debug.Print(Me.name & " received SET_DESCRIPTOR request")
-    End Sub
-
-    Sub handle_get_configuration_request(req As USBDeviceRequest)
-        Debug.Print(Me.name & " received GET_CONFIGURATION request with data 0x" & req.value.ToString("X4"))
-    End Sub
-
-    Overridable Sub handle_set_configuration_request(req As USBDeviceRequest)
-        Debug.Print(Me.name & " received SET_CONFIGURATION request")
-        Me.config_num = req.value
-        Me.configuration = Me.configurations(Me.config_num)
-        Me.state = USB.state._configured
-        Me.endpoints = New Dictionary(Of Byte, USBEndpoint)
-        For Each i As USBInterface In Me.configuration.interfaces.Values
-            For Each e As USBEndpoint In i.endpoints.Values
-                Dim epAddr As Byte = e.number + +IIf(e.direction, 128, 0)
-                If Not endpoints.ContainsKey(epAddr) Then endpoints.Add(epAddr, e)
-            Next
-        Next
-        Me.ack_status_stage()
-    End Sub
-
-    Sub handle_get_interface_request(req As USBDeviceRequest)
-        Debug.Print(Me.name & " received GET_INTERFACE request")
-        '            # HACK: currently only support one interface
-        If req.index = 0 Then
-            Me.maxusb_app.send_on_endpoint(0, New Byte() {&H0}, Me.max_packet_size_ep0)
-        Else
-            Me.maxusb_app.stall_ep0()
-        End If
-    End Sub
-
-    Sub handle_set_interface_request(req As USBDeviceRequest)
-        Debug.Print(Me.name & " received SET_INTERFACE request")
-    End Sub
-
-    Sub handle_synch_frame_request(req As USBDeviceRequest)
-        Debug.Print(Me.name & " received SYNCH_FRAME request")
-    End Sub
-
-End Class
-
-Public Class USBDeviceRequest
-    Public request_type As Byte
-    Public request As Byte
-    Public value As UInt16
-    Public index As UInt16
-    Public length As UInt16
-
-    Public Sub New(buf() As Byte)
-        Me.request_type = buf(0)
-        Me.request = buf(1)
-        Me.value = buf(2) + buf(3) * 256
-        Me.index = buf(4) + buf(5) * 256
-        Me.length = buf(6) + buf(7) * 256
-        'If buf(0) <> 128 And buf(0) <> 0 Then Stop
-
-    End Sub
-
-    Public Overrides Function ToString() As String
-        Return "dir=" & Me.get_direction & ", type=" & Me.get_type & ", rec=" & Me.get_recipient & ", r=" & Me.request & ", v=" & Me.value & ", i=" & Me.index & ", l=" & Me.length
-    End Function
-
-    Public Function raw() As Byte()
-        Return New Byte() {Me.request_type, Me.request, Me.value And 255, (Me.value \ 256) And 255, Me.index And 255, (Me.index \ 256) And 255, Me.length And 255, (Me.length \ 256) And 255}
-    End Function
-
-    Public Function get_direction() As Byte
-        Return (Me.request_type \ 128) And &H1
-    End Function
-
-    Public Function get_type() As Byte
-        Return (Me.request_type \ 32) And &H3
-    End Function
-
-    Public Function get_recipient() As Byte
-        Return Me.request_type And &H1F
-    End Function
-
-    Public Function get_index() As UInt16
-        Dim rec As Byte = Me.get_recipient
-        Select Case rec
-            Case 1
-                Return Me.index
-            Case 2
-                Return Me.index And &HF
-        End Select
-        Return 0
-    End Function
-End Class
-*/
+	return definition_error();
+}

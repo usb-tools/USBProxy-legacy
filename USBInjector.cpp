@@ -18,31 +18,27 @@
  * along with this program; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
+ *
+ * USBInjector.cpp
+ *
+ * Created on: Nov 12, 2013
  */
+#include "USBInjector.h"
 
-#ifndef _USBDeviceProxy_
-#define _USBDeviceProxy_
+USBInjector::USBInjector(USBManager* _manager) {
+	manager=_manager;
+	halt=false;
+}
 
-#include <linux/usb/ch9.h>
+void USBInjector::listen() {
+	while (!halt) {
+		//TODO we also need to handle setup packets and getting the response back
+		USBPacket* p=get_packets();
+		if (p) {manager->inject_packet(p);}
+	}
+}
 
-typedef void (*statusCallback)();
-
-class USBDeviceProxy{
-public:
-	virtual ~USBDeviceProxy() {}
-
-	virtual int connect()=0;
-	virtual void disconnect()=0;
-	virtual void reset()=0;
-	virtual bool is_connected()=0;
-
-	//this should be done synchronously
-	virtual int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr)=0;
-	virtual void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length)=0;
-	virtual void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length)=0;
-
-	virtual __u8 get_address()=0;
-	virtual const char* toString() {return NULL;}
-};
-
-#endif
+void* USBInjector::listen_helper(void* context) {
+	((USBInjector*)context)->listen();
+	return 0;
+}

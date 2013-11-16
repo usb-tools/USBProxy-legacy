@@ -18,31 +18,40 @@
  * along with this program; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
+ *
+ * USBString.h
+ *
+ * Created on: Nov 7, 2013
  */
-
-#ifndef _USBDeviceProxy_
-#define _USBDeviceProxy_
+#ifndef USBSTRING_H_
+#define USBSTRING_H_
 
 #include <linux/usb/ch9.h>
+#include <stdio.h>
+#include "USBDeviceProxy.h"
 
-typedef void (*statusCallback)();
+class USBString {
+private:
+	usb_string_descriptor* descriptor;
+	__u16 languageId;
+	__u8  index;
 
-class USBDeviceProxy{
 public:
-	virtual ~USBDeviceProxy() {}
-
-	virtual int connect()=0;
-	virtual void disconnect()=0;
-	virtual void reset()=0;
-	virtual bool is_connected()=0;
-
-	//this should be done synchronously
-	virtual int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr)=0;
-	virtual void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length)=0;
-	virtual void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length)=0;
-
-	virtual __u8 get_address()=0;
-	virtual const char* toString() {return NULL;}
+	USBString(USBDeviceProxy* proxy,__u8 _index,__u16 _languageId);
+	USBString(const usb_string_descriptor* _descriptor,__u8 _index,__u16 _languageId);
+	//create from ascii string
+	USBString(const char* value,__u8 _index,__u16 _languageId);
+	//create from unicode string
+	USBString(const char16_t* value,__u8 _index,__u16 _languageId);
+	~USBString();
+	const usb_string_descriptor* get_descriptor();
+	__u16 get_languageId();
+	__u8  get_index();
+	void get_ascii(char* buf,int buflen);
+	void print_ascii(FILE *stream);
+	__u8 get_char_count();
+	void append_char(__u16 u);
 };
 
-#endif
+
+#endif /* USBSTRING_H_ */

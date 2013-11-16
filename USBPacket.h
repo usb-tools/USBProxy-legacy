@@ -18,31 +18,35 @@
  * along with this program; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
+ *
+ * Packet.h
+ *
+ * Created on: Nov 11, 2013
  */
-
-#ifndef _USBDeviceProxy_
-#define _USBDeviceProxy_
+#ifndef PACKET_H_
+#define PACKET_H_
 
 #include <linux/usb/ch9.h>
 
-typedef void (*statusCallback)();
+struct USBPacket {
+	__u8	bEndpoint;
+	__u16	wLength;
+	bool	filter;
+	bool	transmit;
+	__u8*	data;
 
-class USBDeviceProxy{
-public:
-	virtual ~USBDeviceProxy() {}
-
-	virtual int connect()=0;
-	virtual void disconnect()=0;
-	virtual void reset()=0;
-	virtual bool is_connected()=0;
-
-	//this should be done synchronously
-	virtual int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr)=0;
-	virtual void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length)=0;
-	virtual void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length)=0;
-
-	virtual __u8 get_address()=0;
-	virtual const char* toString() {return NULL;}
+	USBPacket(__u8 _endpoint,__u8* _data,__u16 _length,bool _filter=true) : bEndpoint(_endpoint),wLength(_length),filter(_filter),transmit(true),data(_data) {}
+	~USBPacket() {if (data) {free(data);}}
 };
 
-#endif
+struct USBSetupPacket {
+	usb_ctrlrequest ctrl_req;
+	bool	filter;
+	bool	transmit;
+	__u8*	data;
+
+	USBSetupPacket(usb_ctrlrequest _ctrl_req,__u8* _data,bool _filter=true) : ctrl_req(_ctrl_req),filter(_filter),transmit(true),data(_data) {}
+	~USBSetupPacket() {if (data) {free(data);}}
+};
+
+#endif /* PACKET_H_ */
