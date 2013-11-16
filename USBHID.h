@@ -41,7 +41,7 @@ struct usb_hid_descriptor {
 	__le16 bcdHID;
 	__u8 bCountryCode;
 	__u8 bNumDescriptors;
-	usb_hid_descriptor_record descriptors[0];
+	usb_hid_descriptor_record descriptors[1];
 } __attribute__ ((packed));
 
 class USBHID {

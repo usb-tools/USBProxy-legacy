@@ -16,7 +16,7 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, Inc., 51 Franklin Street,
 # Boston, MA 02110-1301, USA.
-TARGET=usb-enum
+TARGET=usb-mitm
 
 PLATFORM = $(shell uname -m)
 ifneq ($(PLATFORM), armv7l)
@@ -29,10 +29,11 @@ else
 endif
 
 # CPPFLAGS = compiler options for C and C++
-CPPFLAGS = -Wall -g -Os -mthumb -fdata-sections -ffunction-sections -MMD $(OPTIONS)
+CPPFLAGS = -Wall -g -Os -mthumb -fdata-sections -ffunction-sections -MMD $(OPTIONS) -I/usr/src
 
 # compiler options for C++ only
-CXXFLAGS = -std=gnu++0x -felide-constructors -fno-exceptions -fno-rtti
+#CXXFLAGS = -std=gnu++98 -felide-constructors -fno-exceptions -fno-rtti
+CXXFLAGS = -std=c++98 -pedantic -felide-constructors -fno-exceptions -fno-rtti
 
 # compiler options for C only
 CFLAGS =
@@ -45,7 +46,7 @@ else
 	LIBUSB = usb-1.0
 endif
 
-LDFLAGS += -l$(LIBUSB) -ludev -lstdc++ -lpthread -lusb-gadget
+LDFLAGS += -l$(LIBUSB) -ludev -lstdc++ -lpthread -lusb-gadget -lboost_atomic
 
 C_FILES := $(wildcard *.c) 
 CPP_FILES := $(wildcard *.cpp) 

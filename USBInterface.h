@@ -40,7 +40,7 @@ class USBDevice;
 struct USBGenericDescriptor {
 	__u8  bLength;
 	__u8  bDescriptorType;
-	__u8 bData[0];
+	__u8 bData[1];
 } __attribute__ ((packed));
 
 class USBConfiguration;

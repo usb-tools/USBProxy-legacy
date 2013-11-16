@@ -72,10 +72,10 @@ USBString::USBString(const char* value,__u8 _index,__u16 _languageId) {
 }
 
 //create from unicode-LE16 string
-USBString::USBString(const char16_t* value,__u8 _index,__u16 _languageId) {
+USBString::USBString(const __u16* value,__u8 _index,__u16 _languageId) {
 	index=_index;
 	languageId=_languageId;
-	const char16_t* p=value;
+	const __u16* p=value;
 	int len=0;
 	while (*p++) {len++;}
 	descriptor=(usb_string_descriptor *)calloc(len+1,2);

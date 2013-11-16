@@ -41,7 +41,7 @@ class USBInterfaceGroup {
 		USBInterface** interfaces;
 
 	public:
-		int activeAlternateIndex=-1;
+		int activeAlternateIndex;
 
 		USBInterfaceGroup(__u8 number);
 		~USBInterfaceGroup();

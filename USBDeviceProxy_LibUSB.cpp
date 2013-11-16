@@ -31,6 +31,10 @@ int USBDeviceProxy_LibUSB::debugLevel=0;
 
 USBDeviceProxy_LibUSB::USBDeviceProxy_LibUSB(int vendorId,int productId,bool includeHubs)
 {
+	context=NULL;
+	dev_handle=NULL;
+	privateContext=true;
+	privateDevice=true;
 	desired_vid=vendorId;
 	desired_pid=productId;
 	desired_hubs=includeHubs;
@@ -139,7 +143,7 @@ void USBDeviceProxy_LibUSB::reset() {
 }
 
 bool USBDeviceProxy_LibUSB::is_connected() {
-	return dev_handle?true:false;
+	if (dev_handle) {return true;} else {return false;}
 }
 
 const char* USBDeviceProxy_LibUSB::toString() {

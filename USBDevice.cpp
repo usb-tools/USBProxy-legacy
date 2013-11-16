@@ -33,7 +33,12 @@
 
 
 USBDevice::USBDevice(USBDeviceProxy* _proxy) {
-	proxy=_proxy;
+	hostConfigurationIndex=-1;
+	hostAddress=-1;
+	hostState=USB_STATE_NOTATTACHED;
+    maxStringIdx=0;
+
+    proxy=_proxy;
 	__u8 buf[18];
 	usb_ctrlrequest setup_packet;
 	setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
@@ -100,7 +105,12 @@ USBDevice::USBDevice(USBDeviceProxy* _proxy) {
 }
 
 USBDevice::USBDevice(const usb_device_descriptor* _descriptor) {
-	proxy=NULL;
+	hostConfigurationIndex=-1;
+	hostAddress=-1;
+	hostState=USB_STATE_NOTATTACHED;
+    maxStringIdx=0;
+
+    proxy=NULL;
 	qualifier=NULL;
 	deviceAddress=0;
 	deviceConfigurationIndex=-1;
@@ -110,12 +120,17 @@ USBDevice::USBDevice(const usb_device_descriptor* _descriptor) {
 	configurations=(USBConfiguration **)calloc(descriptor.bNumConfigurations,sizeof(*configurations));
 	strings=(USBString ***)calloc(1,sizeof(*strings));
 	strings[0]=(USBString **)malloc(sizeof(**strings)*2);
-	char16_t zero[]={0x0409, 0};
+	__u16 zero[]={0x0409, 0};
 	strings[0][0]=new USBString(zero,0,0);
 	strings[0][1]=NULL;
 }
 
 USBDevice::USBDevice(__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	__u8  bDeviceProtocol,	__u8  bMaxPacketSize0,	__le16 idVendor,	__le16 idProduct,	__le16 bcdDevice,	__u8  iManufacturer,	__u8  iProduct,	__u8  iSerialNumber,	__u8  bNumConfigurations) {
+	hostConfigurationIndex=-1;
+	hostAddress=-1;
+	hostState=USB_STATE_NOTATTACHED;
+    maxStringIdx=0;
+
 	proxy=NULL;
 	qualifier=NULL;
 	deviceAddress=0;
@@ -139,7 +154,7 @@ USBDevice::USBDevice(__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	_
 	configurations=(USBConfiguration **)calloc(descriptor.bNumConfigurations,sizeof(*configurations));
 	strings=(USBString ***)calloc(1,sizeof(*strings));
 	strings[0]=(USBString **)malloc(sizeof(**strings)*2);
-	char16_t zero[]={0x0409, 0};
+	__u16 zero[]={0x0409, 0};
 	strings[0][0]=new USBString(zero,0,0);
 	strings[0][1]=NULL;
 }

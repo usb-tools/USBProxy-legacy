@@ -27,10 +27,10 @@
 
 class USBDeviceProxy_LibUSB:public USBDeviceProxy {
 private:
-	libusb_context* context=NULL;
-	libusb_device_handle* dev_handle=NULL;
-	bool privateContext=true;
-	bool privateDevice=true;
+	libusb_context* context;
+	libusb_device_handle* dev_handle;
+	bool privateContext;
+	bool privateDevice;
 	int desired_vid;
 	int desired_pid;
 	bool desired_hubs;

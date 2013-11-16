@@ -41,19 +41,19 @@ class USBDeviceQualifier;
 
 class USBDevice {
 private:
-	int hostAddress=-1;
+	int hostAddress;
 	int deviceAddress;
-	usb_device_state hostState=USB_STATE_NOTATTACHED;
+	usb_device_state hostState;
 	usb_device_state deviceState;
 
-	int hostConfigurationIndex=-1;
+	int hostConfigurationIndex;
 	int deviceConfigurationIndex;
 
 	usb_device_descriptor descriptor;
     USBConfiguration** configurations;
     //this is set up like strings[stringID][array of all languages]
     USBString ***strings;
-    int maxStringIdx=0;
+    int maxStringIdx;
     USBDeviceProxy* proxy;
     void add_language(__u16);
     USBDeviceQualifier* qualifier;

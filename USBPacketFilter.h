@@ -34,47 +34,80 @@
 #include "USBPacket.h"
 
 struct packet_filter_endpoint {
-	__u8 address=0;
-	__u8 addressMask=0;
-	__u8 attributes=0;
-	__u8 attributesMask=0;
-	__u16 packetSizeMin=0;
-	__u16 packetSizeMax=65535;
-	__u8 intervalMin=0;
-	__u8 intervalMax=255;
+	__u8 address;
+	__u8 addressMask;
+	__u8 attributes;
+	__u8 attributesMask;
+	__u16 packetSizeMin;
+	__u16 packetSizeMax;
+	__u8 intervalMin;
+	__u8 intervalMax;
+
+	packet_filter_endpoint():
+		address(0),
+		addressMask(0),
+		attributes(0),
+		attributesMask(0),
+		packetSizeMin(0),
+		packetSizeMax(65536),
+		intervalMin(0),
+		intervalMax(255) {}
 };
 
 struct packet_filter_interface {
-	short number=-1;
-	short alternate=-1;
-	short deviceClass=-1;
-	short subClass=-1;
-	short protocol=-1;
+	short number;
+	short alternate;
+	short deviceClass;
+	short subClass;
+	short protocol;
+
+	packet_filter_interface():
+		number(-1),
+		alternate(-1),
+		deviceClass(-1),
+		subClass(-1),
+		protocol(-1) {}
 };
 
 struct packet_filter_configuration {
-	short number=-1;
-	__u8 attributes=0;
-	__u8 attributesMask=0;
-	__u8 highSpeed=255;
+	short number;
+	__u8 attributes;
+	__u8 attributesMask;
+	__u8 highSpeed;
+
+	packet_filter_configuration():
+		number(-1),
+		attributes(0),
+		attributesMask(0),
+		highSpeed(255) {}
 };
 
 struct packet_filter_device {
-	short deviceClass=-1;
-	short subClass=-1;
-	short protocol=-1;
-	__u8 ep0packetSizeMin=0;
-	__u8 ep0packetSizeMax=255;
-	int vendor=-1;
-	int product=-1;
-	int release=-1;
+	short deviceClass;
+	short subClass;
+	short protocol;
+	__u8 ep0packetSizeMin;
+	__u8 ep0packetSizeMax;
+	int vendor;
+	int product;
+	int release;
+
+	packet_filter_device():
+		deviceClass(-1),
+		subClass(-1),
+		protocol(-1),
+		ep0packetSizeMin(0),
+		ep0packetSizeMax(255),
+		vendor(-1),
+		product(-1),
+		release(-1) {}
 };
 
 class USBPacketFilter {
 private:
-	__u8 packetHeader[8]={0,0,0,0,0,0,0,0};
-	__u8 packetHeaderMask[8]={0,0,0,0,0,0,0,0};
-	__u8 packetHeaderMaskLength=0;
+	__u8 packetHeader[8];
+	__u8 packetHeaderMask[8];
+	__u8 packetHeaderMaskLength;
 
 public:
 	packet_filter_endpoint endpoint;
@@ -83,7 +116,11 @@ public:
 	packet_filter_device device;
 
 
-	USBPacketFilter();
+	USBPacketFilter() {
+		int i;
+		for (i=0;i<8;i++) {packetHeader[i]=0;packetHeaderMask[i]=0;}
+		packetHeaderMaskLength=0;
+	}
 	virtual ~USBPacketFilter();
 
 	virtual void filter_packet(USBPacket* packet)=0;

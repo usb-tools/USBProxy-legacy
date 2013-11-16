@@ -32,6 +32,7 @@
 USBInterfaceGroup::USBInterfaceGroup(__u8 _number) {
 	number=_number;
 	alternateCount=0;
+	activeAlternateIndex=-1;
 	interfaces=NULL;
 }
 USBInterfaceGroup::~USBInterfaceGroup() {

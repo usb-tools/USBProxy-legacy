@@ -42,7 +42,7 @@ public:
 	//create from ascii string
 	USBString(const char* value,__u8 _index,__u16 _languageId);
 	//create from unicode string
-	USBString(const char16_t* value,__u8 _index,__u16 _languageId);
+	USBString(const __u16* value,__u8 _index,__u16 _languageId);
 	~USBString();
 	const usb_string_descriptor* get_descriptor();
 	__u16 get_languageId();

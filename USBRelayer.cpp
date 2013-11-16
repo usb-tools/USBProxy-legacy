@@ -184,4 +184,4 @@ void USBRelayer::relay() {
 void* USBRelayer::relay_helper(void* context) {
 	((USBRelayer*)context)->relay();
 	return 0;
-};
+}
