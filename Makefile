@@ -18,18 +18,15 @@
 # Boston, MA 02110-1301, USA.
 TARGET=usb-enum
 
-<<<<<<< HEAD
-CROSS_COMPILE ?= /opt/gcc-linaro-arm-linux-gnueabihf/bin/arm-linux-gnueabihf-
-
-CC = $(CROSS_COMPILE)gcc
-CXX = $(CROSS_COMPILE)g++
-=======
 PLATFORM = $(shell uname -m)
 ifneq ($(PLATFORM), armv7l)
 	CROSS_COMPILE ?= /opt/gcc-linaro-arm-linux-gnueabihf/bin/arm-linux-gnueabihf-
 	CC = $(CROSS_COMPILE)gcc
+	CXX = $(CROSS_COMPILE)g++
+else
+	CC = /usr/bin/gcc
+	CXX = /usr/bin/g++
 endif
->>>>>>> 79f04be26057c3fd38ce85f7713e5c9b347aa8db
 
 # CPPFLAGS = compiler options for C and C++
 CPPFLAGS = -Wall -g -Os -mthumb -fdata-sections -ffunction-sections -MMD $(OPTIONS)
@@ -53,6 +50,7 @@ LDFLAGS += -l$(LIBUSB) -ludev
 C_FILES := $(wildcard *.c) 
 CPP_FILES := $(wildcard *.cpp) 
 OBJS := $(C_FILES:.c=.o) $(CPP_FILES:.cpp=.o)
+HEADERS := $(C_FILES:.c=.h) $(CPP_FILES:.cpp=.h)
 
 all: $(TARGET)
 
