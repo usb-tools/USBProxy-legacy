@@ -29,7 +29,7 @@ else
 endif
 
 # CPPFLAGS = compiler options for C and C++
-CPPFLAGS = -Wall -g -Os -mthumb -fdata-sections -ffunction-sections -MMD $(OPTIONS) -I/usr/src
+CPPFLAGS = -Wall -g -Os -mthumb -fdata-sections -ffunction-sections -MMD -MP $(OPTIONS) -I/usr/src
 
 # compiler options for C++ only
 #CXXFLAGS = -std=gnu++98 -felide-constructors -fno-exceptions -fno-rtti
@@ -46,12 +46,16 @@ else
 	LIBUSB = usb-1.0
 endif
 
+LDFLAGS = -Os -Wl,--gc-sections 
 LDFLAGS += -l$(LIBUSB) -ludev -lstdc++ -lpthread -lusb-gadget -lboost_atomic
 
 C_FILES := $(wildcard *.c) 
 CPP_FILES := $(wildcard *.cpp) 
 OBJS := $(C_FILES:.c=.o) $(CPP_FILES:.cpp=.o)
 HEADERS := $(C_FILES:.c=.h) $(CPP_FILES:.cpp=.h)
+
+-include $(C_FILES:.c=.d)
+-include $(CPP_FILES:.cpp=.d)
 
 all: $(TARGET)
 
