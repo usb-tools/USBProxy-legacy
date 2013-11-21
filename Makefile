@@ -28,7 +28,7 @@ else
 endif
 
 # CPPFLAGS = compiler options for C and C++
-CPPFLAGS = -Wall -g -Os -mthumb -fdata-sections -ffunction-sections -MMD -MP $(OPTIONS) -I/usr/src -I/usr/include -I/usr/local/include
+CPPFLAGS = -Wall -g -Os -mthumb -fdata-sections -ffunction-sections $(OPTIONS) -I/usr/src -I/usr/include -I/usr/local/include
 
 # compiler options for C++ only
 #CXXFLAGS = -std=gnu++98 -felide-constructors -fno-exceptions -fno-rtti
@@ -45,8 +45,7 @@ else
 	LIBUSB = usb-1.0
 endif
 
-C_LDFLAGS += $(LDFLAGS) -l$(LIBUSB) -ludev -lpthread
-CXX_LDFLAGS += $(C_LDFLAGS) -lstdc++ -lboost_atomic
+LDFLAGS += -l$(LIBUSB) -ludev -lpthread -lstdc++ -lboost_atomic
 
 C_FILES   := device_enumeration.c 
 CPP_FILES := USBConfiguration.cpp \
@@ -64,25 +63,22 @@ CPP_FILES := USBConfiguration.cpp \
 			 USBInterface.cpp \
 			 USBString.cpp
 
-C_OBJS    := $(C_FILES:.c=.o)
-CPP_OBJS  := $(CPP_FILES:.cpp=.o)
-OBJS      := $(C_OBJS) $(CPP_OBJS)
-HEADERS   := $(C_FILES:.c=.h) $(CPP_FILES:.cpp=.h)
+C_OBJS      := $(C_FILES:.c=.o)
+CPP_OBJS    := $(CPP_FILES:.cpp=.o)
+OBJS        := $(C_OBJS) $(CPP_OBJS)
+C_HEADERS   := $(C_FILES:.c=.h)
+CPP_HEADERS := $(CPP_FILES:.cpp=.h)
 
 all: usb-mitm
 
-list:
-	echo "blah"
-	echo $(OBJS)
+$(C_OBJS): $(C_FILES) $(C_HEADERS)
+	$(CC) $(CFLAGS) -o $@ -c $(@:.o=.c)
 
-$(C_OBJS): $(C_FILES)
-	$(CC) $(CFLAGS) -o $@ -c $(@:.o=.c) $(C_LDFLAGS)
-
-$(CPP_OBJS): $(CPP_FILES)
-	$(CXX) $(CXXFLAGS) -o $@ -c $(@:.o=.cpp) $(CXX_LDFLAGS)
+$(CPP_OBJS): $(CPP_FILES) $(CPP_HEADERS)
+	$(CXX) $(CXXFLAGS) -o $@ -c $(@:.o=.cpp)
 
 usb-mitm: $(OBJS)
-	$(CXX) $(CXXFLAGS) -Wl,--gc-sections -o $@ $@.cpp $(OBJS) $(CXX_LDFLAGS)
+	$(CXX) $(CXXFLAGS) -Wl,--gc-sections -o $@ $@.cpp $(OBJS) $(LDFLAGS)
 
 
 clean:
