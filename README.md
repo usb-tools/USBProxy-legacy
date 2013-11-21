@@ -1,6 +1,12 @@
 USB Man-in-the-Middle
 =====================
 
+Status
+------
+This project is in the very early stages (pre-alpha), it should be assumesd that
+it is currently non-functional. In fact, there are many occasions on which it
+doesn't compile.
+
 What?
 -----
 A man in the middle device for USB connections using the BeagleBone Black
@@ -14,21 +20,9 @@ platform and I wanted to tinker with the USB device side.  There was also an
 article on Hack a Day about sniffing USB with the BeagleBoard-xM, but on further
 inspection, it would only build against a relatively old kernel version.
 
-How?
-----
-As root, or using sudo:
-
-    # modprobe gadgetfs
-    # mkdir /gadget
-    # mount -t gadgetfs none /gadget
-    # usb-mitm -d -v <vendorId> -p <productId>
-
-Then, open a second connection to the BBB and run tshark to dump packets:
-
-    # tshark -i usbmon1 -w /tmp/capture.pcap
-
 ToDo
 ----
+ * Pretty much everything!
  * Bulk transfers
  * Interrupt transfers
  * Asynchronous I/O
@@ -47,6 +41,12 @@ same license, as shown in the files.
 
 FAQ
 ---
+Q. I need support!
+
+A. Me too buddy, me too.  Let's hug it out.  Your best chance of getting
+support is to contact me on IRC (#usb-mitm on freenode.net), raise an issue on
+GitHub or email me directly.
+
 Q. How is this different to using usbmon on the host?
 
 A. It isn't.  Although there are situations where you may not be able to access
