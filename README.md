@@ -3,8 +3,9 @@ USB Man-in-the-Middle
 
 Status
 ------
-This project is in the very early stages, it should be assumesd that it is 
-currently non-functional.
+This project is in the very early stages (pre-alpha), it should be assumesd that
+it is currently non-functional. In fact, there are many occasions on which it
+doesn't compile.
 
 What?
 -----
@@ -40,6 +41,12 @@ same license, as shown in the files.
 
 FAQ
 ---
+Q. I need support!
+
+A. Me too buddy, me too.  Let's hug it out.  Your best chance of getting
+support is to contact me on IRC (#usb-mitm on freenode.net), raise an issue on
+GitHub or email me directly.
+
 Q. How is this different to using usbmon on the host?
 
 A. It isn't.  Although there are situations where you may not be able to access
