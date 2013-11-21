@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <memory.h>
 #include "USBInterfaceGroup.h"
+#include "TRACE.h"
 
 USBInterfaceGroup::USBInterfaceGroup(__u8 _number) {
 	number=_number;
@@ -38,8 +39,14 @@ USBInterfaceGroup::USBInterfaceGroup(__u8 _number) {
 USBInterfaceGroup::~USBInterfaceGroup() {
 	if (interfaces) {
 		int i;
-		for(i=0;i<alternateCount;i++) {delete(interfaces[i]);}
+		for(i=0;i<alternateCount;i++) {
+			if (interfaces[i]) {
+				delete(interfaces[i]);
+				interfaces[i]=NULL;
+			}
+		}
 		free(interfaces);
+		interfaces=NULL;
 	}
 }
 
@@ -62,11 +69,12 @@ void USBInterfaceGroup::add_interface(USBInterface* interface) {
 		if (alternateCount) {
 			memcpy(newInterfaces,interfaces,sizeof(*interfaces)*alternateCount);
 			free(interfaces);
+			/* not needed interaces=NULL; */
 		}
 		interfaces=newInterfaces;
 		alternateCount=alternate+1;
 	} else {
-		if (interfaces[alternate]) {delete(interfaces[alternate]);}
+		if (interfaces[alternate]) {delete(interfaces[alternate]);/* not needed interfaces[alternate]=NULL;*/}
 	}
 	interfaces[alternate]=interface;
 }

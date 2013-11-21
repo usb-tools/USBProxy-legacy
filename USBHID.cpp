@@ -53,7 +53,10 @@ USBHID::USBHID(__u16 bcdHID,__u8 bCountryCode,__u8 bNumDescriptors,usb_hid_descr
 }
 
 USBHID::~USBHID() {
-	free(descriptor);
+	if (descriptor) {
+		free(descriptor);
+		descriptor=NULL;
+	}
 }
 
 const usb_hid_descriptor* USBHID::get_descriptor() {

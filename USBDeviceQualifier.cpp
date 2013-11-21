@@ -82,8 +82,14 @@ USBDeviceQualifier::USBDeviceQualifier(USBDevice* _device,__le16 bcdUSB,	__u8  b
 USBDeviceQualifier::~USBDeviceQualifier() {
 	int i;
 	if (configurations) {
-		for(i=0;i<descriptor.bNumConfigurations;i++) {delete(configurations[i]);}
+		for(i=0;i<descriptor.bNumConfigurations;i++) {
+			if (configurations[i]) {
+				delete(configurations[i]);
+				configurations[i]=NULL;
+			}
+		}
 		free(configurations);
+		configurations=NULL;
 	}
 }
 
@@ -94,7 +100,7 @@ const usb_qualifier_descriptor* USBDeviceQualifier::get_descriptor() {
 void USBDeviceQualifier::add_configuration(USBConfiguration* config) {
 	int value=config->get_descriptor()->bConfigurationValue;
 	if (value>descriptor.bNumConfigurations) {return;} else {value--;}
-	if (configurations[value]) {delete(configurations[value]);}
+	if (configurations[value]) {delete(configurations[value]);/* not needed configurations[value]=NULL; */}
 	configurations[value]=config;
 }
 

@@ -24,10 +24,11 @@
  * Created on: Nov 11, 2013
  */
 #include "USBRelayer.h"
+#include "TRACE.h"
 
 USBRelayer::USBRelayer(USBEndpoint* _endpoint,USBDeviceProxy* _device,USBHostProxy* _host,boost::lockfree::queue<USBPacket*>* _queue) {
 	endpoint=_endpoint;
-	if (endpoint->get_descriptor()->bEndpointAddress) {fprintf(stderr,"Wrong queue type for EP%d relayer.\n",endpoint->get_descriptor()->bEndpointAddress);}
+	if (!endpoint->get_descriptor()->bEndpointAddress) {fprintf(stderr,"Wrong queue type for EP%d relayer.\n",endpoint->get_descriptor()->bEndpointAddress);}
 	device=_device;
 	host=_host;
 	queue_ep0=NULL;
@@ -50,7 +51,10 @@ USBRelayer::USBRelayer(USBEndpoint* _endpoint,USBDeviceProxy* _device,USBHostPro
 }
 
 USBRelayer::~USBRelayer() {
-	if (filters) {free(filters);}
+	if (filters) {
+		free(filters);
+		filters=NULL;
+	}
 }
 
 void USBRelayer::add_filter(USBPacketFilter* filter) {
@@ -64,6 +68,7 @@ void USBRelayer::add_filter(USBPacketFilter* filter) {
 }
 
 void USBRelayer::relay_ep0() {
+	TRACE1(endpoint->get_descriptor()->bEndpointAddress);
 	__u8 bmAttributes=endpoint->get_descriptor()->bmAttributes;
 	__u16 maxPacketSize=endpoint->get_descriptor()->wMaxPacketSize;
 	__u8* buf;
@@ -95,8 +100,9 @@ void USBRelayer::relay_ep0() {
 				host->send_data(0,bmAttributes,maxPacketSize,NULL,0);
 			}
 			delete(p);
+			/* not needed p=NULL; */
 		}
-		if (queue->pop(p)) {
+		if (queue_ep0->pop(p)) {
 			__u8 i=0;
 			while (i<filterCount && p->filter) {
 				if (filters[i]->test_setup_packet(p)) {filters[i]->filter_setup_packet(p);}
@@ -120,6 +126,7 @@ void USBRelayer::relay_ep0() {
 
 			//TODO send this data back to the injector somehow
 			delete(p);
+			/* not needed p=NULL; */
 		}
 	}
 }
@@ -127,6 +134,7 @@ void USBRelayer::relay_ep0() {
 void USBRelayer::relay() {
 	__u8 epAddress=endpoint->get_descriptor()->bEndpointAddress;
 	if (!epAddress) {relay_ep0();return;}
+	TRACE1(epAddress);
 	__u8 bmAttributes=endpoint->get_descriptor()->bmAttributes;
 	__u16 maxPacketSize=endpoint->get_descriptor()->wMaxPacketSize;
 	__u8* buf;
@@ -144,6 +152,7 @@ void USBRelayer::relay() {
 				}
 				if (p->transmit) {host->send_data(epAddress,bmAttributes,maxPacketSize,p->data,p->wLength);}
 				delete(p);
+				/* not needed p=NULL; */
 			}
 			if (queue->pop(p)) {
 				__u8 i=0;
@@ -153,6 +162,7 @@ void USBRelayer::relay() {
 				}
 				if (p->transmit) {host->send_data(epAddress,bmAttributes,maxPacketSize,p->data,p->wLength);}
 				delete(p);
+				/* not needed p=NULL; */
 			}
 		}
 	} else {
@@ -167,6 +177,7 @@ void USBRelayer::relay() {
 				}
 				if (p->transmit) {device->send_data(epAddress,bmAttributes,maxPacketSize,p->data,p->wLength);}
 				delete(p);
+				/* not needed p=NULL; */
 			}
 			if (queue->pop(p)) {
 				__u8 i=0;
@@ -176,6 +187,7 @@ void USBRelayer::relay() {
 				}
 				if (p->transmit) {device->send_data(epAddress,bmAttributes,maxPacketSize,p->data,p->wLength);}
 				delete(p);
+				/* not needed p=NULL; */
 			}
 		}
 	}

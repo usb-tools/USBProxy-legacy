@@ -91,15 +91,31 @@ USBInterface::USBInterface(USBConfiguration* _configuration,__u8 bInterfaceNumbe
 
 USBInterface::~USBInterface() {
 	int i;
-	for(i=0;i<descriptor.bNumEndpoints;i++) {delete(endpoints[i]);}
-	free(endpoints);
-	if (hid_descriptor) {delete(hid_descriptor);}
-	i=0;
-	while (generic_descriptors[i]) {
-		free(generic_descriptors[i]);
-		i++;
+	if (endpoints) {
+		for(i=0;i<descriptor.bNumEndpoints;i++) {
+			if (endpoints[i]) {
+				delete(endpoints[i]);
+				endpoints[i]=NULL;
+			}
+		}
+		free(endpoints);
+		endpoints=NULL;
 	}
-	free(generic_descriptors);}
+	if (hid_descriptor) {
+		delete(hid_descriptor);
+		hid_descriptor=NULL;
+	}
+	i=0;
+	if (generic_descriptors) {
+		while (generic_descriptors[i]) {
+			free(generic_descriptors[i]);
+			generic_descriptors[i]=NULL;
+			i++;
+		}
+		free(generic_descriptors);
+		generic_descriptors=NULL;
+	}
+}
 
 const usb_interface_descriptor* USBInterface::get_descriptor() {
 	return &descriptor;
@@ -138,6 +154,7 @@ void USBInterface::add_endpoint(USBEndpoint* endpoint) {
 		} else {
 			if (endpoints[i]->get_descriptor()->bEndpointAddress==endpoint->get_descriptor()->bEndpointAddress) {
 				delete(endpoints[i]);
+				/* not needed endpoints[i]=NULL; */
 				endpoints[i]=endpoint;
 				break;
 			}

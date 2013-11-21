@@ -29,6 +29,7 @@
 #include <memory.h>
 #include "USBConfiguration.h"
 #include "DefinitionErrors.h"
+#include "TRACE.h"
 
 USBConfiguration::USBConfiguration(USBDevice* _device,USBDeviceProxy* proxy, int idx,bool highSpeed)
 {
@@ -93,9 +94,16 @@ USBConfiguration::USBConfiguration(USBDevice* _device,__u16 wTotalLength,__u8 bN
 }
 
 USBConfiguration::~USBConfiguration() {
-	int i;
-	for(i=0;i<descriptor.bNumInterfaces;i++) {delete(interfaceGroups[i]);}
-	free(interfaceGroups);
+	if (interfaceGroups) {
+		int i;
+		for(i=0;i<descriptor.bNumInterfaces;i++) {
+			if (interfaceGroups[i]) {
+				delete(interfaceGroups[i]);
+				interfaceGroups[i]=NULL;}
+		}
+		free(interfaceGroups);
+		interfaceGroups=NULL;
+	}
 }
 
 const usb_config_descriptor* USBConfiguration::get_descriptor() {

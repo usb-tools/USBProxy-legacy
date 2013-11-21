@@ -89,7 +89,10 @@ USBString::USBString(const __u16* value,__u8 _index,__u16 _languageId) {
 }
 
 USBString::~USBString() {
-	if (descriptor) {free(descriptor);}
+	if (descriptor) {
+		free(descriptor);
+		descriptor=NULL;
+	}
 }
 
 void USBString::get_ascii(char* buf,int buflen) {
@@ -122,6 +125,7 @@ void USBString::print_ascii(FILE *stream) {
 	get_ascii(buf,strlen+1);
 	fprintf(stream,"%s",buf);
 	free(buf);
+	/* not needed buf=NULL; */
 }
 
 void USBString::append_char(__u16 u) {

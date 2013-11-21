@@ -162,18 +162,37 @@ USBDevice::USBDevice(__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	_
 
 USBDevice::~USBDevice() {
 	int i;
-	if (qualifier) {delete(qualifier);}
-	for(i=0;i<descriptor.bNumConfigurations;i++) {delete(configurations[i]);}
-	free(configurations);
-	for(i=0;i<=maxStringIdx;i++) {
-		int j=0;
-		while (strings[i][j]) {
-			if (strings[i][j]) {delete(strings[i][j]);}
-			j++;
-		}
-		free(strings[i]);
+	if (qualifier) {
+		delete(qualifier);
+		qualifier=NULL;
 	}
-	free(strings);
+	if (configurations) {
+		for(i=0;i<descriptor.bNumConfigurations;i++) {
+			if (configurations[i]) {
+				delete(configurations[i]);
+				configurations[i]=NULL;
+			}
+		}
+		free(configurations);
+		configurations=NULL;
+	}
+	if (strings) {
+		for(i=0;i<=maxStringIdx;i++) {
+			if (strings[i]) {
+				int j=0;
+				while (strings[i][j]) {
+					if (strings[i][j]) {
+						delete(strings[i][j]);
+						strings[i][j]=NULL;}
+					j++;
+				}
+				free(strings[i]);
+				strings[i]=NULL;
+			}
+		}
+		free(strings);
+		strings=NULL;
+	}
 }
 
 const usb_device_descriptor* USBDevice::get_descriptor() {
@@ -183,7 +202,7 @@ const usb_device_descriptor* USBDevice::get_descriptor() {
 void USBDevice::add_configuration(USBConfiguration* config) {
 	int value=config->get_descriptor()->bConfigurationValue;
 	if (value>descriptor.bNumConfigurations) {return;} else {value--;}
-	if (configurations[value]) {delete(configurations[value]);}
+	if (configurations[value]) {delete(configurations[value]);/* not needed configurations[value]=NULL; */}
 	configurations[value]=config;
 }
 
@@ -242,6 +261,7 @@ void USBDevice::add_string(USBString* string) {
 		if (strings) {
 			memcpy(newStrings,strings,sizeof(*newStrings)*(maxStringIdx+1));
 			free(strings);
+			/*not needed strings=NULL;*/
 		}
 		strings=newStrings;
 		maxStringIdx=index;
@@ -252,6 +272,7 @@ void USBDevice::add_string(USBString* string) {
 			if (strings[index][i]) {
 				if (strings[index][i]->get_languageId()==languageId) {
 					delete(strings[index][i]);
+					/* not needed strings[index][i]=NULL; */
 					strings[index][i]=string;
 				}
 			} else {
@@ -349,7 +370,7 @@ USBDeviceQualifier* USBDevice::get_device_qualifier() {
 	return qualifier;
 }
 void USBDevice::set_device_qualifier(USBDeviceQualifier* _qualifier) {
-	if (qualifier) {delete(qualifier);}
+	if (qualifier) {delete(qualifier);/* not needed qualifier=NULL; */}
 	qualifier=_qualifier;
 }
 bool USBDevice::is_highspeed() {

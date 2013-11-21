@@ -60,9 +60,10 @@ bool USBHostProxy_GadgetFS::is_connected() {
 }
 
 //return 0 in usb_ctrlrequest->brequest if there is no request
-int USBHostProxy_GadgetFS::control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8** dataptr) {
+int USBHostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *nbytes, __u8** dataptr) {
 	//FINISH
-	return 1;
+	setup_packet->bRequest=0;
+	return 0;
 }
 
 void USBHostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length) {

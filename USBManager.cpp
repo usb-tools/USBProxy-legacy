@@ -53,27 +53,53 @@ USBManager::USBManager(USBDeviceProxy* _deviceProxy,USBHostProxy* _hostProxy) {
 }
 
 USBManager::~USBManager() {
-	if (device) {delete(device);}
-	if (filters) {free(filters);}
-	if (injectors) {free(injectors);}
+	if (device) {
+		delete(device);
+		device=NULL;
+	}
+	if (filters) {
+		free(filters);
+		filters=NULL;
+	}
+	if (injectors) {
+		free(injectors);
+		injectors=NULL;
+	}
 	int i;
 	for (i=0;i<16;i++) {
-		if (in_relayers[i]) {delete(in_relayers[i]);}
-		if (out_relayers[i]) {delete(out_relayers[i]);}
+		if (in_relayers[i]) {
+			delete(in_relayers[i]);
+			in_relayers[i]=NULL;
+		}
+		if (out_relayers[i]) {
+			delete(out_relayers[i]);
+			out_relayers[i]=NULL;
+		}
 		USBPacket* p;
 		if (in_queue[i]) {
-			while(in_queue[i]->pop(p)) {delete(p);}
+			while(in_queue[i]->pop(p)) {delete(p);/* not needed p=NULL; */}
 			delete(in_queue[i]);
+			in_queue[i]=NULL;
 		}
 		if (out_queue[i]) {
-			while(out_queue[i]->pop(p)) {delete(p);}
+			while(out_queue[i]->pop(p)) {delete(p);/* not needed p=NULL; */}
 			delete(out_queue[i]);
+			out_queue[i]=NULL;
 		}
-		if (in_relayerThreads[i]) {pthread_cancel(in_relayerThreads[i]);}
-		if (out_relayerThreads[i]) {pthread_cancel(out_relayerThreads[i]);}
+		if (in_relayerThreads[i]) {
+			pthread_cancel(in_relayerThreads[i]);
+			in_relayerThreads[i]=0;
+		}
+		if (out_relayerThreads[i]) {
+			pthread_cancel(out_relayerThreads[i]);
+			out_relayerThreads[i]=0;
+		}
 	}
 	for (i=0;i<injectorCount;i++) {
-		if (injectorThreads[i]) {pthread_cancel(injectorThreads[i]);}
+		if (injectorThreads[i]) {
+			pthread_cancel(injectorThreads[i]);
+			injectorThreads[i]=0;
+		}
 	}
 }
 
@@ -115,10 +141,11 @@ void USBManager::add_injector(USBInjector* _injector){
 void USBManager::remove_injector(__u8 index,bool freeMemory){
 	if (status!=USBM_IDLE) {fprintf(stderr,"Can't remove injectors unless manager is idle.\n");}
 	if (!injectors || index>=injectorCount) {fprintf(stderr,"Injector index out of bounds.\n");}
-	if (freeMemory && injectors[index]) {delete(injectors[index]);}
+	if (freeMemory && injectors[index]) {delete(injectors[index]);/* not needed injectors[index]=NULL;*/}
 	if (injectorCount==1) {
 		injectorCount=0;
 		free(injectors);
+		injectors=NULL;
 	} else {
 		int i;
 		for(i=index+1;i<injectorCount;i++) {
@@ -151,10 +178,11 @@ void USBManager::add_filter(USBPacketFilter* _filter){
 void USBManager::remove_filter(__u8 index,bool freeMemory){
 	if (status!=USBM_IDLE) {fprintf(stderr,"Can't remove filters unless manager is idle.\n");}
 	if (!filters || index>=filterCount) {fprintf(stderr,"Filter index out of bounds.\n");}
-	if (freeMemory && filters[index]) {delete(filters[index]);}
+	if (freeMemory && filters[index]) {delete(filters[index]);/* not needed filters[index]=NULL;*/}
 	if (filterCount==1) {
 		filterCount=0;
 		free(filters);
+		filters=NULL;
 	} else {
 		int i;
 		for(i=index+1;i<filterCount;i++) {
@@ -185,17 +213,14 @@ void USBManager::start_relaying(){
 	device=new USBDevice(deviceProxy);
 
 	//enumerate endpoints
-	TRACE;
 	USBConfiguration* cfg=device->get_active_configuration();
 	int ifc_idx;
 	int ifc_cnt=cfg->get_descriptor()->bNumInterfaces;
 	for (ifc_idx=0;ifc_idx<ifc_cnt;ifc_idx++) {
-		TRACE1(ifc_idx);
 		USBInterface* ifc=cfg->get_interface(ifc_idx);
 		int ep_idx;
 		int ep_cnt=ifc->get_endpoint_count();
 		for(ep_idx=0;ep_idx<ep_cnt;ep_idx++) {
-			TRACE2(ifc_idx,ep_idx);
 			USBEndpoint* ep=ifc->get_endpoint_by_idx(ep_idx);
 			const usb_endpoint_descriptor* epd=ep->get_descriptor();
 			if (epd->bEndpointAddress & 0x80) { //IN EP
@@ -206,7 +231,6 @@ void USBManager::start_relaying(){
 		}
 	}
 
-	TRACE;
 	//create EP0 endpoint object
 	usb_endpoint_descriptor desc_ep0;
 	desc_ep0.bLength=7;
@@ -258,6 +282,7 @@ void USBManager::start_relaying(){
 		pthread_create(&injectorThreads[i],NULL,&USBInjector::listen_helper,injectors[i]);
 	}
 
+	//TODO set back to <16
 	for(i=0;i<16;i++) {
 		if (in_relayers[i]) {
 			pthread_create(&in_relayerThreads[i],NULL,&USBRelayer::relay_helper,in_relayers[i]);
@@ -328,6 +353,7 @@ void USBManager::stop_relaying(){
 
 	//clean up device model & endpoints
 	delete(device);
+	device=NULL;
 
 	status=USBM_IDLE;
 }

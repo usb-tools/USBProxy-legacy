@@ -178,8 +178,8 @@ const char* USBDeviceProxy_LibUSB::toString() {
 	size_t length=snprintf(NULL,0,"%04x:%04x@%02x %s - %s",desc.idVendor,desc.idProduct,address,str_mfr,str_prd);
 	char *buf=(char  *)malloc(length);
 	sprintf(buf,"%04x:%04x@%02x %s - %s",desc.idVendor,desc.idProduct,address,str_mfr,str_prd);
-	if (str_mfr) {free(str_mfr);}
-	if (str_prd) {free(str_prd);}
+	if (str_mfr) {free(str_mfr);/*not needed str_mfr=NULL;*/}
+	if (str_prd) {free(str_prd);/*not needed str_prd=NULL;*/}
 	return buf;
 }
 
@@ -225,13 +225,13 @@ void USBDeviceProxy_LibUSB::send_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 			break;
 		case USB_ENDPOINT_XFER_BULK:
 			rc=libusb_bulk_transfer(dev_handle,endpoint,dataptr,length,&transferred,0);
-			if (rc) {fprintf(stderr,"Transfer error on Device EP%d\n",endpoint);}
+			if (rc) {fprintf(stderr,"Transfer error (%d) on Device EP%d\n",rc,endpoint);}
 			//TODO retry transfer if incomplete
 			if (transferred!=length) {fprintf(stderr,"Incomplete Bulk transfer on EP%d\n",endpoint);}
 			break;
 		case USB_ENDPOINT_XFER_INT:
 			rc=libusb_interrupt_transfer(dev_handle,endpoint,dataptr,length,&transferred,0);
-			if (rc) {fprintf(stderr,"Transfer error on Device EP%d\n",endpoint);}
+			if (rc) {fprintf(stderr,"Transfer error (%d) on Device EP%d\n",rc,endpoint);}
 			//TODO retry transfer if incomplete
 			if (transferred!=length) {fprintf(stderr,"Incomplete Interrupt transfer on EP%d\n",endpoint);}
 			break;
@@ -253,12 +253,12 @@ void USBDeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 max
 		case USB_ENDPOINT_XFER_BULK:
 			*dataptr=(__u8*)malloc(maxPacketSize);
 			rc=libusb_bulk_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,0);
-			if (rc) {fprintf(stderr,"Transfer error on Device EP%d\n",endpoint);}
+			if (rc) {fprintf(stderr,"Transfer error (%d) on Device EP%d\n",rc,endpoint);}
 			break;
 		case USB_ENDPOINT_XFER_INT:
 			*dataptr=(__u8*)malloc(maxPacketSize);
 			rc=libusb_interrupt_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,0);
-			if (rc) {fprintf(stderr,"Transfer error on Device EP%d\n",endpoint);}
+			if (rc) {fprintf(stderr,"Transfer error (%d) on Device EP%d\n",rc,endpoint);}
 			break;
 	}
 }

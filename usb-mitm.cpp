@@ -27,6 +27,8 @@
  */
 
 /* $(CROSS_COMPILE)cc -Wall -g -o proxy proxy.c usbstring.c -lpthread */
+
+//FIXME make sure we are setting pointers to NULL after delete/freeing them if needed
 #include "usb-mitm.h"
 #include "USBManager.h"
 #include "USBDeviceProxy_LibUSB.h"
@@ -121,8 +123,11 @@ extern "C" int main(int argc, char **argv)
 	TRACE;
 
 	delete(manager);
+	manager=NULL;
 	delete(host_proxy);
+	host_proxy=NULL;
 	delete(device_proxy);
+	device_proxy=NULL;
 
 	printf("done\n");
 	return 0;
