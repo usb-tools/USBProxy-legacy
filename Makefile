@@ -16,7 +16,6 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, Inc., 51 Franklin Street,
 # Boston, MA 02110-1301, USA.
-TARGET=usb-mitm
 
 PLATFORM = $(shell uname -m)
 ifneq ($(PLATFORM), armv7l)
@@ -29,14 +28,14 @@ else
 endif
 
 # CPPFLAGS = compiler options for C and C++
-CPPFLAGS = -Wall -g -Os -mthumb -fdata-sections -ffunction-sections -MMD -MP $(OPTIONS) -I/usr/src
+CPPFLAGS = -Wall -g -Os -mthumb -fdata-sections -ffunction-sections -MMD -MP $(OPTIONS) -I/usr/src -I/usr/include -I/usr/local/include
 
 # compiler options for C++ only
 #CXXFLAGS = -std=gnu++98 -felide-constructors -fno-exceptions -fno-rtti
-CXXFLAGS = -std=c++98 -pedantic -felide-constructors -fno-exceptions -fno-rtti
+CXXFLAGS = $(CPPFLAGS) -std=c++98 -pedantic -felide-constructors -fno-exceptions -fno-rtti
 
 # compiler options for C only
-CFLAGS =
+CFLAGS = $(CPPFLAGS)
 
 OS = $(shell uname)
 ifeq ($(OS), FreeBSD)
@@ -46,27 +45,47 @@ else
 	LIBUSB = usb-1.0
 endif
 
-LDFLAGS = -Os -Wl,--gc-sections 
-LDFLAGS += -l$(LIBUSB) -ludev -lstdc++ -lpthread -lusb-gadget -lboost_atomic
+C_LDFLAGS += $(LDFLAGS) -l$(LIBUSB) -ludev -lpthread
+CXX_LDFLAGS += $(C_LDFLAGS) -lstdc++ -lboost_atomic
 
-C_FILES := $(wildcard *.c) 
-CPP_FILES := $(wildcard *.cpp) 
-OBJS := $(C_FILES:.c=.o) $(CPP_FILES:.cpp=.o)
-HEADERS := $(C_FILES:.c=.h) $(CPP_FILES:.cpp=.h)
+C_FILES   := device_enumeration.c 
+CPP_FILES := USBConfiguration.cpp \
+			 USBDevice.cpp \
+			 USBDeviceQualifier.cpp \
+			 USBHostProxy_GadgetFS.cpp \
+			 USBInterfaceGroup.cpp \
+			 USBPacketFilter.cpp \
+			 USBEndpoint.cpp \
+			 USBInjector.cpp \
+			 USBManager.cpp \
+			 USBRelayer.cpp \
+			 USBDeviceProxy_LibUSB.cpp \
+			 USBHID.cpp \
+			 USBInterface.cpp \
+			 USBString.cpp
 
--include $(C_FILES:.c=.d)
--include $(CPP_FILES:.cpp=.d)
+C_OBJS    := $(C_FILES:.c=.o)
+CPP_OBJS  := $(CPP_FILES:.cpp=.o)
+OBJS      := $(C_OBJS) $(CPP_OBJS)
+HEADERS   := $(C_FILES:.c=.h) $(CPP_FILES:.cpp=.h)
 
-all: $(TARGET)
+all: usb-mitm
 
 list:
 	echo "blah"
 	echo $(OBJS)
 
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -g -o $(TARGET) $(OBJS) $(LDFLAGS)
+$(C_OBJS): $(C_FILES)
+	$(CC) $(CFLAGS) -o $@ -c $(@:.o=.c) $(C_LDFLAGS)
+
+$(CPP_OBJS): $(CPP_FILES)
+	$(CXX) $(CXXFLAGS) -o $@ -c $(@:.o=.cpp) $(CXX_LDFLAGS)
+
+usb-mitm: $(OBJS)
+	$(CXX) $(CXXFLAGS) -Wl,--gc-sections -o $@ $@.cpp $(OBJS) $(CXX_LDFLAGS)
+
 
 clean:
-	rm -f $(TARGET) *.o *.d
+	rm -f usb-mitm *.o
 
-.PHONY: all clean
+.PHONY: all clean list
