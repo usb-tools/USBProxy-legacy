@@ -16,7 +16,6 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, Inc., 51 Franklin Street,
 # Boston, MA 02110-1301, USA.
-TARGET=usb-mitm
 
 PLATFORM = $(shell uname -m)
 ifneq ($(PLATFORM), armv7l)
@@ -29,13 +28,21 @@ else
 endif
 
 # CPPFLAGS = compiler options for C and C++
+<<<<<<< HEAD
 CPPFLAGS = -Wall -g -Os -mthumb -fdata-sections -ffunction-sections -MMD -MP $(OPTIONS) -I/usr/src -I/usr/include -I/usr/local/include
 
 # compiler options for C++ only
 CXXFLAGS = -std=c++98 -pedantic -felide-constructors -fno-exceptions -fno-rtti
+=======
+CPPFLAGS = -Wall -g -Os -mthumb -fdata-sections -ffunction-sections $(OPTIONS) -I/usr/src -I/usr/include -I/usr/local/include
+
+# compiler options for C++ only
+#CXXFLAGS = -std=gnu++98 -felide-constructors -fno-exceptions -fno-rtti
+CXXFLAGS = $(CPPFLAGS) -std=c++98 -pedantic -felide-constructors -fno-exceptions -fno-rtti
+>>>>>>> 237e5314cdcb03288a9068ba3dcee7ed847f82e1
 
 # compiler options for C only
-CFLAGS =
+CFLAGS = $(CPPFLAGS)
 
 OS = $(shell uname)
 ifeq ($(OS), FreeBSD)
@@ -45,22 +52,56 @@ else
 	LIBUSB = usb-1.0
 endif
 
+<<<<<<< HEAD
 LDFLAGS += -Os -Wl,--gc-sections 
 LDFLAGS += -l$(LIBUSB) -ludev -lstdc++ -lpthread -lusb-gadget -lboost_atomic
+=======
+LDFLAGS += -l$(LIBUSB) -ludev -lpthread -lstdc++ -lboost_atomic
+>>>>>>> 237e5314cdcb03288a9068ba3dcee7ed847f82e1
 
-C_FILES := $(wildcard *.c) 
-CPP_FILES := $(wildcard *.cpp) 
-OBJS := $(C_FILES:.c=.o) $(CPP_FILES:.cpp=.o)
-HEADERS := $(C_FILES:.c=.h) $(CPP_FILES:.cpp=.h)
+C_FILES   := device_enumeration.c 
+CPP_FILES := USBConfiguration.cpp \
+			 USBDevice.cpp \
+			 USBDeviceQualifier.cpp \
+			 USBHostProxy_GadgetFS.cpp \
+			 USBInterfaceGroup.cpp \
+			 USBPacketFilter.cpp \
+			 USBEndpoint.cpp \
+			 USBInjector.cpp \
+			 USBManager.cpp \
+			 USBRelayer.cpp \
+			 USBDeviceProxy_LibUSB.cpp \
+			 USBHID.cpp \
+			 USBInterface.cpp \
+			 USBString.cpp
 
-all: $(TARGET)
+C_OBJS      := $(C_FILES:.c=.o)
+CPP_OBJS    := $(CPP_FILES:.cpp=.o)
+OBJS        := $(C_OBJS) $(CPP_OBJS)
+C_HEADERS   := $(C_FILES:.c=.h)
+CPP_HEADERS := $(CPP_FILES:.cpp=.h)
 
+<<<<<<< HEAD
 -include $(OBJS:.o=.d)
+=======
+all: usb-mitm
 
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -g -o $(TARGET) $(OBJS) $(LDFLAGS)
+$(C_OBJS): $(C_FILES) $(C_HEADERS)
+	$(CC) $(CFLAGS) -o $@ -c $(@:.o=.c)
+
+$(CPP_OBJS): $(CPP_FILES) $(CPP_HEADERS)
+	$(CXX) $(CXXFLAGS) -o $@ -c $(@:.o=.cpp)
+
+usb-mitm: $(OBJS)
+	$(CXX) $(CXXFLAGS) -Wl,--gc-sections -o $@ $@.cpp $(OBJS) $(LDFLAGS)
+>>>>>>> 237e5314cdcb03288a9068ba3dcee7ed847f82e1
+
 
 clean:
-	rm -f $(TARGET) *.o *.d
+	rm -f usb-mitm *.o
 
+<<<<<<< HEAD
 .PHONY: all clean
+=======
+.PHONY: all clean list
+>>>>>>> 237e5314cdcb03288a9068ba3dcee7ed847f82e1
