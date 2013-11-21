@@ -31,7 +31,7 @@
 
 class USBHostProxy {
 public:
-	virtual ~USBHostProxy();
+	virtual ~USBHostProxy() {}
 
 	virtual int connect(USBDevice* device)=0;
 	virtual void disconnect()=0;

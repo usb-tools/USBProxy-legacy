@@ -177,7 +177,7 @@ USBDevice::~USBDevice() {
 
 const usb_device_descriptor* USBDevice::get_descriptor() {
 	return &descriptor;
-};
+}
 
 void USBDevice::add_configuration(USBConfiguration* config) {
 	int value=config->get_descriptor()->bConfigurationValue;
@@ -196,7 +196,7 @@ void USBDevice::print(__u8 tabs) {
 	int i;
 	for(i=0;i<tabs;i++) {putchar('\t');}
 	printf("Device:");
-	for(i=0;i<sizeof(descriptor);i++) {printf(" %02x",((__u8 *)&descriptor)[i]);}
+	for(i=0;i<(int)sizeof(descriptor);i++) {printf(" %02x",((__u8 *)&descriptor)[i]);}
 	putchar('\n');
 	USBString* s;
 	if (descriptor.iManufacturer) {

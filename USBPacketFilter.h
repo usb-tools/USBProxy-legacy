@@ -49,7 +49,7 @@ struct packet_filter_endpoint {
 		attributes(0),
 		attributesMask(0),
 		packetSizeMin(0),
-		packetSizeMax(65536),
+		packetSizeMax(65535),
 		intervalMin(0),
 		intervalMax(255) {}
 };

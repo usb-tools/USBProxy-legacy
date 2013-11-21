@@ -22,7 +22,6 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <libusb-1.0/libusb.h>
 #include "USBDeviceProxy_LibUSB.h"
 
 int USBDeviceProxy_LibUSB::debugLevel=0;

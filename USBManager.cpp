@@ -26,6 +26,10 @@
 #include "USBManager.h"
 #include "pthread.h"
 
+#define TRACE; fprintf(stderr,"Trace: %s, line %d\n",__FILE__,__LINE__);
+#define TRACE(X); fprintf(stderr,"Trace(%d): %s, line %d\n",X,__FILE__,__LINE__);
+#define TRACE(Y); fprintf(stderr,"Trace(%d,%d): %s, line %d\n",X,Y,__FILE__,__LINE__);
+
 USBManager::USBManager(USBDeviceProxy* _deviceProxy,USBHostProxy* _hostProxy) {
 	status=USBM_IDLE;
 	deviceProxy=_deviceProxy;
@@ -60,10 +64,14 @@ USBManager::~USBManager() {
 		if (in_relayers[i]) {delete(in_relayers[i]);}
 		if (out_relayers[i]) {delete(out_relayers[i]);}
 		USBPacket* p;
-		while(in_queue[i]->pop(p)) {delete(p);}
-		if (in_queue[i]) {delete(in_queue[i]);}
-		while(out_queue[i]->pop(p)) {delete(p);}
-		if (out_queue[i]) {delete(out_queue[i]);}
+		if (in_queue[i]) {
+			while(in_queue[i]->pop(p)) {delete(p);}
+			delete(in_queue[i]);
+		}
+		if (out_queue[i]) {
+			while(out_queue[i]->pop(p)) {delete(p);}
+			delete(out_queue[i]);
+		}
 		if (in_relayerThreads[i]) {pthread_cancel(in_relayerThreads[i]);}
 		if (out_relayerThreads[i]) {pthread_cancel(out_relayerThreads[i]);}
 	}
@@ -170,18 +178,26 @@ __u8 USBManager::get_filter_count(){
 
 
 void USBManager::start_relaying(){
+	//TODO this should exit immediately if already started, and wait (somehow) is stopping or setting up
+	TRACE;
 	status=USBM_SETUP;
 
 	//connect device proxy
+	TRACE;
 	if (deviceProxy->connect()!=0) {fprintf(stderr,"Unable to connect to device proxy.\n");}
 
 	//populate device model
+	TRACE;
 	device=new USBDevice(deviceProxy);
 
 	//enumerate endpoints
+	TRACE;
 	USBConfiguration* cfg=device->get_active_configuration();
+	TRACE;
 	int ifc_idx;
+	TRACE;
 	int ifc_cnt=cfg->get_descriptor()->bNumInterfaces;
+	TRACE;
 	for (ifc_idx=0;ifc_idx<ifc_cnt;ifc_idx++) {
 		USBInterface* ifc=cfg->get_interface(ifc_idx);
 		int ep_idx;
@@ -261,6 +277,7 @@ void USBManager::start_relaying(){
 }
 
 void USBManager::stop_relaying(){
+	//TODO this should exit immediately if already stopped, and wait (somehow) is stopping or setting up
 	status=USBM_STOPPING;
 
 	int i;

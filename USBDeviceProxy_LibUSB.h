@@ -23,6 +23,11 @@
 #ifndef _LibUSBDeviceProxy_
 #define _LibUSBDeviceProxy_
 
+#ifndef LIBUSB_HOTPLUG_MATCH_ANY
+#define LIBUSB_HOTPLUG_MATCH_ANY -1
+#endif
+
+#include <libusb-1.0/libusb.h>
 #include "USBDeviceProxy.h"
 
 class USBDeviceProxy_LibUSB:public USBDeviceProxy {

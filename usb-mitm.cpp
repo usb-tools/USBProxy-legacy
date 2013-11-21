@@ -1,0 +1,129 @@
+/*
+ * Copyright 2013 Dominic Spill
+ * Copyright 2013 Adam Stasiak
+ *
+ * This file is part of USB-MitM.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; see the file COPYING.  If not, write to
+ * the Free Software Foundation, Inc., 51 Franklin Street,
+ * Boston, MA 02110-1301, USA.
+ */
+
+/*
+ * This file is based on http://www.linux-usb.org/gadget/usb.c
+ * That file lacks any copyright information - but it belongs to someone
+ * probably David Brownell - so thank you very much to him too!
+ */
+
+/* $(CROSS_COMPILE)cc -Wall -g -o proxy proxy.c usbstring.c -lpthread */
+#include "usb-mitm.h"
+#include "USBManager.h"
+#include "USBDeviceProxy_LibUSB.h"
+#include "USBHostProxy_GadgetFS.h"
+
+#define TRACE; fprintf(stderr,"Trace: %s, line %d\n",__FILE__,__LINE__)
+
+static int debug=0;
+
+USBManager* manager;
+
+void usage(char *arg) {
+	fprintf(stderr, "usage: %s [-v vendorId] [-p productId] [-d (debug)]\n",
+			arg);
+	
+}
+
+void cleanup(void) {
+}
+
+//sigterm: stop forwarding threads, and/or hotplug loop and exit
+//sighup: reset forwarding threads, reset device and gadget
+void handle_signal(int signum)
+{
+	switch (signum) {
+		case SIGTERM:
+			printf("Received SIGTERM, stopping relaying...\n");
+			if (manager) {manager->stop_relaying();}
+			printf("Exiting\n");
+			break;
+		case SIGINT:
+			printf("Received SIGINT, stopping relaying...\n");
+			if (manager) {manager->stop_relaying();}
+			printf("Exiting\n");
+			break;
+		case SIGHUP:
+			printf("Received SIGHUP, restarting relaying...\n");
+			if (manager) {manager->stop_relaying();}
+			if (manager) {manager->start_relaying();}
+			break;
+	}
+}
+
+extern "C" int main(int argc, char **argv)
+{
+	int c;
+	char* end;
+	int vendorId=LIBUSB_HOTPLUG_MATCH_ANY, productId=LIBUSB_HOTPLUG_MATCH_ANY;
+	
+	struct sigaction action;
+	memset(&action, 0, sizeof(struct sigaction));
+	action.sa_handler = handle_signal;
+	sigaction(SIGTERM, &action, NULL);
+	sigaction(SIGHUP, &action, NULL);
+	sigaction(SIGINT, &action, NULL);
+	
+	while ((c = getopt (argc, argv, "p:v:d")) != EOF) {
+		switch (c) {
+		case 'p':
+			productId = strtol(optarg, &end, 16);
+			continue;
+		case 'v':
+			vendorId = strtol(optarg, &end, 16);
+			continue;
+		case 'd':		/* verbose */
+			debug++;
+			continue;
+		}
+		usage(argv[0]);
+		return 1;
+	}
+
+	if (chdir("/dev/gadget") < 0) {
+		perror("can't chdir /dev/gadget\n");
+		return 1;
+	}
+
+
+	USBDeviceProxy* device_proxy=(USBDeviceProxy *)new USBDeviceProxy_LibUSB(vendorId,productId);
+	USBHostProxy* host_proxy=(USBHostProxy* )new USBHostProxy_GadgetFS("/dev/gadget");
+	manager=new USBManager(device_proxy,host_proxy);
+
+	TRACE;
+	manager->start_relaying();
+	TRACE;
+
+	int i;
+	for (i=10;i>0;i--) {printf("%d...\n",i);sleep(1);}
+
+	TRACE;
+	manager->stop_relaying();
+	TRACE;
+
+	delete(manager);
+	delete(host_proxy);
+	delete(device_proxy);
+
+	printf("done\n");
+	return 0;
+}

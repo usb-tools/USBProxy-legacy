@@ -107,7 +107,7 @@ void USBDeviceQualifier::print(__u8 tabs) {
 	int i;
 	for(i=0;i<tabs;i++) {putchar('\t');}
 	printf("HS Qualifier:");
-	for(i=0;i<sizeof(descriptor);i++) {printf(" %02x",((__u8 *)&descriptor)[i]);}
+	for(i=0;i<(int)sizeof(descriptor);i++) {printf(" %02x",((__u8 *)&descriptor)[i]);}
 	putchar('\n');
 	for(i=0;i<descriptor.bNumConfigurations;i++) {
 		if (configurations[i]) {configurations[i]->print(tabs+1,(configurations[i]==device->get_active_configuration())?true:false);}

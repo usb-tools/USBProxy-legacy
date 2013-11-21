@@ -19,39 +19,32 @@
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
  *
- * USBString.h
+ * USBHostProxyGadgetFS.h
  *
- * Created on: Nov 7, 2013
+ * Created on: Nov 21, 2013
  */
-#ifndef USBSTRING_H_
-#define USBSTRING_H_
+#ifndef USBHOSTPROXYGADGETFS_H_
+#define USBHOSTPROXYGADGETFS_H_
 
-#include <linux/usb/ch9.h>
-#include <stdio.h>
-#include "USBDeviceProxy.h"
+#include "USBHostProxy.h"
 
-class USBString {
+class USBHostProxy_GadgetFS: public USBHostProxy {
 private:
-	usb_string_descriptor* descriptor;
-	__u16 languageId;
-	__u8  index;
+	const char * device_path;
 
 public:
-	USBString(USBDeviceProxy* proxy,__u8 _index,__u16 _languageId);
-	USBString(const usb_string_descriptor* _descriptor,__u8 _index,__u16 _languageId);
-	//create from ascii string
-	USBString(const char* value,__u8 _index,__u16 _languageId);
-	//create from unicode string
-	USBString(const __u16* value,__u8 _index,__u16 _languageId);
-	~USBString();
-	const usb_string_descriptor* get_descriptor();
-	__u16 get_languageId();
-	__u8  get_index();
-	void get_ascii(char* buf,int buflen);
-	void print_ascii(FILE *stream);
-	__u8 get_char_count();
-	void append_char(__u16 u);
+	USBHostProxy_GadgetFS(const char * _device_path);
+	virtual ~USBHostProxy_GadgetFS();
+
+	int connect(USBDevice* device);
+	void disconnect();
+	void reset();
+	bool is_connected();
+
+	//return 0 in usb_ctrlrequest->brequest if there is no request
+	int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8** dataptr);
+	void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length);
+	void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length);
 };
 
-
-#endif /* USBSTRING_H_ */
+#endif /* USBHOSTPROXYGADGETFS_H_ */
