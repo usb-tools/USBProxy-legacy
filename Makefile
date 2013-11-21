@@ -29,10 +29,9 @@ else
 endif
 
 # CPPFLAGS = compiler options for C and C++
-CPPFLAGS = -Wall -g -Os -mthumb -fdata-sections -ffunction-sections -MMD -MP $(OPTIONS) -I/usr/src
+CPPFLAGS = -Wall -g -Os -mthumb -fdata-sections -ffunction-sections -MMD -MP $(OPTIONS) -I/usr/src -I/usr/include -I/usr/local/include
 
 # compiler options for C++ only
-#CXXFLAGS = -std=gnu++98 -felide-constructors -fno-exceptions -fno-rtti
 CXXFLAGS = -std=c++98 -pedantic -felide-constructors -fno-exceptions -fno-rtti
 
 # compiler options for C only
@@ -46,7 +45,7 @@ else
 	LIBUSB = usb-1.0
 endif
 
-LDFLAGS = -Os -Wl,--gc-sections 
+LDFLAGS += -Os -Wl,--gc-sections 
 LDFLAGS += -l$(LIBUSB) -ludev -lstdc++ -lpthread -lusb-gadget -lboost_atomic
 
 C_FILES := $(wildcard *.c) 
@@ -56,12 +55,7 @@ HEADERS := $(C_FILES:.c=.h) $(CPP_FILES:.cpp=.h)
 
 all: $(TARGET)
 
--include $(C_FILES:.c=.d)
--include $(CPP_FILES:.cpp=.d)
-
-list:
-	echo "blah"
-	echo $(OBJS)
+-include $(OBJS:.o=.d)
 
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -g -o $(TARGET) $(OBJS) $(LDFLAGS)
