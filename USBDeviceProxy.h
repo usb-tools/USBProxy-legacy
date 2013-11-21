@@ -41,6 +41,9 @@ public:
 	virtual void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length)=0;
 	virtual void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length)=0;
 
+	virtual void claim_interface(__u8 interface)=0;
+	virtual void release_interface(__u8 interface)=0;
+
 	virtual __u8 get_address()=0;
 	virtual const char* toString() {return NULL;}
 };

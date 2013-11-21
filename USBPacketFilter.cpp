@@ -26,6 +26,7 @@
 
 #include <linux/usb/ch9.h>
 #include "USBPacketFilter.h"
+#include "TRACE.h"
 
 bool USBPacketFilter::test_device(USBDevice* _device) {
 	const usb_device_descriptor* desc=_device->get_descriptor();
@@ -41,7 +42,7 @@ bool USBPacketFilter::test_device(USBDevice* _device) {
 bool USBPacketFilter::test_configuration(USBConfiguration* _configuration) {
 	const usb_config_descriptor* desc=_configuration->get_descriptor();
 	if (configuration.number!=-1 && configuration.number!=desc->bConfigurationValue) {return false;}
-	if (configuration.highSpeed!=-255 && (configuration.highSpeed?USB_DT_OTHER_SPEED_CONFIG:USB_DT_CONFIG)!=desc->bDescriptorType) {return false;}
+	if (configuration.highSpeed!=255 && (configuration.highSpeed?USB_DT_OTHER_SPEED_CONFIG:USB_DT_CONFIG)!=desc->bDescriptorType) {return false;}
 	if ((configuration.attributesMask&configuration.attributes)!=(configuration.attributesMask&desc->bmAttributes)) {return false;}
 	return true;
 }
