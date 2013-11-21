@@ -45,7 +45,6 @@ else
         LIBUSB = usb-1.0
 endif
 
-# LDFLAGS += -Os 
 LDFLAGS += -Wl,--gc-sections
 LDFLAGS += -l$(LIBUSB) -ludev -lstdc++ -lpthread -lusb-gadget -lboost_atomic
 
@@ -59,9 +58,9 @@ all: $(TARGET)
 -include $(OBJS:.o=.d)
 
 $(TARGET): $(OBJS)
-        $(CC) $(CFLAGS) -g -o $(TARGET) $(OBJS) $(LDFLAGS)
+	$(CC) $(CFLAGS) -g -o $(TARGET) $(OBJS) $(LDFLAGS)
 
 clean:
-        rm -f $(TARGET) *.o *.d
+	rm -f $(TARGET) *.o *.d
 
 .PHONY: all clean
