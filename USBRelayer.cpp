@@ -68,7 +68,6 @@ void USBRelayer::add_filter(USBPacketFilter* filter) {
 }
 
 void USBRelayer::relay_ep0() {
-	TRACE1(endpoint->get_descriptor()->bEndpointAddress);
 	__u8 bmAttributes=endpoint->get_descriptor()->bmAttributes;
 	__u16 maxPacketSize=endpoint->get_descriptor()->wMaxPacketSize;
 	__u8* buf;
@@ -134,7 +133,6 @@ void USBRelayer::relay_ep0() {
 void USBRelayer::relay() {
 	__u8 epAddress=endpoint->get_descriptor()->bEndpointAddress;
 	if (!epAddress) {relay_ep0();return;}
-	TRACE1(epAddress);
 	__u8 bmAttributes=endpoint->get_descriptor()->bmAttributes;
 	__u16 maxPacketSize=endpoint->get_descriptor()->wMaxPacketSize;
 	__u8* buf;

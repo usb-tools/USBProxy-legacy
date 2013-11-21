@@ -121,7 +121,7 @@ public:
 		for (i=0;i<8;i++) {packetHeader[i]=0;packetHeaderMask[i]=0;}
 		packetHeaderMaskLength=0;
 	}
-	virtual ~USBPacketFilter();
+	virtual ~USBPacketFilter() {};
 
 	virtual void filter_packet(USBPacket* packet)=0;
 	virtual void filter_setup_packet(USBSetupPacket* packet)=0;

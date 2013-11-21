@@ -111,16 +111,15 @@ extern "C" int main(int argc, char **argv)
 	USBHostProxy* host_proxy=(USBHostProxy* )new USBHostProxy_GadgetFS("/dev/gadget");
 	manager=new USBManager(device_proxy,host_proxy);
 
-	TRACE;
+	USBPacketFilter_streamlog* logfilter=new USBPacketFilter_streamlog(stderr);
+	manager->add_filter(logfilter);
+
 	manager->start_relaying();
-	TRACE;
 
 	int i;
-	for (i=3;i>0;i--) {printf("%d...\n",i);sleep(1);}
+	for (i=10;i>0;i--) {printf("%d...\n",i);sleep(1);}
 
-	TRACE;
 	manager->stop_relaying();
-	TRACE;
 
 	delete(manager);
 	manager=NULL;

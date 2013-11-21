@@ -59,7 +59,6 @@ int USBDeviceProxy_LibUSB::connect(libusb_device* dvc, libusb_context* _context)
 		dev_handle=NULL;
 		return rc;
 	}
-	libusb_set_auto_detach_kernel_driver(dev_handle,1);
 	if (debugLevel) {fprintf(stdout,"Connected to device: %s\n",toString());}
 	return 0;
 }
@@ -75,7 +74,6 @@ int USBDeviceProxy_LibUSB::connect(libusb_device_handle* devh,libusb_context* _c
 }
 
 int USBDeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) {
-	TRACE;
 	if (dev_handle) {fprintf(stderr,"LibUSB already connected.\n"); return 0;}
 	privateContext=true;
 	privateDevice=true;
@@ -127,6 +125,7 @@ int USBDeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) 
 	}
 
 	libusb_free_device_list(list,1);
+	libusb_set_auto_detach_kernel_driver(dev_handle,1);
 	if (debugLevel) {fprintf(stdout,"Connected to device: %s\n",toString());}
 	return 0;
 }
@@ -252,14 +251,29 @@ void USBDeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 max
 			break;
 		case USB_ENDPOINT_XFER_BULK:
 			*dataptr=(__u8*)malloc(maxPacketSize);
-			rc=libusb_bulk_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,0);
+			rc=libusb_bulk_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,1);
+			if (rc==LIBUSB_ERROR_TIMEOUT){length=0;return;}
 			if (rc) {fprintf(stderr,"Transfer error (%d) on Device EP%d\n",rc,endpoint);}
 			break;
 		case USB_ENDPOINT_XFER_INT:
 			*dataptr=(__u8*)malloc(maxPacketSize);
-			rc=libusb_interrupt_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,0);
+			rc=libusb_interrupt_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,10);
+			if (rc==LIBUSB_ERROR_TIMEOUT){length=0;return;}
 			if (rc) {fprintf(stderr,"Transfer error (%d) on Device EP%d\n",rc,endpoint);}
 			break;
 	}
 }
 
+void USBDeviceProxy_LibUSB::claim_interface(__u8 interface) {
+	if (is_connected()) {
+		int rc=libusb_claim_interface(dev_handle,interface);
+		if (rc) {fprintf(stderr,"Error (%d) claiming interface %d\n",rc,interface);}
+	}
+}
+
+void USBDeviceProxy_LibUSB::release_interface(__u8 interface) {
+	if (is_connected()) {
+		int rc=libusb_release_interface(dev_handle,interface);
+		if (rc) {fprintf(stderr,"Error (%d) releasing interface %d\n",rc,interface);}
+	}
+}

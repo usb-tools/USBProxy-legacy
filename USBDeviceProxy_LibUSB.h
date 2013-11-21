@@ -57,6 +57,9 @@ public:
 	void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length);
 	void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length);
 
+	void claim_interface(__u8 interface);
+	void release_interface(__u8 interface);
+
 	__u8 get_address();
 	const char* toString();
 };

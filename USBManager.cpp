@@ -263,6 +263,7 @@ void USBManager::start_relaying(){
 		}
 	}
 
+
 	//apply filters to relayers
 	for(i=0;i<filterCount;i++) {
 		if (filters[i]->test_device(device) && filters[i]->test_configuration(cfg)) {
@@ -280,6 +281,11 @@ void USBManager::start_relaying(){
 	hostProxy->connect(device);
 	for(i=0;i<injectorCount;i++) {
 		pthread_create(&injectorThreads[i],NULL,&USBInjector::listen_helper,injectors[i]);
+	}
+
+	//Claim interfaces
+	for (ifc_idx=0;ifc_idx<ifc_cnt;ifc_idx++) {
+		deviceProxy->claim_interface(ifc_idx);
 	}
 
 	//TODO set back to <16
@@ -340,9 +346,18 @@ void USBManager::stop_relaying(){
 			out_queue[i]=NULL;
 		}
 	}
+
 	if (out_queue_ep0) {
 		delete(out_queue_ep0);
 		out_queue_ep0=NULL;
+	}
+
+	//Release interfaces
+	int ifc_idx;
+	USBConfiguration* cfg=device->get_active_configuration();
+	int ifc_cnt=cfg->get_descriptor()->bNumInterfaces;
+	for (ifc_idx=0;ifc_idx<ifc_cnt;ifc_idx++) {
+		deviceProxy->release_interface(ifc_idx);
 	}
 
 	//disconnect from host
