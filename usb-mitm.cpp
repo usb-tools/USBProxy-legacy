@@ -34,8 +34,6 @@
 #include "USBDeviceProxy_LibUSB.h"
 #include "USBHostProxy_GadgetFS.h"
 
-#define TRACE; fprintf(stderr,"Trace: %s, line %d\n",__FILE__,__LINE__)
-
 static int debug=0;
 
 USBManager* manager;
