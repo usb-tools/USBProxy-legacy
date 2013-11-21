@@ -25,10 +25,7 @@
  */
 #include "USBManager.h"
 #include "pthread.h"
-
-#define TRACE; fprintf(stderr,"Trace: %s, line %d\n",__FILE__,__LINE__);
-#define TRACE(X); fprintf(stderr,"Trace(%d): %s, line %d\n",X,__FILE__,__LINE__);
-#define TRACE(Y); fprintf(stderr,"Trace(%d,%d): %s, line %d\n",X,Y,__FILE__,__LINE__);
+#include "TRACE.h"
 
 USBManager::USBManager(USBDeviceProxy* _deviceProxy,USBHostProxy* _hostProxy) {
 	status=USBM_IDLE;
@@ -179,30 +176,26 @@ __u8 USBManager::get_filter_count(){
 
 void USBManager::start_relaying(){
 	//TODO this should exit immediately if already started, and wait (somehow) is stopping or setting up
-	TRACE;
 	status=USBM_SETUP;
 
 	//connect device proxy
-	TRACE;
-	if (deviceProxy->connect()!=0) {fprintf(stderr,"Unable to connect to device proxy.\n");}
+	if (deviceProxy->connect()!=0) {fprintf(stderr,"Unable to connect to device proxy.\n");status=USBM_IDLE;return;}
 
 	//populate device model
-	TRACE;
 	device=new USBDevice(deviceProxy);
 
 	//enumerate endpoints
 	TRACE;
 	USBConfiguration* cfg=device->get_active_configuration();
-	TRACE;
 	int ifc_idx;
-	TRACE;
 	int ifc_cnt=cfg->get_descriptor()->bNumInterfaces;
-	TRACE;
 	for (ifc_idx=0;ifc_idx<ifc_cnt;ifc_idx++) {
+		TRACE1(ifc_idx);
 		USBInterface* ifc=cfg->get_interface(ifc_idx);
 		int ep_idx;
 		int ep_cnt=ifc->get_endpoint_count();
 		for(ep_idx=0;ep_idx<ep_cnt;ep_idx++) {
+			TRACE2(ifc_idx,ep_idx);
 			USBEndpoint* ep=ifc->get_endpoint_by_idx(ep_idx);
 			const usb_endpoint_descriptor* epd=ep->get_descriptor();
 			if (epd->bEndpointAddress & 0x80) { //IN EP
@@ -213,6 +206,7 @@ void USBManager::start_relaying(){
 		}
 	}
 
+	TRACE;
 	//create EP0 endpoint object
 	usb_endpoint_descriptor desc_ep0;
 	desc_ep0.bLength=7;

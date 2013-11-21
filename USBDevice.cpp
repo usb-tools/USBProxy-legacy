@@ -25,6 +25,7 @@
 #include <memory.h>
 #include "USBDevice.h"
 #include "DefinitionErrors.h"
+#include "TRACE.h"
 
 //CLEANUP update active endpoints in proxied device upon set configuration request
 //CLEANUP update active configuration for the class upon set configuration request

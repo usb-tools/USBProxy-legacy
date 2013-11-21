@@ -114,7 +114,7 @@ extern "C" int main(int argc, char **argv)
 	TRACE;
 
 	int i;
-	for (i=10;i>0;i--) {printf("%d...\n",i);sleep(1);}
+	for (i=3;i>0;i--) {printf("%d...\n",i);sleep(1);}
 
 	TRACE;
 	manager->stop_relaying();

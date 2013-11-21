@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "USBDeviceProxy_LibUSB.h"
+#include "TRACE.h"
 
 int USBDeviceProxy_LibUSB::debugLevel=0;
 
@@ -74,6 +75,7 @@ int USBDeviceProxy_LibUSB::connect(libusb_device_handle* devh,libusb_context* _c
 }
 
 int USBDeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) {
+	TRACE;
 	if (dev_handle) {fprintf(stderr,"LibUSB already connected.\n"); return 0;}
 	privateContext=true;
 	privateDevice=true;
@@ -112,7 +114,7 @@ int USBDeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) 
 	if (found==NULL) {
 		if (debugLevel) {fprintf(stderr,"No devices found.\n");}
 		libusb_free_device_list(list,1);
-		return rc;
+		return -1;
 	} else {
 		rc=libusb_open(found,&dev_handle);
 		if (rc) {
@@ -123,6 +125,7 @@ int USBDeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) 
 		}
 
 	}
+
 	libusb_free_device_list(list,1);
 	if (debugLevel) {fprintf(stdout,"Connected to device: %s\n",toString());}
 	return 0;
