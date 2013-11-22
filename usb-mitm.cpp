@@ -30,6 +30,7 @@
 
 //FIXME make sure we are setting pointers to NULL after delete/freeing them if needed
 #include "usb-mitm.h"
+#include "TRACE.h"
 #include "USBManager.h"
 #include "USBDeviceProxy_LibUSB.h"
 #include "USBHostProxy_GadgetFS.h"
@@ -84,20 +85,22 @@ extern "C" int main(int argc, char **argv)
 	sigaction(SIGHUP, &action, NULL);
 	sigaction(SIGINT, &action, NULL);
 	
-	while ((c = getopt (argc, argv, "p:v:d")) != EOF) {
+	while ((c = getopt (argc, argv, "p:v:dh")) != EOF) {
 		switch (c) {
 		case 'p':
 			productId = strtol(optarg, &end, 16);
-			continue;
+			break;
 		case 'v':
 			vendorId = strtol(optarg, &end, 16);
-			continue;
+			break;
 		case 'd':		/* verbose */
 			debug++;
-			continue;
+			break;
+		case 'h':
+		default:
+			usage(argv[0]);
+			return 1;
 		}
-		usage(argv[0]);
-		return 1;
 	}
 
 	if (chdir("/dev/gadget") < 0) {
