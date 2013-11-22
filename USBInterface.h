@@ -69,7 +69,7 @@ class USBInterface {
 		void print(__u8 tabs=0,bool active=false);
 		USBString* get_interface_string(__u16 languageId=0);
 		const USBGenericDescriptor* get_generic_descriptor(__u8 index);
-		__u8 get_generic_descriptor_count(__u8 index);
+		__u8 get_generic_descriptor_count();
 		void add_generic_descriptor(USBGenericDescriptor* _gd);
 		const definition_error is_defined(__u8 configId,__u8 interfaceNum);
 		USBConfiguration* get_configuration();

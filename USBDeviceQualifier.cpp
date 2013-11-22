@@ -105,7 +105,7 @@ void USBDeviceQualifier::add_configuration(USBConfiguration* config) {
 }
 
 USBConfiguration* USBDeviceQualifier::get_configuration(__u8 index) {
-	if (index>descriptor.bNumConfigurations) {return NULL;}
+	if (index>descriptor.bNumConfigurations || index<1) {return NULL;}
 	return configurations[index-1];
 }
 

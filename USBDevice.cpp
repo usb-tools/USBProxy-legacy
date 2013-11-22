@@ -207,7 +207,7 @@ void USBDevice::add_configuration(USBConfiguration* config) {
 }
 
 USBConfiguration* USBDevice::get_configuration(__u8 index) {
-	if (index>descriptor.bNumConfigurations) {return NULL;}
+	if (index>descriptor.bNumConfigurations || index<1) {return NULL;}
 	return configurations[index-1];
 }
 
@@ -308,6 +308,7 @@ void USBDevice::add_string(__u8 index) {
 }
 
 USBString* USBDevice::get_string(__u8 index,__u16 languageId) {
+	if (index>maxStringIdx || index<0)  {return NULL;}
 	if (!strings[index]) {return NULL;}
 	if (!languageId&&index) {languageId=strings[0][0]->get_descriptor()->wData[0];}
 	int i=0;
@@ -351,7 +352,7 @@ void USBDevice::add_language(__u16 languageId) {
 }
 
 __u16 USBDevice::get_language_by_index(__u8 index) {
-	if (index>=get_language_count()) {return 0;}
+	if (index>=get_language_count() || index<0) {return 0;}
 	return strings[0][0]->get_descriptor()->wData[index];
 }
 

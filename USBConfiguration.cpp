@@ -140,11 +140,13 @@ void USBConfiguration::add_interface(USBInterface* interface) {
 }
 
 USBInterface* USBConfiguration::get_interface_alternate(__u8 number,__u8 alternate) {
+	if (number>=descriptor.bNumInterfaces || number<0) {return NULL;}
 	if (!interfaceGroups[number]) {return NULL;}
 	return interfaceGroups[number]->get_interface(alternate);
 }
 
 USBInterface* USBConfiguration::get_interface(__u8 number) {
+	if (number>=descriptor.bNumInterfaces || number<0) {return NULL;}
 	if (!interfaceGroups[number]) {return NULL;}
 	return interfaceGroups[number]->get_active_interface();
 }
