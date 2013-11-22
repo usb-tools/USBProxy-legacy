@@ -29,7 +29,10 @@ else
 endif
 
 # CPPFLAGS = compiler options for C and C++
-CPPFLAGS = -Wall -O2 -g -mthumb -fdata-sections -ffunction-sections -MMD -MP $(OPTIONS) -I/usr/src -I/usr/include -I/usr/local/include
+CPPFLAGS = -Wall -g -mthumb -fdata-sections -ffunction-sections -MMD -MP $(OPTIONS) -I/usr/src -I/usr/include -I/usr/local/include
+#temporarily removed below as it was interfering with debugging
+#CPPFLAGS += -O2
+
 
 # compiler options for C++ only
 CXXFLAGS = -std=c++98 -pedantic -felide-constructors -fno-exceptions -fno-rtti
