@@ -71,8 +71,8 @@ USBPacket* USBInjector_UDP::get_packets() {
 		__u16 usblen=buf[2]<<8 | buf[3];
 		__u8* usbbuf=(__u8*)malloc(usblen);
 		memcpy(usbbuf,buf+4,usblen);
-		struct USBPacket* p=new USBPacket(buf[0],usbbuf,usblen,buf[1]&0x01?true:false);
-		p->transmit=buf[1]&0x02?true:false;
+		struct USBPacket* p=new USBPacket(buf[0],usbbuf,usblen,buf[1]&0x01?false:true);
+		p->transmit=buf[1]&0x02?false:true;
 		return p;
 	}
 	if (len<0 && errno!=EWOULDBLOCK && errno!=EAGAIN ) {
