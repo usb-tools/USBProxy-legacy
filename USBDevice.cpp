@@ -250,6 +250,7 @@ void USBDevice::print(__u8 tabs) {
 		if (configurations[i]) {configurations[i]->print(tabs+1,configurations[i]==get_active_configuration()?true:false);}
 	}
 	if (qualifier) {qualifier->print(tabs);}
+	if (index>descriptor.bNumConfigurations) {return NULL;}
 }
 
 void USBDevice::add_string(USBString* string) {
