@@ -80,7 +80,7 @@ void USBInterfaceGroup::add_interface(USBInterface* interface) {
 }
 
 USBInterface* USBInterfaceGroup::get_interface(__u8 alternate) {
-	if (alternate>=alternateCount) {return NULL;}
+	if (alternate>=alternateCount || alternate<0) {return NULL;}
 	return interfaces[alternate];
 }
 

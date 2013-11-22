@@ -164,6 +164,7 @@ void USBInterface::add_endpoint(USBEndpoint* endpoint) {
 }
 
 USBEndpoint* USBInterface::get_endpoint_by_idx(__u8 index) {
+	if (index>=descriptor.bNumEndpoints || index<0) {return NULL;}
 	return endpoints[index];
 }
 
@@ -215,10 +216,12 @@ USBString* USBInterface::get_interface_string(__u16 languageId) {
 }
 
 const USBGenericDescriptor* USBInterface::get_generic_descriptor(__u8 index) {
+	//fixme we can't check the upper bound cheaply should change to store gdCount in class rather than null termincate
+	if (index>=get_generic_descriptor_count() || index<0) {return NULL;}
 	return generic_descriptors[index];
 }
 
-__u8 USBInterface::get_generic_descriptor_count(__u8 index) {
+__u8 USBInterface::get_generic_descriptor_count() {
 	int i=0;
 	while (generic_descriptors[i]) {i++;}
 	return i;
