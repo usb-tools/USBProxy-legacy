@@ -119,7 +119,7 @@ extern "C" int main(int argc, char **argv)
 	manager->start_relaying();
 
 	int i;
-	for (i=10;i>0;i--) {printf("%d...\n",i);sleep(1);}
+	for (i=10;i>0 && manager->get_status()==USBM_RELAYING;i--) {printf("%d...\n",i);sleep(1);}
 
 	manager->stop_relaying();
 

@@ -91,6 +91,8 @@ public:
 	USBPacketFilter* get_filter(__u8 index);
 	__u8 get_filter_count();
 
+	enum USBManager_status get_status() {return status;}
+
 	void start_relaying();
 	void stop_relaying();
 };
