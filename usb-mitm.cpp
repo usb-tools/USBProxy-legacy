@@ -33,6 +33,7 @@
 #include "USBManager.h"
 #include "USBDeviceProxy_LibUSB.h"
 #include "USBHostProxy_GadgetFS.h"
+#include "USBInjector_UDP.h"
 
 static int debug=0;
 
@@ -110,7 +111,10 @@ extern "C" int main(int argc, char **argv)
 	manager=new USBManager(device_proxy,host_proxy);
 
 	USBPacketFilter_streamlog* logfilter=new USBPacketFilter_streamlog(stderr);
+	USBInjector_UDP* udpinjector=new USBInjector_UDP(12345);
+
 	manager->add_filter(logfilter);
+	manager->add_injector(udpinjector);
 
 	manager->start_relaying();
 

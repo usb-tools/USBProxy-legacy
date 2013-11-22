@@ -34,13 +34,19 @@ class USBManager;
 class USBInjector {
 private:
 	USBManager* manager;
+
+protected:
+	virtual USBPacket* get_packets()=0;
+	virtual void start_injector() {}
+	virtual void stop_injector() {}
+
 public:
 	bool halt;
 
-	USBInjector(USBManager* _manager);
+	USBInjector();
 	virtual ~USBInjector() {}
-	virtual USBPacket* get_packets()=0;
 
+	void set_manager(USBManager* _manager) {manager=_manager;}
 	void listen();
 
 	static void *listen_helper(void* context);

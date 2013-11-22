@@ -95,40 +95,44 @@ USBManager::~USBManager() {
 			out_relayerThreads[i]=0;
 		}
 	}
-	for (i=0;i<injectorCount;i++) {
-		if (injectorThreads[i]) {
-			pthread_cancel(injectorThreads[i]);
-			injectorThreads[i]=0;
+	if (injectorThreads) {
+		for (i=0;i<injectorCount;i++) {
+			if (injectorThreads[i]) {
+				pthread_cancel(injectorThreads[i]);
+				injectorThreads[i]=0;
+			}
 		}
+		free(injectorThreads);
+		injectorThreads=NULL;
 	}
 }
 
 void USBManager::inject_packet(USBPacket *packet) {
-	if (status!=USBM_RELAYING) {fprintf(stderr,"Can't inject packets unless manager is relaying.\n");}
+	if (status!=USBM_RELAYING) {fprintf(stderr,"Can't inject packets unless manager is relaying.\n");return;}
 	__u8 epAddress=packet->bEndpoint;
 	if (epAddress&0x80) { //device->host
-		in_queue[epAddress&0x0f]->push(packet);
+		if (in_queue[epAddress&0x0f]) {	in_queue[epAddress&0x0f]->push(packet); }
 	} else { //host->device
-		out_queue[epAddress&0x0f]->push(packet);
+		if (out_queue[epAddress&0x0f]) { out_queue[epAddress&0x0f]->push(packet); }
 	}
 }
 
 void USBManager::inject_setup_in(usb_ctrlrequest request,__u8** data,__u16 *transferred, bool filter) {
-	if (status!=USBM_RELAYING) {fprintf(stderr,"Can't inject packets unless manager is relaying.\n");}
+	if (status!=USBM_RELAYING) {fprintf(stderr,"Can't inject packets unless manager is relaying.\n");return;}
 	USBSetupPacket* p=new USBSetupPacket(request,NULL,filter);
 	out_queue_ep0->push(p);
 	//TODO handle returned data...somehow..can use 2nd queue for replies, but would need to poll it or something
 }
 
 void USBManager::inject_setup_out(usb_ctrlrequest request,__u8* data,bool filter) {
-	if (status!=USBM_RELAYING) {fprintf(stderr,"Can't inject packets unless manager is relaying.\n");}
+	if (status!=USBM_RELAYING) {fprintf(stderr,"Can't inject packets unless manager is relaying.\n");return;}
 	USBSetupPacket* p=new USBSetupPacket(request,data,filter);
 	out_queue_ep0->push(p);
 }
 
 
 void USBManager::add_injector(USBInjector* _injector){
-	if (status!=USBM_IDLE) {fprintf(stderr,"Can't add injectors unless manager is idle.\n");}
+	if (status!=USBM_IDLE) {fprintf(stderr,"Can't add injectors unless manager is idle.\n");return;}
 	if (injectors) {
 		injectors=(USBInjector**)realloc(injectors,++injectorCount*sizeof(USBInjector*));
 	} else {
@@ -136,11 +140,12 @@ void USBManager::add_injector(USBInjector* _injector){
 		injectors=(USBInjector**)malloc(sizeof(USBInjector*));
 	}
 	injectors[injectorCount-1]=_injector;
+	_injector->set_manager(this);
 }
 
 void USBManager::remove_injector(__u8 index,bool freeMemory){
-	if (status!=USBM_IDLE) {fprintf(stderr,"Can't remove injectors unless manager is idle.\n");}
-	if (!injectors || index>=injectorCount) {fprintf(stderr,"Injector index out of bounds.\n");}
+	if (status!=USBM_IDLE) {fprintf(stderr,"Can't remove injectors unless manager is idle.\n");return;}
+	if (!injectors || index>=injectorCount) {fprintf(stderr,"Injector index out of bounds.\n");return;}
 	if (freeMemory && injectors[index]) {delete(injectors[index]);/* not needed injectors[index]=NULL;*/}
 	if (injectorCount==1) {
 		injectorCount=0;
@@ -165,7 +170,7 @@ __u8 USBManager::get_injector_count(){
 }
 
 void USBManager::add_filter(USBPacketFilter* _filter){
-	if (status!=USBM_IDLE) {fprintf(stderr,"Can't add filters unless manager is idle.\n");}
+	if (status!=USBM_IDLE) {fprintf(stderr,"Can't add filters unless manager is idle.\n");return;}
 	if (filters) {
 		filters=(USBPacketFilter**)realloc(filters,++filterCount*sizeof(USBPacketFilter*));
 	} else {
@@ -176,8 +181,8 @@ void USBManager::add_filter(USBPacketFilter* _filter){
 }
 
 void USBManager::remove_filter(__u8 index,bool freeMemory){
-	if (status!=USBM_IDLE) {fprintf(stderr,"Can't remove filters unless manager is idle.\n");}
-	if (!filters || index>=filterCount) {fprintf(stderr,"Filter index out of bounds.\n");}
+	if (status!=USBM_IDLE) {fprintf(stderr,"Can't remove filters unless manager is idle.\n");return;}
+	if (!filters || index>=filterCount) {fprintf(stderr,"Filter index out of bounds.\n");return;}
 	if (freeMemory && filters[index]) {delete(filters[index]);/* not needed filters[index]=NULL;*/}
 	if (filterCount==1) {
 		filterCount=0;
@@ -279,8 +284,20 @@ void USBManager::start_relaying(){
 	}
 
 	hostProxy->connect(device);
-	for(i=0;i<injectorCount;i++) {
-		pthread_create(&injectorThreads[i],NULL,&USBInjector::listen_helper,injectors[i]);
+	if (injectorCount) {
+		if (injectorThreads) {
+			for(i=0;i<injectorCount;i++) {
+				if (injectorThreads[i]) {
+					pthread_cancel(injectorThreads[i]);
+					/* not needeed injectorThreds[i]=0; */
+				}
+			}
+			/* not needed injectorThreads=NULL; */
+		}
+		injectorThreads=(pthread_t *)calloc(injectorCount,sizeof(pthread_t));
+		for(i=0;i<injectorCount;i++) {
+			pthread_create(&injectorThreads[i],NULL,&USBInjector::listen_helper,injectors[i]);
+		}
 	}
 
 	//Claim interfaces
@@ -320,6 +337,7 @@ void USBManager::stop_relaying(){
 		pthread_join(injectorThreads[i],NULL);
 		injectorThreads[i]=0;
 	}
+	if (injectorThreads) {free(injectorThreads);injectorThreads=NULL;}
 
 	//wait for all relayer threads to stop, then delete relayer objects
 	for(i=0;i<16;i++) {

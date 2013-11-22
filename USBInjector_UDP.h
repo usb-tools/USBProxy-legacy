@@ -19,28 +19,32 @@
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
  *
- * USBInjector.cpp
+ * USBInjectorUDP.h
  *
- * Created on: Nov 12, 2013
+ * Created on: Nov 22, 2013
  */
+#ifndef USBINJECTORUDP_H_
+#define USBINJECTORUDP_H_
+
 #include "USBInjector.h"
+#include "sys/socket.h"
 
-USBInjector::USBInjector() {
-	halt=false;
-	manager=NULL;
-}
+#define UDP_BUFFER_SIZE 1472
 
-void USBInjector::listen() {
-	start_injector();
-	while (!halt) {
-		//TODO we also need to handle setup packets and getting the response back
-		USBPacket* p=get_packets();
-		if (p) {manager->inject_packet(p);}
-	}
-	stop_injector();
-}
+class USBInjector_UDP: public USBInjector {
+private:
+	__u16 port;
+	int sck;
+	__u8* buf;
 
-void* USBInjector::listen_helper(void* context) {
-	((USBInjector*)context)->listen();
-	return 0;
-}
+protected:
+	void start_injector();
+	void stop_injector();
+	USBPacket* get_packets();
+
+public:
+	USBInjector_UDP(__u16 _port);
+	virtual ~USBInjector_UDP();
+};
+
+#endif /* USBINJECTORUDP_H_ */
