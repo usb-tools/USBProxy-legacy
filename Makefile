@@ -29,7 +29,7 @@ else
 endif
 
 # CPPFLAGS = compiler options for C and C++
-CPPFLAGS = -Wall -g -Os -mthumb -fdata-sections -ffunction-sections -MMD -MP $(OPTIONS) -I/usr/src -I/usr/include -I/usr/local/include
+CPPFLAGS = -Wall -O2 -g -mthumb -fdata-sections -ffunction-sections -MMD -MP $(OPTIONS) -I/usr/src -I/usr/include -I/usr/local/include
 
 # compiler options for C++ only
 CXXFLAGS = -std=c++98 -pedantic -felide-constructors -fno-exceptions -fno-rtti
@@ -46,7 +46,7 @@ else
 endif
 
 LDFLAGS += -Wl,--gc-sections
-LDFLAGS += -l$(LIBUSB) -ludev -lstdc++ -lpthread -lusb-gadget -lboost_atomic
+LDFLAGS += -l$(LIBUSB) -ludev -lstdc++ -lpthread -lboost_atomic
 
 C_FILES := $(wildcard *.c)
 CPP_FILES := $(wildcard *.cpp)
