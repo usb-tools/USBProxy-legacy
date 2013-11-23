@@ -35,6 +35,7 @@
 #include "USBDeviceProxy_LibUSB.h"
 #include "USBHostProxy_GadgetFS.h"
 #include "USBInjector_UDP.h"
+#include "USBPacketFilter_KeyLogger.h"
 
 static int debug=0;
 
@@ -114,15 +115,17 @@ extern "C" int main(int argc, char **argv)
 	manager=new USBManager(device_proxy,host_proxy);
 
 	USBPacketFilter_streamlog* logfilter=new USBPacketFilter_streamlog(stderr);
+	USBPacketFilter_KeyLogger* keyfilter=new USBPacketFilter_KeyLogger(stderr);
 	USBInjector_UDP* udpinjector=new USBInjector_UDP(12345);
 
-	manager->add_filter(logfilter);
+	//manager->add_filter(logfilter);
+	manager->add_filter(keyfilter);
 	manager->add_injector(udpinjector);
 
 	manager->start_relaying();
 
 	int i;
-	for (i=10;i>0 && manager->get_status()==USBM_RELAYING;i--) {printf("%d...\n",i);sleep(1);}
+	while (manager->get_status()==USBM_RELAYING) {sleep(1);}
 
 	manager->stop_relaying();
 
