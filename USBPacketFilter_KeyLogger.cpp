@@ -103,10 +103,10 @@ USBPacketFilter_KeyLogger::USBPacketFilter_KeyLogger(FILE* _file) {
 	keyMap[0x4c]="{DELETE}";
 	keyMap[0x4d]="{END}";
 	keyMap[0x4e]="{PG DOWN}";
-	keyMap[0x4f]="{RIGHT}";
-	keyMap[0x50]="{LEFT}";
-	keyMap[0x51]="{DOWN}";
-	keyMap[0x52]="{UP}";
+	keyMap[0x4f]="\033[1C";
+	keyMap[0x50]="\033[1D";
+	keyMap[0x51]="\033[1B";
+	keyMap[0x52]="\033[1A";
 	keyMap[0x53]="{NUM LOCK}";
 	keyMap[0x54]="/";
 	keyMap[0x55]="*";
@@ -175,24 +175,53 @@ USBPacketFilter_KeyLogger::USBPacketFilter_KeyLogger(FILE* _file) {
 }
 
 void USBPacketFilter_KeyLogger::keyPressed(__u8 keyCode,__u8 mods) {
-	if ((mods & 0x22) && shiftKeyMap[keyCode]) {
-		fprintf(file,"%s",shiftKeyMap[keyCode]);
-	} else if (keyMap[keyCode]) {
-		fprintf(file,"%s",keyMap[keyCode]);
+	if (keyCode) {
+		if (mods & 0x01) { fprintf(file,"\033[0;31m{LCTRL}\033[0m"); }
+		if (mods & 0x04) { fprintf(file,"\033[0;31m{LALT}\033[0m"); }
+		if (mods & 0x08) { fprintf(file,"\033[0;31m{LWIN}\033[0m"); }
+		if (mods & 0x10) { fprintf(file,"\033[0;31m{RCTRL}\033[0m"); }
+		if (mods & 0x40) { fprintf(file,"\033[0;31m{RALT}\033[0m"); }
+		if (mods & 0x80) { fprintf(file,"\033[0;31m{RWIN}\033[0m"); }
+		if ((mods & 0x22) && shiftKeyMap[keyCode]) {
+			if (shiftKeyMap[keyCode][0]=='{' && shiftKeyMap[keyCode][1]!=0) {
+				fprintf(file,"\033[0;34m%s\033[0m",shiftKeyMap[keyCode]);
+			} else {
+				fprintf(file,"%s",shiftKeyMap[keyCode]);
+			}
+		} else if (keyMap[keyCode]) {
+			if (keyMap[keyCode][0]=='{' && keyMap[keyCode][1]!=0) {
+				fprintf(file,"\033[0;34m%s\033[0m",keyMap[keyCode]);
+			} else {
+				fprintf(file,"%s",keyMap[keyCode]);
+			}
+		} else {
+			fprintf(file,"{INVALID}");
+		}
 	} else {
-		fprintf(file,"{INVALID}");
+		if (mods & 0x01) { fprintf(file,"\033[0;31m{LCTRL}\033[0m"); }
+		if (mods & 0x02) { fprintf(file,"\033[0;31m{LSHIFT}\033[0m"); }
+		if (mods & 0x04) { fprintf(file,"\033[0;31m{LALT}\033[0m"); }
+		if (mods & 0x08) { fprintf(file,"\033[0;31m{LWIN}\033[0m"); }
+		if (mods & 0x10) { fprintf(file,"\033[0;31m{RCTRL}\033[0m"); }
+		if (mods & 0x20) { fprintf(file,"\033[0;31m{RSHIFT}\033[0m"); }
+		if (mods & 0x40) { fprintf(file,"\033[0;31m{RALT}\033[0m"); }
+		if (mods & 0x80) { fprintf(file,"\033[0;31m{RWIN}\033[0m"); }
 	}
 }
 
 void USBPacketFilter_KeyLogger::filter_packet(USBPacket* packet) {
 	int i,j;
-	bool found;
+	bool found=false,noKeys=true;
+	__u8 newMods=packet->data[0]&(~lastReport[0]);
 	for(i=2;i<8;i++) {
 		found=false;
 		for(j=0;j<8;j++) {
 			if (packet->data[i]==lastReport[j]) {found=true;break;}
 		}
-		if (!found) {keyPressed(packet->data[i],packet->data[0]);}
+		if (!found) {keyPressed(packet->data[i],packet->data[0]);noKeys=false;}
+	}
+	if (noKeys) {
+		keyPressed(0,newMods);
 	}
 	memcpy(lastReport,packet->data,8);
 }
