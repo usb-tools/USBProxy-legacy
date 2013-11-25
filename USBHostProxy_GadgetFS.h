@@ -30,14 +30,12 @@ extern "C" {
 #include <linux/usb/gadgetfs.h>
 }
 #include "USBHostProxy.h"
-#include <string>
-#include <fstream>
 
 class USBHostProxy_GadgetFS: public USBHostProxy {
 private:
 	const char *device_path;
 	bool p_is_connected;
-	std::ofstream p_device_file;
+	int p_device_file;
 
 public:
 	USBHostProxy_GadgetFS(const char * _device_path);

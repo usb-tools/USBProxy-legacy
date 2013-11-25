@@ -29,6 +29,8 @@
 #include <cstring>
 #include "TRACE.h"
 #include "GadgetFS_helpers.h"
+#include <fcntl.h>
+#include <unistd.h>
 #include "errno.h"
 
 /* gadgetfs currently has no chunking (or O_DIRECT/zerocopy) support
@@ -44,17 +46,16 @@ USBHostProxy_GadgetFS::USBHostProxy_GadgetFS(const char * _device_path) {
 
 USBHostProxy_GadgetFS::~USBHostProxy_GadgetFS() {
 	//FINISH
-	if(p_device_file.is_open())
-		p_device_file.close();
+	
+	//FINISH - check if it's open
+	close(p_device_file);
 }
 
 int USBHostProxy_GadgetFS::connect(USBDevice* device) {
-	int i;
-	char *ptr, *header_ptr;
+	int i, status;
+	char *ptr;
 	const char *device_filename;
 	const usb_device_descriptor *device_descriptor;
-	USBConfiguration* configuration;
-	const usb_config_descriptor* config_descriptor;
 	char descriptor_buf[USB_BUFSIZE];
 
 	if (p_is_connected) {fprintf(stderr,"GadgetFS already connected.\n"); return 0;}
@@ -124,13 +125,14 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 	strcat(path, "/");
 	strcat(path, device_filename);
 
-	p_device_file.open(path);
-	if (p_device_file.fail()) {fprintf(stderr,"Fail on open %d %s\n",errno,strerror(errno));}
-	p_device_file.write(descriptor_buf, ptr - descriptor_buf);
-	p_device_file.flush();
-	if (p_device_file.fail()) {fprintf(stderr,"Fail on write %d %s\n",errno,strerror(errno));}
-	TRACE1(p_device_file.failbit)
-	//fprintf(stderr,"write: %d\n",rc);
+	p_device_file = open(path, O_RDWR);
+	if (p_device_file < 0)
+		fprintf(stderr,"Fail on open %d %s\n",errno,strerror(errno));
+
+	status = write(p_device_file, descriptor_buf, ptr - descriptor_buf);
+	if (status < 0)
+		fprintf(stderr,"Fail on write %d %s\n",errno,strerror(errno));
+
 	p_is_connected = true;
 	return 0;
 }
@@ -138,8 +140,9 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 void USBHostProxy_GadgetFS::disconnect() {
 	//FINISH
 	if (!p_is_connected) {fprintf(stderr,"GadgetFS not connected.\n"); return;}
-	if(p_device_file.is_open())
-		p_device_file.close();
+	
+	//FINISH - check if it's open
+	close(p_device_file);
 	
 	p_is_connected = false;
 }
