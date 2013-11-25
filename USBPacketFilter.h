@@ -123,8 +123,8 @@ public:
 	}
 	virtual ~USBPacketFilter() {};
 
-	virtual void filter_packet(USBPacket* packet)=0;
-	virtual void filter_setup_packet(USBSetupPacket* packet)=0;
+	virtual void filter_packet(USBPacket* packet) {}
+	virtual void filter_setup_packet(USBSetupPacket* packet) {}
 
 	bool test_device(USBDevice* _device);
 	bool test_configuration(USBConfiguration* _configuration);
@@ -148,13 +148,7 @@ public:
 		for(i=0;i<packet->wLength;i++) {fprintf(file," %02x",packet->data[i]);}
 		fprintf(file,"\n");
 	}
-	void filter_setup_packet(USBSetupPacket* packet) {
-		__u8* req=(__u8*)&(packet->ctrl_req);
-		fprintf(file,"SETUP[%02x%02x%02x%02x%02x%02x%02x%02x]:",req[0],req[1],req[2],req[3],req[4],req[5],req[6],req[7]);
-		int i;
-		for(i=0;i<packet->ctrl_req.wLength;i++) {fprintf(file," %02x",packet->data[i]);}
-		fprintf(file,"\n");
-	}
+	void filter_setup_packet(USBSetupPacket* packet) {return;}
 	virtual char* toString() {return (char*)"Stream Log Filter";}
 };
 
