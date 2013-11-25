@@ -125,9 +125,12 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 	strcat(path, device_filename);
 
 	p_device_file = open(path, O_RDWR);
-	if (p_device_file < 0) {fprintf(stderr,"Fail on open %d %s\n",errno,strerror(errno));
+	if (p_device_file < 0)
+		fprintf(stderr,"Fail on open %d %s\n",errno,strerror(errno));
+
 	status = write(p_device_file, descriptor_buf, ptr - descriptor_buf);
-	if (status < 0) {fprintf(stderr,"Fail on write %d %s\n",errno,strerror(errno));
+	if (status < 0)
+		fprintf(stderr,"Fail on write %d %s\n",errno,strerror(errno));
 
 	p_is_connected = true;
 	return 0;
