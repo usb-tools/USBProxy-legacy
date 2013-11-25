@@ -281,7 +281,10 @@ void USBManager::start_relaying(){
 		}
 	}
 
-	hostProxy->connect(device);
+	if (hostProxy->connect(device)!=0) {
+		stop_relaying();
+		return;
+	}
 
 	if (injectorCount) {
 		injectorThreads=(pthread_t *)calloc(injectorCount,sizeof(pthread_t));
@@ -309,7 +312,7 @@ void USBManager::start_relaying(){
 }
 
 void USBManager::stop_relaying(){
-	//TODO this should exit immediately if already stopped, and wait (somehow) is stopping or setting up
+	if (status!=USBM_RELAYING && status!=USBM_SETUP) return;
 	status=USBM_STOPPING;
 
 	int i;

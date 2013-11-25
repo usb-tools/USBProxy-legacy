@@ -274,6 +274,6 @@ void USBDeviceProxy_LibUSB::claim_interface(__u8 interface) {
 void USBDeviceProxy_LibUSB::release_interface(__u8 interface) {
 	if (is_connected()) {
 		int rc=libusb_release_interface(dev_handle,interface);
-		if (rc) {fprintf(stderr,"Error (%d) releasing interface %d\n",rc,interface);}
+		if (rc && rc!=-5) {fprintf(stderr,"Error (%d) releasing interface %d\n",rc,interface);}
 	}
 }
