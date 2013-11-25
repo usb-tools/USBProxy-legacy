@@ -135,7 +135,7 @@ extern "C" int main(int argc, char **argv)
 	manager->start_relaying();
 
 	int i;
-	while (manager->get_status()==USBM_RELAYING) {sleep(1);TRACE}
+	while (manager->get_status()==USBM_RELAYING) {sleep(1);}
 
 	manager->stop_relaying();
 

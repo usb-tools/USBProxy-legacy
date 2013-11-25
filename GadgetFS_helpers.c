@@ -66,25 +66,22 @@ const char *find_gadget(const char *path)
 				   + pathconf(path, _PC_NAME_MAX)
 				   + 1);
 
-	if (entry) {
-		while(1) {
-			TRACE2(readdir_r(dir, entry, &result),result==NULL?1:0)
-			if (readdir_r(dir, entry, &result) > 0 && result) {
-				TRACE
-				for (i = 0; devices[i] && strcmp (devices[i], entry->d_name); i++)
-					;
-				filename = devices[i];
-				break;
-			}
-			if (result==NULL) {
-				free(entry);
-				closedir(dir);
-				fprintf(stderr,"/dev/gadget device file not found.\n");
-				return NULL;
-			}
-		}
-		free(entry);
+	fprintf(stderr,"searching in [%s]\n",path);
+
+	if (!entry) {
+		closedir (dir);
+		return NULL;
 	}
+
+	while(1) {
+		if (readdir_r(dir, entry, &result) < 0) break;
+		if (!result) {fprintf(stderr,"/dev/gadget device file not found.\n");break;}
+		for (i = 0; devices[i] && strcmp (devices[i], entry->d_name); i++)
+			;
+		if (devices[i]) {filename = devices[i];break;}
+	}
+
+	free(entry);
 
 	closedir(dir);
 
