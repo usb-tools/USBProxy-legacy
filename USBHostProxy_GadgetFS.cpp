@@ -28,9 +28,7 @@
 #include "USBHostProxy_GadgetFS.h"
 #include <cstring>
 #include "TRACE.h"
-extern "C" {
-	#include "GadgetFS_helpers.h"
-}
+#include "GadgetFS_helpers.h"
 
 /* gadgetfs currently has no chunking (or O_DIRECT/zerocopy) support
  * to turn big requests into lots of smaller ones; so this is "small".
