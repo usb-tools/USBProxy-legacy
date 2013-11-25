@@ -78,7 +78,7 @@ const char *find_gadget(const char *path)
 		if (!result) {fprintf(stderr,"/dev/gadget device file not found.\n");break;}
 		for (i = 0; devices[i] && strcmp (devices[i], entry->d_name); i++)
 			;
-		if (devices[i]) {filename = devices[i];break;}
+		if (devices[i]) {filename = devices[i] ;break;}
 	}
 
 	free(entry);

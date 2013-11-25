@@ -31,6 +31,7 @@
 #include "GadgetFS_helpers.h"
 #include <fcntl.h>
 #include <unistd.h>
+#include "errno.h"
 
 /* gadgetfs currently has no chunking (or O_DIRECT/zerocopy) support
  * to turn big requests into lots of smaller ones; so this is "small".
@@ -107,14 +108,16 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 		return 1;
 	}
 
-	char path[256];
+	char path[256]={0x0};
 	strcat(path, device_path);
 	strcat(path, "/");
 	strcat(path, device_filename);
 
 	p_device_file = open(path, O_RDWR);
+	if (p_device_file < 0) {fprintf(stderr,"Fail on open %d %s\n",errno,strerror(errno));
 	status = write(p_device_file, descriptor_buf, ptr - descriptor_buf);
-	fprintf(stderr, "write: %d\n", status);
+	if (status < 0) {fprintf(stderr,"Fail on write %d %s\n",errno,strerror(errno));
+
 	p_is_connected = true;
 	return 0;
 }
