@@ -60,11 +60,19 @@ void handle_signal(int signum)
 			printf("Received SIGTERM, stopping relaying...\n");
 			if (manager) {manager->stop_relaying();}
 			printf("Exiting\n");
+			struct sigaction action;
+			memset(&action, 0, sizeof(struct sigaction));
+			action.sa_handler = SIG_DFL;
+			sigaction(SIGTERM, &action, NULL);
 			break;
 		case SIGINT:
 			printf("Received SIGINT, stopping relaying...\n");
 			if (manager) {manager->stop_relaying();}
 			printf("Exiting\n");
+			struct sigaction action;
+			memset(&action, 0, sizeof(struct sigaction));
+			action.sa_handler = SIG_DFL;
+			sigaction(SIGINT, &action, NULL);
 			break;
 		case SIGHUP:
 			printf("Received SIGHUP, restarting relaying...\n");
