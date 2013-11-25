@@ -77,7 +77,9 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 		//	header_ptr = ptr;
 		int length=device->get_configuration(i)->get_full_descriptor_length();
 		memcpy(ptr,device->get_configuration(i)->get_full_descriptor(),length);
-		((usb_config_descriptor *)ptr)->bmAttributes=((usb_config_descriptor *)ptr)->bmAttributes & (!USB_CONFIG_ATT_WAKEUP);
+		TRACE1(((usb_config_descriptor *)ptr)->bmAttributes)
+		((usb_config_descriptor *)ptr)->bmAttributes=((usb_config_descriptor *)ptr)->bmAttributes & (~USB_CONFIG_ATT_WAKEUP);
+		TRACE1(((usb_config_descriptor *)ptr)->bmAttributes)
 		ptr+=length;
 		// ((usb_config_descriptor *)header_ptr)->wTotalLength = __cpu_to_le16(ptr - header_ptr);
 	}
@@ -86,9 +88,18 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 	  for (i=1;i<=device->get_descriptor()->bNumConfigurations;i++) {
 	    int length=device->get_device_qualifier()->get_configuration(i)->get_full_descriptor_length();
 	    memcpy(ptr,device->get_device_qualifier()->get_configuration(i)->get_full_descriptor(),length);
-		((usb_config_descriptor *)ptr)->bmAttributes=((usb_config_descriptor *)ptr)->bmAttributes & (!USB_CONFIG_ATT_WAKEUP);
+		((usb_config_descriptor *)ptr)->bmAttributes=((usb_config_descriptor *)ptr)->bmAttributes & (~USB_CONFIG_ATT_WAKEUP);
 	    ptr+=length;
 	  }
+	} else {
+		for (i=1;i<=device->get_descriptor()->bNumConfigurations;i++) {
+			//	header_ptr = ptr;
+			int length=device->get_configuration(i)->get_full_descriptor_length();
+			memcpy(ptr,device->get_configuration(i)->get_full_descriptor(),length);
+			((usb_config_descriptor *)ptr)->bmAttributes=((usb_config_descriptor *)ptr)->bmAttributes & (~USB_CONFIG_ATT_WAKEUP);
+			ptr+=length;
+			// ((usb_config_descriptor *)header_ptr)->wTotalLength = __cpu_to_le16(ptr - header_ptr);
+		}
 	}
 	memcpy(ptr, (char *)device_descriptor, sizeof(usb_device_descriptor));
 	ptr += sizeof(struct usb_device_descriptor);
