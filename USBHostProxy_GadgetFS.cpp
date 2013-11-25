@@ -88,7 +88,6 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 	  for (i=1;i<=device->get_descriptor()->bNumConfigurations;i++) {
 	    int length=device->get_device_qualifier()->get_configuration(i)->get_full_descriptor_length();
 	    memcpy(ptr,device->get_device_qualifier()->get_configuration(i)->get_full_descriptor(),length);
-		((usb_config_descriptor *)ptr)->bDescriptorType=USB_DT_CONFIG;
 		((usb_config_descriptor *)ptr)->bmAttributes=((usb_config_descriptor *)ptr)->bmAttributes & (~USB_CONFIG_ATT_WAKEUP);
 	    ptr+=length;
 	  }
