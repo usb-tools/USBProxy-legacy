@@ -69,11 +69,13 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 	ptr[0] = ptr[1] = ptr[2] = ptr[3] = 0;
 	ptr += 4;
 
+
 	/* FINISH: Add error checking */
 	for (i=1;i<=device->get_descriptor()->bNumConfigurations;i++) {
 		//	header_ptr = ptr;
 		int length=device->get_configuration(i)->get_full_descriptor_length();
 		memcpy(ptr,device->get_configuration(i)->get_full_descriptor(),length);
+		((usb_config_descriptor *)ptr)->bmAttributes=((usb_config_descriptor *)ptr)->bmAttributes & (!USB_CONFIG_ATT_WAKEUP);
 		ptr+=length;
 		// ((usb_config_descriptor *)header_ptr)->wTotalLength = __cpu_to_le16(ptr - header_ptr);
 	}
@@ -82,6 +84,7 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 	  for (i=1;i<=device->get_descriptor()->bNumConfigurations;i++) {
 	    int length=device->get_device_qualifier()->get_configuration(i)->get_full_descriptor_length();
 	    memcpy(ptr,device->get_device_qualifier()->get_configuration(i)->get_full_descriptor(),length);
+		((usb_config_descriptor *)ptr)->bmAttributes=((usb_config_descriptor *)ptr)->bmAttributes & (!USB_CONFIG_ATT_WAKEUP);
 	    ptr+=length;
 	  }
 	}
@@ -109,7 +112,9 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 	strcat(path, device_filename);
 
 	p_device_file.open(path);
+	TRACE1(p_device_file.failbit)
 	p_device_file.write(descriptor_buf, ptr - descriptor_buf);
+	TRACE1(p_device_file.failbit)
 	//fprintf(stderr,"write: %d\n",rc);
 	p_is_connected = true;
 	return 0;
