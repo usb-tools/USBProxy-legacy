@@ -26,11 +26,16 @@
 #ifndef USBHOSTPROXYGADGETFS_H_
 #define USBHOSTPROXYGADGETFS_H_
 
+extern "C" {
+#include <linux/usb/gadgetfs.h>
+}
 #include "USBHostProxy.h"
 
 class USBHostProxy_GadgetFS: public USBHostProxy {
 private:
 	const char * device_path;
+	bool p_is_connected;
+	char *descriptor_buf;
 
 public:
 	USBHostProxy_GadgetFS(const char * _device_path);

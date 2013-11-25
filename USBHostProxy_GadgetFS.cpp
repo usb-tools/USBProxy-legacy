@@ -1,6 +1,8 @@
 /*
  * Copyright 2013 Dominic Spill
  * Copyright 2013 Adam Stasiak
+ * 
+ * Based on libusb-gadget - Copyright 2009 Daiki Ueno <ueno@unixuser.org>
  *
  * This file is part of USB-MitM.
  *
@@ -24,6 +26,11 @@
  * Created on: Nov 21, 2013
  */
 #include "USBHostProxy_GadgetFS.h"
+#include <cstring>
+#include "TRACE.h"
+#extern "C" {
+	#include "GadgetFS_helpers.h"
+}
 
 /*-------------------------------------------------------------------------*/
 /* gadgetfs currently has no chunking (or O_DIRECT/zerocopy) support
@@ -34,20 +41,80 @@
 
 USBHostProxy_GadgetFS::USBHostProxy_GadgetFS(const char * _device_path) {
 	device_path=_device_path;
-	//FINISH
+	p_is_connected = false;
+	//Check path exists, permissions, etc
 }
 
 USBHostProxy_GadgetFS::~USBHostProxy_GadgetFS() {
 	//FINISH
+	if(descriptor_buf) {
+		free(descriptor_buf);
+		descriptor_buf = NULL;
+	}
 }
 
 int USBHostProxy_GadgetFS::connect(USBDevice* device) {
-	//FINISH
+	int i;
+	char *ptr, *header_ptr, *gadget_file;
+	const usb_device_descriptor *device_descriptor;
+	USBConfiguration* configuration;
+	const usb_config_descriptor* config_descriptor;
+
+	if (p_is_connected) {fprintf(stderr,"GadgetFS already connected.\n"); return 0;}
+
+	device_descriptor = device->get_descriptor();
+	if (device_descriptor == NULL) {
+		fprintf(stderr,"Error, unable to fetch device descriptor.\n");
+		return 1;
+	}
+
+	descriptor_buf = (char *) malloc(USB_BUFSIZE);
+	if (descriptor_buf == NULL) {
+		fprintf(stderr,"Error, unable to allocate descriptor buffer.\n");
+		return 1;
+	}
+
+	ptr = descriptor_buf;
+	/* tag for device descriptor format */
+	ptr[0] = ptr[1] = ptr[2] = ptr[3] = 0;
+	ptr += 4;
+	
+	/* FINISH: Add error checking */
+	header_ptr = ptr;
+	for(i=1; i <= device_descriptor->bNumConfigurations; i++) {
+		configuration = device->get_configuration(i);
+		config_descriptor = configuration->get_descriptor();
+		fprintf(stderr, "Copying %d bytes\n", sizeof(usb_config_descriptor));
+		memcpy(ptr, (char *)config_descriptor, sizeof(usb_config_descriptor));
+		ptr += config_descriptor->bLength;
+	}
+
+	((usb_config_descriptor *)header_ptr)->wTotalLength = __cpu_to_le16(ptr - header_ptr);
+
+	memcpy (ptr,  (char *)device_descriptor, sizeof(usb_device_descriptor));
+	ptr += sizeof(struct usb_device_descriptor);
+
+	for(i=0; descriptor_buf+i != ptr; i++) {
+		if(i%8 == 0)
+			fprintf(stderr, "\n");
+		fprintf(stderr, " %x", descriptor_buf[i]);
+	}
+	
+	gadget_file = find_gadget(device_path);
+	if (gadget_file == NULL) {
+		fprintf(stderr,"Error, unable to open gadget file in %s.\n", device_path);
+		return 1;
+	}
+
+	p_is_connected = false;
 	return 1;
 }
 
 void USBHostProxy_GadgetFS::disconnect() {
 	//FINISH
+	if (!p_is_connected) {fprintf(stderr,"GadgetFS not connected.\n"); return;}
+	
+	p_is_connected = false;
 }
 
 void USBHostProxy_GadgetFS::reset() {
@@ -55,8 +122,7 @@ void USBHostProxy_GadgetFS::reset() {
 }
 
 bool USBHostProxy_GadgetFS::is_connected() {
-	//FINISH
-	return false;
+	return p_is_connected;
 }
 
 //return 0 in usb_ctrlrequest->brequest if there is no request

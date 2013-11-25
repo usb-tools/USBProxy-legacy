@@ -1,4 +1,5 @@
 # Copyright 2013 Dominic Spill
+# Copyright 2013 Adam Stasiak
 #
 # This file is part of USB-MitM.
 #
@@ -18,7 +19,7 @@
 # Boston, MA 02110-1301, USA.
 TARGET=usb-mitm
 
-PLATFORM = $(shell uname -m)
+PLATFORM ?= $(shell uname -m)
 ifneq ($(PLATFORM), armv7l)
         CROSS_COMPILE ?= /opt/gcc-linaro-arm-linux-gnueabihf/bin/arm-linux-gnueabihf-
         CC = $(CROSS_COMPILE)gcc

@@ -26,7 +26,6 @@
 #ifndef USBHOSTPROXY_H_
 #define USBHOSTPROXY_H_
 
-#include <linux/usb/ch9.h>
 #include "USBDevice.h"
 
 class USBHostProxy {
