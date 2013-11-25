@@ -55,12 +55,12 @@ void cleanup(void) {
 //sighup: reset forwarding threads, reset device and gadget
 void handle_signal(int signum)
 {
+	struct sigaction action;
 	switch (signum) {
 		case SIGTERM:
 			printf("Received SIGTERM, stopping relaying...\n");
 			if (manager) {manager->stop_relaying();}
 			printf("Exiting\n");
-			struct sigaction action;
 			memset(&action, 0, sizeof(struct sigaction));
 			action.sa_handler = SIG_DFL;
 			sigaction(SIGTERM, &action, NULL);
@@ -69,7 +69,6 @@ void handle_signal(int signum)
 			printf("Received SIGINT, stopping relaying...\n");
 			if (manager) {manager->stop_relaying();}
 			printf("Exiting\n");
-			struct sigaction action;
 			memset(&action, 0, sizeof(struct sigaction));
 			action.sa_handler = SIG_DFL;
 			sigaction(SIGINT, &action, NULL);
