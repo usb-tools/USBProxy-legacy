@@ -32,6 +32,7 @@
 #include <unistd.h>
 #include <stddef.h>
 #include "TRACE.h"
+
 /* Find the appropriate gadget file on the GadgetFS filesystem */
 const char *find_gadget(const char *path)
 {
@@ -67,10 +68,19 @@ const char *find_gadget(const char *path)
 
 	if (entry) {
 		while(1) {
+			TRACE2(readdir_r(dir, entry, &result),result==NULL?1:0)
 			if (readdir_r(dir, entry, &result) > 0 && result) {
+				TRACE
 				for (i = 0; devices[i] && strcmp (devices[i], entry->d_name); i++)
 					;
 				filename = devices[i];
+				break;
+			}
+			if (result==NULL) {
+				free(entry);
+				closedir(dir);
+				fprintf(stderr,"/dev/gadget device file not found.\n");
+				return NULL;
 			}
 		}
 		free(entry);
