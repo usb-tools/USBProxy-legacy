@@ -29,6 +29,8 @@
 #include <cstring>
 #include "TRACE.h"
 #include "GadgetFS_helpers.h"
+#include <fcntl.h>
+#include <unistd.h>
 
 /* gadgetfs currently has no chunking (or O_DIRECT/zerocopy) support
  * to turn big requests into lots of smaller ones; so this is "small".
@@ -43,17 +45,16 @@ USBHostProxy_GadgetFS::USBHostProxy_GadgetFS(const char * _device_path) {
 
 USBHostProxy_GadgetFS::~USBHostProxy_GadgetFS() {
 	//FINISH
-	if(p_device_file.is_open())
-		p_device_file.close();
+	
+	//FINISH - check if it's open
+	close(p_device_file);
 }
 
 int USBHostProxy_GadgetFS::connect(USBDevice* device) {
-	int i;
-	char *ptr, *header_ptr;
+	int i, status;
+	char *ptr;
 	const char *device_filename;
 	const usb_device_descriptor *device_descriptor;
-	USBConfiguration* configuration;
-	const usb_config_descriptor* config_descriptor;
 	char descriptor_buf[USB_BUFSIZE];
 
 	if (p_is_connected) {fprintf(stderr,"GadgetFS already connected.\n"); return 0;}
@@ -111,11 +112,9 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 	strcat(path, "/");
 	strcat(path, device_filename);
 
-	p_device_file.open(path);
-	TRACE1(p_device_file.failbit)
-	p_device_file.write(descriptor_buf, ptr - descriptor_buf);
-	TRACE1(p_device_file.failbit)
-	//fprintf(stderr,"write: %d\n",rc);
+	p_device_file = open(path, O_RDWR);
+	status = write(p_device_file, descriptor_buf, ptr - descriptor_buf);
+	fprintf(stderr, "write: %d\n", status);
 	p_is_connected = true;
 	return 0;
 }
@@ -123,8 +122,9 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 void USBHostProxy_GadgetFS::disconnect() {
 	//FINISH
 	if (!p_is_connected) {fprintf(stderr,"GadgetFS not connected.\n"); return;}
-	if(p_device_file.is_open())
-		p_device_file.close();
+	
+	//FINISH - check if it's open
+	close(p_device_file);
 	
 	p_is_connected = false;
 }
