@@ -102,7 +102,7 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 
 	char path[256];
 	strcat(path, device_path);
-	strcat(path, '/');
+	strcat(path, "/");
 	strcat(path, device_filename);
 
 	p_device_file.open(path);
