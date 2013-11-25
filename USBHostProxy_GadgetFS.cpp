@@ -70,16 +70,21 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 	ptr += 4;
 
 	/* FINISH: Add error checking */
-	header_ptr = ptr;
-	for(i=1; i <= device_descriptor->bNumConfigurations; i++) {
-		configuration = device->get_configuration(i);
-		config_descriptor = configuration->get_descriptor();
-		memcpy(ptr, (char *)config_descriptor, sizeof(usb_config_descriptor));
-		ptr += config_descriptor->bLength;
+	for (i=1;i<=device->get_descriptor()->bNumConfigurations;i++) {
+		//	header_ptr = ptr;
+		int length=device->get_configuration(i)->get_full_descriptor_length();
+		memcpy(ptr,device->get_configuration(i)->get_full_descriptor(),length);
+		ptr+=length;
+		// ((usb_config_descriptor *)header_ptr)->wTotalLength = __cpu_to_le16(ptr - header_ptr);
 	}
 
-	((usb_config_descriptor *)header_ptr)->wTotalLength = __cpu_to_le16(ptr - header_ptr);
-
+	if (device->is_highspeed()) {
+	  for (i=1;i<=device->get_descriptor()->bNumConfigurations;i++) {
+	    int length=device->get_device_qualifier()->get_configuration(i)->get_full_descriptor_length();
+	    memcpy(ptr,device->get_device_qualifier()->get_configuration(i)->get_full_descriptor(),length);
+	    ptr+=length;
+	  }
+	}
 	memcpy(ptr, (char *)device_descriptor, sizeof(usb_device_descriptor));
 	ptr += sizeof(struct usb_device_descriptor);
 
