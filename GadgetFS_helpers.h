@@ -26,5 +26,19 @@
  * Created on: Nov 24, 2013
  */
 
+#ifndef INCLUDED_GADGETFS_HELPERS_H
+#define INCLUDED_GADGETFS_HELPERS_H
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 /* Find the appropriate gadget file on the GadgetFS filesystem */
-const char *find_gadget(const char *path)
+const char *find_gadget(const char *path);
+
+#ifdef __cplusplus
+} // __cplusplus defined.
+#endif
+
+#endif /* INCLUDED_GADGETFS_HELPERS_H */

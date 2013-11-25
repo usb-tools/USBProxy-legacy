@@ -31,7 +31,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <stddef.h>
-
+#include "TRACE.h"
 /* Find the appropriate gadget file on the GadgetFS filesystem */
 const char *find_gadget(const char *path)
 {
