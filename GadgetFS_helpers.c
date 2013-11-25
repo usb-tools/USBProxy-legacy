@@ -53,6 +53,7 @@ const char *find_gadget(const char *path)
 		"at91_udc",
 		"lh740x_udc",
 		"atmel_usba_udc",
+		"musb-hdrc",
 		NULL
 	};
 

@@ -95,10 +95,12 @@ USBManager::~USBManager() {
 			out_relayerThreads[i]=0;
 		}
 	}
-	for (i=0;i<injectorCount;i++) {
-		if (injectorThreads[i]) {
-			pthread_cancel(injectorThreads[i]);
-			injectorThreads[i]=0;
+	if (injectorThreads) {
+		for (i=0;i<injectorCount;i++) {
+			if (injectorThreads[i]) {
+				pthread_cancel(injectorThreads[i]);
+				injectorThreads[i]=0;
+			}
 		}
 	}
 }
@@ -203,6 +205,7 @@ __u8 USBManager::get_filter_count(){
 
 
 void USBManager::start_relaying(){
+	TRACE;
 	//TODO this should exit immediately if already started, and wait (somehow) is stopping or setting up
 	status=USBM_SETUP;
 
@@ -279,8 +282,12 @@ void USBManager::start_relaying(){
 	}
 
 	hostProxy->connect(device);
-	for(i=0;i<injectorCount;i++) {
-		pthread_create(&injectorThreads[i],NULL,&USBInjector::listen_helper,injectors[i]);
+
+	if (injectorCount) {
+		injectorThreads=(pthread_t *)calloc(injectorCount,sizeof(pthread_t));
+		for(i=0;i<injectorCount;i++) {
+			pthread_create(&injectorThreads[i],NULL,&USBInjector::listen_helper,injectors[i]);
+		}
 	}
 
 	//Claim interfaces
@@ -316,13 +323,15 @@ void USBManager::stop_relaying(){
 	}
 
 	//wait for all injector threads to stop
-	for(i=0;i<injectorCount;i++) {pthread_join(injectorThreads[i],NULL);}
+	if (injectorThreads) {
+		for(i=0;i<injectorCount;i++) {if (injectorThreads[i]) {pthread_join(injectorThreads[i],NULL);}}
+	}
 
 	//wait for all relayer threads to stop, then delete relayer objects
 	for(i=0;i<16;i++) {
 		if (in_endpoints[i]) {in_endpoints[i]=NULL;}
 		if (in_relayers[i]) {
-			pthread_join(in_relayerThreads[i],NULL);
+			if (in_relayerThreads[i]) {pthread_join(in_relayerThreads[i],NULL);}
 			delete(in_relayers[i]);
 			in_relayers[i]=NULL;
 		}
@@ -333,7 +342,7 @@ void USBManager::stop_relaying(){
 			out_endpoints[i]=NULL;
 		}
 		if (out_relayers[i]) {
-			pthread_join(out_relayerThreads[i],NULL);
+			if (out_relayerThreads[i]) {pthread_join(out_relayerThreads[i],NULL);}
 			delete(out_relayers[i]);
 			out_relayers[i]=NULL;
 		}
@@ -354,10 +363,12 @@ void USBManager::stop_relaying(){
 
 	//Release interfaces
 	int ifc_idx;
-	USBConfiguration* cfg=device->get_active_configuration();
-	int ifc_cnt=cfg->get_descriptor()->bNumInterfaces;
-	for (ifc_idx=0;ifc_idx<ifc_cnt;ifc_idx++) {
-		deviceProxy->release_interface(ifc_idx);
+		if (device) {
+		USBConfiguration* cfg=device->get_active_configuration();
+		int ifc_cnt=cfg->get_descriptor()->bNumInterfaces;
+		for (ifc_idx=0;ifc_idx<ifc_cnt;ifc_idx++) {
+			deviceProxy->release_interface(ifc_idx);
+		}
 	}
 
 	//disconnect from host
@@ -367,8 +378,10 @@ void USBManager::stop_relaying(){
 	deviceProxy->disconnect();
 
 	//clean up device model & endpoints
-	delete(device);
-	device=NULL;
+	if (device) {
+		delete(device);
+		device=NULL;
+	}
 
 	status=USBM_IDLE;
 }

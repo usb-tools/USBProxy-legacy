@@ -97,7 +97,9 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 	if(i%8 != 0)
 		fprintf(stderr, "\n");
 
+	TRACE;
 	device_filename = find_gadget(device_path);
+	TRACE;
 	if (device_filename == NULL) {
 		fprintf(stderr, "Error, unable to find gadget file in %s.\n", device_path);
 		return 1;
@@ -108,10 +110,12 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 	strcat(path, "/");
 	strcat(path, device_filename);
 
+	TRACE;
 	p_device_file.open(path);
-
+	TRACE;
 	p_device_file.write(descriptor_buf, ptr - descriptor_buf);
-
+	TRACE;
+	//fprintf(stderr,"write: %d\n",rc);
 	p_is_connected = true;
 	return 0;
 }
@@ -119,6 +123,8 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 void USBHostProxy_GadgetFS::disconnect() {
 	//FINISH
 	if (!p_is_connected) {fprintf(stderr,"GadgetFS not connected.\n"); return;}
+	if(p_device_file.is_open())
+		p_device_file.close();
 	
 	p_is_connected = false;
 }
