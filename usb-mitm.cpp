@@ -112,14 +112,8 @@ extern "C" int main(int argc, char **argv)
 		}
 	}
 
-	if (chdir("/dev/gadget") < 0) {
-		perror("can't chdir /dev/gadget\n");
-		return 1;
-	}
-
-
 	USBDeviceProxy* device_proxy=(USBDeviceProxy *)new USBDeviceProxy_LibUSB(vendorId,productId);
-	USBHostProxy* host_proxy=(USBHostProxy* )new USBHostProxy_GadgetFS("/dev/gadget");
+	USBHostProxy* host_proxy=(USBHostProxy* )new USBHostProxy_GadgetFS();
 	manager=new USBManager(device_proxy,host_proxy);
 
 	//USBPacketFilter_streamlog* logfilter=new USBPacketFilter_streamlog(stderr);
@@ -134,7 +128,6 @@ extern "C" int main(int argc, char **argv)
 
 	manager->start_relaying();
 
-	int i;
 	while (manager->get_status()==USBM_RELAYING) {sleep(1);}
 
 	manager->stop_relaying();

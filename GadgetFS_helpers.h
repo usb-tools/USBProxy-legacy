@@ -34,8 +34,19 @@ extern "C"
 {
 #endif
 
+/* gadgetfs currently has no chunking (or O_DIRECT/zerocopy) support
+ * to turn big requests into lots of smaller ones; so this is "small".
+ */
+#define	USB_BUFSIZE	(7 * 1024)
+
 /* Find the appropriate gadget file on the GadgetFS filesystem */
-const char *find_gadget(const char *path);
+int find_gadget();
+
+/* Mount gadgetfs filesystem in a temporary directory */
+int mount_gadget();
+
+/* Unmount gadgetfs filesystem and remove temporary directory */
+int unmount_gadget();
 
 #ifdef __cplusplus
 } // __cplusplus defined.

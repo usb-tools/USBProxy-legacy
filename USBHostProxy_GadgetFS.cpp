@@ -27,19 +27,13 @@
  */
 #include "USBHostProxy_GadgetFS.h"
 #include <cstring>
+#include <unistd.h>
 #include "TRACE.h"
 #include "GadgetFS_helpers.h"
-#include <fcntl.h>
-#include <unistd.h>
 #include "errno.h"
 
-/* gadgetfs currently has no chunking (or O_DIRECT/zerocopy) support
- * to turn big requests into lots of smaller ones; so this is "small".
- */
-#define	USB_BUFSIZE	(7 * 1024)
-
-USBHostProxy_GadgetFS::USBHostProxy_GadgetFS(const char * _device_path) {
-	device_path = _device_path;
+USBHostProxy_GadgetFS::USBHostProxy_GadgetFS() {
+	mount_gadget();
 	p_is_connected = false;
 	//Check path exists, permissions, etc
 }
@@ -49,12 +43,12 @@ USBHostProxy_GadgetFS::~USBHostProxy_GadgetFS() {
 	
 	//FINISH - check if it's open
 	close(p_device_file);
+	unmount_gadget();
 }
 
 int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 	int i, status;
 	char *ptr;
-	const char *device_filename;
 	const usb_device_descriptor *device_descriptor;
 	char descriptor_buf[USB_BUFSIZE];
 
@@ -113,19 +107,8 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 	}
 	if(i%8 != 0)
 		fprintf(stderr, "\n");
-
-	device_filename = find_gadget(device_path);
-	if (device_filename == NULL) {
-		fprintf(stderr, "Error, unable to find gadget file in %s.\n", device_path);
-		return 1;
-	}
-
-	char path[256]={0x0};
-	strcat(path, device_path);
-	strcat(path, "/");
-	strcat(path, device_filename);
-
-	p_device_file = open(path, O_RDWR);
+	
+	p_device_file = find_gadget();
 	TRACE1(p_device_file);
 	if (p_device_file < 0) {
 		fprintf(stderr,"Fail on open %d %s\n",errno,strerror(errno));

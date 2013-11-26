@@ -31,11 +31,44 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <stddef.h>
+#include <stdio.h>
+#include <sys/mount.h>
+#include <fcntl.h>
 #include "TRACE.h"
 
+static char *gadgetfs_path;
+
+/* Mount gadgetfs filesystem in a temporary directory */
+int mount_gadget() {
+	int status;
+	char mount_template[] = "/tmp/gadget-XXXXXX";
+	
+	
+	gadgetfs_path = malloc(sizeof(mount_template));
+	memcpy(gadgetfs_path, mount_template, sizeof(mount_template));
+	
+	gadgetfs_path = mkdtemp(gadgetfs_path);
+	fprintf(stderr, "Made directory %s for gadget\n", gadgetfs_path);
+	
+	status = mount(NULL, gadgetfs_path, "gadgetfs", 0, "");
+	TRACE1(status)
+	
+	return 0;
+}
+
+/* Unmount gadgetfs filesystem and remove temporary directory */
+int unmount_gadget() {
+	int status;
+	status = umount2(gadgetfs_path, 0);
+	TRACE1(status)
+	status = rmdir (gadgetfs_path);
+	TRACE1(status)
+	free(gadgetfs_path);
+	return 0;
+}
+
 /* Find the appropriate gadget file on the GadgetFS filesystem */
-const char *find_gadget(const char *path)
-{
+int find_gadget() {
 	const char *filename = NULL;
 	DIR *dir;
 	struct dirent *entry;
@@ -58,32 +91,44 @@ const char *find_gadget(const char *path)
 		NULL
 	};
 
-	dir = opendir(path);
+	dir = opendir(gadgetfs_path);
 	if (!dir)
-		return NULL;
+		return -1;
 
 	entry = malloc(offsetof(struct dirent, d_name)
-				   + pathconf(path, _PC_NAME_MAX)
+				   + pathconf(gadgetfs_path, _PC_NAME_MAX)
 				   + 1);
 
-	fprintf(stderr,"searching in [%s]\n",path);
+	fprintf(stderr,"searching in [%s]\n",gadgetfs_path);
 
 	if (!entry) {
 		closedir (dir);
-		return NULL;
+		return -1;
 	}
 
 	while(1) {
 		if (readdir_r(dir, entry, &result) < 0) break;
-		if (!result) {fprintf(stderr,"/dev/gadget device file not found.\n");break;}
+		if (!result) {
+			fprintf(stderr,"%s device file not found.\n", gadgetfs_path);
+			break;
+		}
 		for (i = 0; devices[i] && strcmp (devices[i], entry->d_name); i++)
 			;
 		if (devices[i]) {filename = devices[i] ;break;}
 	}
 
 	free(entry);
-
 	closedir(dir);
-
-	return filename;
+	
+	if (filename == NULL) {
+		fprintf(stderr, "Error, unable to find gadget file.\n");
+		return -1;
+	}
+	
+	char path[256]={0x0};
+	strcat(path, gadgetfs_path);
+	strcat(path, "/");
+	strcat(path, filename);
+	
+	return open(path, O_RDWR);
 }
