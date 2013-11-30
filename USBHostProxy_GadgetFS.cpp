@@ -71,9 +71,7 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 		//	header_ptr = ptr;
 		int length=device->get_configuration(i)->get_full_descriptor_length();
 		memcpy(ptr,device->get_configuration(i)->get_full_descriptor(),length);
-		TRACE1(((usb_config_descriptor *)ptr)->bmAttributes)
 		((usb_config_descriptor *)ptr)->bmAttributes=((usb_config_descriptor *)ptr)->bmAttributes & (~USB_CONFIG_ATT_WAKEUP);
-		TRACE1(((usb_config_descriptor *)ptr)->bmAttributes)
 		ptr+=length;
 		// ((usb_config_descriptor *)header_ptr)->wTotalLength = __cpu_to_le16(ptr - header_ptr);
 	}
@@ -107,9 +105,10 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 	}
 	if(i%8 != 0)
 		fprintf(stderr, "\n");
-	
+
+	showFDInfo();
 	p_device_file = find_gadget();
-	TRACE1(p_device_file);
+	showFDInfo();
 	if (p_device_file < 0) {
 		fprintf(stderr,"Fail on open %d %s\n",errno,strerror(errno));
 		return 1;
@@ -128,11 +127,13 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 
 void USBHostProxy_GadgetFS::disconnect() {
 	//FINISH
-	TRACE1(p_device_file);
 	if (!p_is_connected) {fprintf(stderr,"GadgetFS not connected.\n"); return;}
 	
 	//FINISH - check if it's open
 	close(p_device_file);
+	showFDInfo();
+	unmount_gadget();
+	showFDInfo();
 	
 	p_is_connected = false;
 }
