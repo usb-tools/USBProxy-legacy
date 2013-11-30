@@ -130,5 +130,5 @@ int find_gadget() {
 	strcat(path, "/");
 	strcat(path, filename);
 	
-	return open(path, O_RDWR);
+	return open(path, O_CLOEXEC | O_RDWR);
 }

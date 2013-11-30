@@ -42,7 +42,7 @@ USBInjector_UDP::~USBInjector_UDP() {
 
 void USBInjector_UDP::start_injector() {
 	fprintf(stderr,"Opening injection UDP socket on port %d.\n",port);
-	sck=socket(AF_INET,SOCK_DGRAM | SOCK_NONBLOCK,IPPROTO_UDP);
+	sck=socket(AF_INET,SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC,IPPROTO_UDP);
 	if (socket<0) {
 		fprintf(stderr,"Error creating socket.\n");
 		sck=0;
