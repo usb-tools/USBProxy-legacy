@@ -195,17 +195,86 @@ bool USBHostProxy_GadgetFS::is_connected() {
 	return p_is_connected;
 }
 
+#define NEVENT 5
+
 //return 0 in usb_ctrlrequest->brequest if there is no request
 int USBHostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *nbytes, __u8** dataptr) {
+	struct usb_gadgetfs_event events[NEVENT];
+	int ret, nevent, i;
+	//FINISH we should make this timeout if possible, otherwise this relayer thread won't end nicely.
+	//FINISH we also may not be able to do reads, because a read may be interpreted as an ack, which we may need to handle explicitly
+	//FINISH this would likely include passing them through the relayer to the device so it can ack
+	ret = read (p_device_file, &events, sizeof(events));
+	if (ret < 0) {
+		setup_packet->bRequest=0;
+		fprintf(stderr,"Read error %d\n",ret);
+		return 0;
+	}
+
+	nevent = ret / sizeof(events[0]);
+	if (debugLevel>1) fprintf(stderr, "libusb-gadget: %d events received\n", nevent);
+
+	for (i = 0; i < nevent; i++) {
+		if (debugLevel>0) fprintf(stderr,"libusb-gadget: event %d\n", events[i].type);
+		switch (events[i].type) {
+		case GADGETFS_SETUP:
+			//FINISH handle OUT setup with length>0
+			//FINISH handle IN setup with length>0
+			setup_packet->bRequestType=events[i].u.setup.bRequestType;
+			setup_packet->bRequest=events[i].u.setup.bRequest;
+			setup_packet->bRequest=events[i].u.setup.bRequest;
+			setup_packet->wIndex=events[i].u.setup.wIndex;
+			setup_packet->wValue=events[i].u.setup.wValue;
+			setup_packet->wLength=events[i].u.setup.wLength;
+			return 0;
+			break;
+		case GADGETFS_NOP:
+			break;
+		case GADGETFS_CONNECT:
+			/*
+			if (handle->event_cb) {
+				event.type = USG_EVENT_CONNECT;
+				handle->speed = events[i].u.speed;
+				debug (handle, 2, "libusb-gadget: connected with speed %d\n",
+				handle->speed);
+				handle->event_cb (handle, &event, handle->event_arg);
+			}
+			*/
+			break;
+		case GADGETFS_DISCONNECT:
+			/*
+			if (handle->event_cb) {
+				handle->speed = USB_SPEED_UNKNOWN;
+				event.type = USG_EVENT_DISCONNECT;
+				handle->event_cb (handle, &event, handle->event_arg);
+			}
+			*/
+			break;
+		case GADGETFS_SUSPEND:
+			/*
+			if (handle->event_cb) {
+				event.type = USG_EVENT_SUSPEND;
+				handle->event_cb (handle, &event, handle->event_arg);
+			}
+			*/
+			break;
+		default:
+			break;
+		}
+	}
+
 	//FINISH
 	setup_packet->bRequest=0;
 	return 0;
 }
 
+
 void USBHostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length) {
+	fprintf(stderr,"trying to send %d bytes on EP %d\n",length,endpoint);
 	//FINISH
 }
 
 void USBHostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length) {
+	//fprintf(stderr,"trying to receive %d bytes on EP %d\n",length,endpoint);
 	//FINISH
 }
