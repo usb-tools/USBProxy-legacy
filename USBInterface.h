@@ -53,6 +53,7 @@ class USBInterface {
 		USBConfiguration* configuration;
 		USBHID* hid_descriptor;
 		USBGenericDescriptor** generic_descriptors;
+		__u8 generic_descriptor_count;
 
 	public:
 		USBInterface(USBConfiguration* _configuration,__u8** p,const __u8* e);
