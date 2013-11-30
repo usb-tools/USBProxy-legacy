@@ -40,9 +40,6 @@ USBHostProxy_GadgetFS::USBHostProxy_GadgetFS() {
 }
 
 USBHostProxy_GadgetFS::~USBHostProxy_GadgetFS() {
-	//FINISH
-	
-	//FINISH - check if it's open
 	if (p_device_file) {
 		close(p_device_file);
 		p_device_file=0;
