@@ -166,10 +166,8 @@ int find_gadget() {
 		return -1;
 	}
 	
-	char path[256]={0x0};
-	strcat(path, gadgetfs_path);
-	strcat(path, "/");
-	strcat(path, filename);
+	char path[256];
+	sprintf(path, "%s/%s", gadgetfs_path, filename);
 	
 	return open(path, O_CLOEXEC | O_RDWR);
 }
