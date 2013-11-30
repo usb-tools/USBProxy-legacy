@@ -115,14 +115,14 @@ extern "C" int main(int argc, char **argv)
 	USBHostProxy* host_proxy=(USBHostProxy* )new USBHostProxy_GadgetFS(1);
 	manager=new USBManager(device_proxy,host_proxy);
 
-	//USBPacketFilter_streamlog* logfilter=new USBPacketFilter_streamlog(stderr);
-	USBPacketFilter_KeyLogger* keyfilter=new USBPacketFilter_KeyLogger(stderr);
-	USBPacketFilter_ROT13* rotfilter=new USBPacketFilter_ROT13();
+	USBPacketFilter_streamlog* logfilter=new USBPacketFilter_streamlog(stderr);
+	//USBPacketFilter_KeyLogger* keyfilter=new USBPacketFilter_KeyLogger(stderr);
+	//USBPacketFilter_ROT13* rotfilter=new USBPacketFilter_ROT13();
 	USBInjector_UDP* udpinjector=new USBInjector_UDP(12345);
 
-	//manager->add_filter(logfilter);
-	manager->add_filter(rotfilter);
-	manager->add_filter(keyfilter);
+	manager->add_filter(logfilter);
+	//manager->add_filter(rotfilter);
+	//manager->add_filter(keyfilter);
 	manager->add_injector(udpinjector);
 
 	manager->start_relaying();
