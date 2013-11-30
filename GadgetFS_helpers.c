@@ -34,36 +34,63 @@
 #include <stdio.h>
 #include <sys/mount.h>
 #include <fcntl.h>
+#include "mntent.h"
 #include "TRACE.h"
 
 static char *gadgetfs_path;
 
 /* Mount gadgetfs filesystem in a temporary directory */
 int mount_gadget() {
+	char** mounts=NULL;
+	int mountCount=0;
+
+	FILE* mtab=setmntent("/etc/mtab","r");
+	struct mntent* m;
+	struct mntent mnt;
+	char strings[4096];
+	while ((m=getmntent_r(mtab,&mnt,strings,sizeof(strings)))) {
+	    if (strcmp(mnt.mnt_type,"gadgetfs")==0) {
+	    	mountCount++;
+	    	if (mounts) {
+	    		mounts=realloc(mounts,sizeof(char*)*mountCount);
+	    	} else {
+	    		mounts=malloc(sizeof(char*));
+	    	}
+	    	mounts[mountCount-1]=strdup(mnt.mnt_dir);
+	    }
+	}
+	endmntent(mtab);
+
+	int i;
+	for (i=0;i<mountCount;i++) {
+		umount2(mounts[i],0);
+	}
+
 	int status;
 	char mount_template[] = "/tmp/gadget-XXXXXX";
-	
-	
+
+
 	gadgetfs_path = malloc(sizeof(mount_template));
 	memcpy(gadgetfs_path, mount_template, sizeof(mount_template));
-	
+
 	gadgetfs_path = mkdtemp(gadgetfs_path);
 	fprintf(stderr, "Made directory %s for gadget\n", gadgetfs_path);
-	
+
 	status = mount(NULL, gadgetfs_path, "gadgetfs", 0, "");
 	TRACE1(status)
-	
+
 	return 0;
 }
 
 /* Unmount gadgetfs filesystem and remove temporary directory */
 int unmount_gadget() {
-	int status;
-	status = umount2(gadgetfs_path, 0);
-	TRACE1(status)
-	status = rmdir (gadgetfs_path);
-	TRACE1(status)
-	free(gadgetfs_path);
+	if (gadgetfs_path) {
+		int status;
+		status=umount2(gadgetfs_path,0);
+		status = rmdir (gadgetfs_path);
+		free(gadgetfs_path);
+		gadgetfs_path=NULL;
+	}
 	return 0;
 }
 
