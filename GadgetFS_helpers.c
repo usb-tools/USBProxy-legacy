@@ -34,36 +34,77 @@
 #include <stdio.h>
 #include <sys/mount.h>
 #include <fcntl.h>
+#include "mntent.h"
 #include "TRACE.h"
 
 static char *gadgetfs_path;
 
 /* Mount gadgetfs filesystem in a temporary directory */
 int mount_gadget() {
+	char** mountDirs=NULL;
+	char** mountNames=NULL;
+	int mountCount=0;
+
+	FILE* mtab=setmntent("/etc/mtab","r");
+	struct mntent* m;
+	struct mntent mnt;
+	char strings[4096];
+	while ((m=getmntent_r(mtab,&mnt,strings,sizeof(strings)))) {
+	    if (strcmp(mnt.mnt_type,"gadgetfs")==0) {
+	    	mountCount++;
+	    	if (mountDirs) {
+	    		mountDirs=realloc(mountDirs,sizeof(char*)*mountCount);
+	    		mountNames=realloc(mountNames,sizeof(char*)*mountCount);
+	    	} else {
+	    		mountDirs=malloc(sizeof(char*));
+	    		mountNames=malloc(sizeof(char*));
+	    	}
+	    	mountDirs[mountCount-1]=strdup(mnt.mnt_dir);
+	    	mountNames[mountCount-1]=strdup(mnt.mnt_fsname);
+	    }
+	}
+	endmntent(mtab);
+
+	int i;
+	for (i=0;i<mountCount;i++) {
+		umount2(mountDirs[i],0);
+	}
+
+	for (i=0;i<mountCount;i++) {
+		if (strcmp(mountNames[i],"usb-mitm")!=0) {
+			mount(mountNames[i],mountDirs[i],"gadgetfs",0,"");
+		}
+		free(mountNames[i]);
+		free(mountDirs[i]);
+	}
+	free(mountNames);
+	free(mountDirs);
+
 	int status;
 	char mount_template[] = "/tmp/gadget-XXXXXX";
-	
-	
+
+
 	gadgetfs_path = malloc(sizeof(mount_template));
 	memcpy(gadgetfs_path, mount_template, sizeof(mount_template));
-	
+
 	gadgetfs_path = mkdtemp(gadgetfs_path);
 	fprintf(stderr, "Made directory %s for gadget\n", gadgetfs_path);
-	
-	status = mount(NULL, gadgetfs_path, "gadgetfs", 0, "");
+
+	status = mount("usb-mitm", gadgetfs_path, "gadgetfs", 0, "");
 	TRACE1(status)
-	
+
 	return 0;
 }
 
 /* Unmount gadgetfs filesystem and remove temporary directory */
 int unmount_gadget() {
-	int status;
-	status = umount2(gadgetfs_path, 0);
-	TRACE1(status)
-	status = rmdir (gadgetfs_path);
-	TRACE1(status)
-	free(gadgetfs_path);
+	if (gadgetfs_path) {
+		int status;
+		status=umount2(gadgetfs_path,0);
+		status = rmdir (gadgetfs_path);
+		free(gadgetfs_path);
+		gadgetfs_path=NULL;
+	}
 	return 0;
 }
 
@@ -128,5 +169,5 @@ int find_gadget() {
 	char path[256];
 	sprintf(path, "%s/%s", gadgetfs_path, filename);
 	
-	return open(path, O_RDWR);
+	return open(path, O_CLOEXEC | O_RDWR);
 }

@@ -36,7 +36,8 @@
 USBInterface::USBInterface(USBConfiguration* _configuration,__u8** p,const __u8* e) {
 	configuration=_configuration;
 	hid_descriptor=NULL;
-	generic_descriptors=(USBGenericDescriptor**)calloc(1,sizeof(*generic_descriptors));
+	generic_descriptors=NULL;
+	generic_descriptor_count=0;
 
 	memcpy(&descriptor,*p,9);
 	*p=*p+9;
@@ -53,11 +54,13 @@ USBInterface::USBInterface(USBConfiguration* _configuration,__u8** p,const __u8*
 			default:
 				USBGenericDescriptor* d=(USBGenericDescriptor*)malloc((*p)[0]);
 				memcpy(d,*p,(*p)[0]);
-				int i=0;
-				while (generic_descriptors[i]) {i++;}
-				generic_descriptors[i]=d;
-				generic_descriptors=(USBGenericDescriptor**)realloc(generic_descriptors,sizeof(*generic_descriptors)*(i+1));
-				generic_descriptors[i+1]=NULL;
+				generic_descriptor_count++;
+				if (generic_descriptors) {
+					generic_descriptors=(USBGenericDescriptor**)realloc(generic_descriptors,sizeof(*generic_descriptors)*generic_descriptor_count);
+				} else {
+					generic_descriptors=(USBGenericDescriptor**)malloc(sizeof(*generic_descriptors));
+				}
+				generic_descriptors[generic_descriptor_count-1]=d;
 				break;
 		}
 		*p=*p+**p;
@@ -67,10 +70,11 @@ USBInterface::USBInterface(USBConfiguration* _configuration,__u8** p,const __u8*
 USBInterface::USBInterface(USBConfiguration* _configuration,const usb_interface_descriptor* _descriptor) {
 	configuration=_configuration;
 	hid_descriptor=NULL;
+	generic_descriptors=NULL;
+	generic_descriptor_count=0;
 
 	descriptor=*_descriptor;
 	endpoints=(USBEndpoint**)calloc(descriptor.bNumEndpoints,sizeof(*endpoints));
-	generic_descriptors=(USBGenericDescriptor**)calloc(1,sizeof(*generic_descriptors));
 }
 
 USBInterface::USBInterface(USBConfiguration* _configuration,__u8 bInterfaceNumber,__u8 bAlternateSetting,__u8 bNumEndpoints,__u8 bInterfaceClass,__u8 bInterfaceSubClass,__u8 bInterfaceProtocol,__u8 iInterface) {
@@ -86,7 +90,8 @@ USBInterface::USBInterface(USBConfiguration* _configuration,__u8 bInterfaceNumbe
 	descriptor.bInterfaceProtocol=bInterfaceProtocol;
 	descriptor.iInterface=iInterface;
 	endpoints=(USBEndpoint**)calloc(descriptor.bNumEndpoints,sizeof(*endpoints));
-	generic_descriptors=(USBGenericDescriptor**)calloc(1,sizeof(*generic_descriptors));
+	generic_descriptors=NULL;
+	generic_descriptor_count=0;
 }
 
 USBInterface::~USBInterface() {
@@ -107,10 +112,9 @@ USBInterface::~USBInterface() {
 	}
 	i=0;
 	if (generic_descriptors) {
-		while (generic_descriptors[i]) {
+		for (i=0;i<generic_descriptor_count;i++) {
 			free(generic_descriptors[i]);
 			generic_descriptors[i]=NULL;
-			i++;
 		}
 		free(generic_descriptors);
 		generic_descriptors=NULL;
@@ -216,25 +220,23 @@ USBString* USBInterface::get_interface_string(__u16 languageId) {
 }
 
 const USBGenericDescriptor* USBInterface::get_generic_descriptor(__u8 index) {
-	//fixme we can't check the upper bound cheaply should change to store gdCount in class rather than null termincate
-	if (index>=get_generic_descriptor_count() || index<0) {return NULL;}
+	if (index>=generic_descriptor_count || index<0) {return NULL;}
 	return generic_descriptors[index];
 }
 
 __u8 USBInterface::get_generic_descriptor_count() {
-	int i=0;
-	while (generic_descriptors[i]) {i++;}
-	return i;
+	return generic_descriptor_count;
 }
 
 void USBInterface::add_generic_descriptor(USBGenericDescriptor* _gd) {
 	USBGenericDescriptor* d=(USBGenericDescriptor*)malloc(_gd->bLength);
 	memcpy(d,_gd,_gd->bLength);
-	int i=0;
-	while (generic_descriptors[i]) {i++;}
-	generic_descriptors[i]=d;
-	generic_descriptors=(USBGenericDescriptor**)realloc(generic_descriptors,sizeof(*generic_descriptors)*(i+1));
-	generic_descriptors[i+1]=NULL;
+	if (generic_descriptors) {
+		generic_descriptors=(USBGenericDescriptor**)realloc(generic_descriptors,sizeof(*generic_descriptors)*generic_descriptor_count);
+	} else {
+		generic_descriptors=(USBGenericDescriptor**)malloc(sizeof(*generic_descriptors));
+	}
+	generic_descriptors[generic_descriptor_count-1]=d;
 }
 
 const definition_error USBInterface::is_defined(__u8 configId,__u8 interfaceNum) {
