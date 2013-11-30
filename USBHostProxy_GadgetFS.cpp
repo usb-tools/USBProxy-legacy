@@ -47,59 +47,67 @@ USBHostProxy_GadgetFS::~USBHostProxy_GadgetFS() {
 	unmount_gadget();
 }
 
-int USBHostProxy_GadgetFS::connect(USBDevice* device) {
-	int i, status;
+int USBHostProxy_GadgetFS::generate_descriptor(USBDevice* device,char* buf) {
 	char *ptr;
-	const usb_device_descriptor *device_descriptor;
-	char descriptor_buf[USB_BUFSIZE];
+	int i;
 
-	if (p_is_connected) {fprintf(stderr,"GadgetFS already connected.\n"); return 0;}
-
-	device_descriptor = device->get_descriptor();
-	if (device_descriptor == NULL) {
-		fprintf(stderr,"Error, unable to fetch device descriptor.\n");
-		return 1;
-	}
-
-	ptr = descriptor_buf;
+	ptr = buf;
 	/* tag for device descriptor format */
 	ptr[0] = ptr[1] = ptr[2] = ptr[3] = 0;
 	ptr += 4;
 
-
-	/* FINISH: Add error checking */
 	for (i=1;i<=device->get_descriptor()->bNumConfigurations;i++) {
-		//	header_ptr = ptr;
-		int length=device->get_configuration(i)->get_full_descriptor_length();
-		memcpy(ptr,device->get_configuration(i)->get_full_descriptor(),length);
-		((usb_config_descriptor *)ptr)->bmAttributes=((usb_config_descriptor *)ptr)->bmAttributes & (~USB_CONFIG_ATT_WAKEUP);
-		ptr+=length;
-		// ((usb_config_descriptor *)header_ptr)->wTotalLength = __cpu_to_le16(ptr - header_ptr);
+		char* header_ptr = ptr;
+		USBConfiguration* cfg=device->get_configuration(i);
+		if (cfg) {
+			int length=cfg->get_full_descriptor_length();
+			memcpy(ptr,cfg->get_full_descriptor(),length);
+			((usb_config_descriptor *)ptr)->bmAttributes=((usb_config_descriptor *)ptr)->bmAttributes & (~USB_CONFIG_ATT_WAKEUP);
+			ptr+=length;
+			((usb_config_descriptor *)header_ptr)->wTotalLength = __cpu_to_le16(ptr - header_ptr);
+		}
 	}
-
-	if (device->is_highspeed()) {
+	if (device->is_highspeed() && device->get_device_qualifier()) {
 	  for (i=1;i<=device->get_descriptor()->bNumConfigurations;i++) {
-	    int length=device->get_device_qualifier()->get_configuration(i)->get_full_descriptor_length();
-	    memcpy(ptr,device->get_device_qualifier()->get_configuration(i)->get_full_descriptor(),length);
-		((usb_config_descriptor *)ptr)->bDescriptorType=USB_DT_CONFIG;
-		((usb_config_descriptor *)ptr)->bmAttributes=((usb_config_descriptor *)ptr)->bmAttributes & (~USB_CONFIG_ATT_WAKEUP);
-	    ptr+=length;
+		USBConfiguration* cfg=device->get_device_qualifier()->get_configuration(i);
+		if (cfg) {
+			 int length=cfg->get_full_descriptor_length();
+			memcpy(ptr,cfg->get_full_descriptor(),length);
+			((usb_config_descriptor *)ptr)->bDescriptorType=USB_DT_CONFIG;
+			((usb_config_descriptor *)ptr)->bmAttributes=((usb_config_descriptor *)ptr)->bmAttributes & (~USB_CONFIG_ATT_WAKEUP);
+			ptr+=length;
+		}
 	  }
 	} else {
 		for (i=1;i<=device->get_descriptor()->bNumConfigurations;i++) {
-			//	header_ptr = ptr;
-			int length=device->get_configuration(i)->get_full_descriptor_length();
-			memcpy(ptr,device->get_configuration(i)->get_full_descriptor(),length);
-			((usb_config_descriptor *)ptr)->bmAttributes=((usb_config_descriptor *)ptr)->bmAttributes & (~USB_CONFIG_ATT_WAKEUP);
-			ptr+=length;
-			// ((usb_config_descriptor *)header_ptr)->wTotalLength = __cpu_to_le16(ptr - header_ptr);
+			char * header_ptr = ptr;
+			USBConfiguration* cfg=device->get_configuration(i);
+			if (cfg) {
+				int length=cfg->get_full_descriptor_length();
+				memcpy(ptr,cfg->get_full_descriptor(),length);
+				((usb_config_descriptor *)ptr)->bmAttributes=((usb_config_descriptor *)ptr)->bmAttributes & (~USB_CONFIG_ATT_WAKEUP);
+				ptr+=length;
+				((usb_config_descriptor *)header_ptr)->wTotalLength = __cpu_to_le16(ptr - header_ptr);
+			}
 		}
 	}
-	memcpy(ptr, (char *)device_descriptor, sizeof(usb_device_descriptor));
+	memcpy(ptr, (char *)device->get_descriptor(), sizeof(usb_device_descriptor));
 	ptr += sizeof(struct usb_device_descriptor);
+	return ptr-buf;
+}
+
+
+int USBHostProxy_GadgetFS::connect(USBDevice* device) {
+	int i, status;
+	char descriptor_buf[USB_BUFSIZE];
+
+	if (p_is_connected) {fprintf(stderr,"GadgetFS already connected.\n"); return 0;}
+
+	int len=generate_descriptor(device,descriptor_buf);
+	if (len<=0) {return 1;}
 
 	/* FINISH - remove this output */
-	for(i=0; descriptor_buf+i != ptr; i++) {
+	for(i=0; i<len; i++) {
 		if(i%8 == 0)
 			fprintf(stderr, "\n");
 		fprintf(stderr, " %02x", descriptor_buf[i]);
@@ -113,7 +121,7 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 		return 1;
 	}
 
-	status = write(p_device_file, descriptor_buf, ptr - descriptor_buf);
+	status = write(p_device_file, descriptor_buf, len);
 	if (status < 0) {
 		fprintf(stderr,"Fail on write %d %s\n",errno,strerror(errno));
 		close(p_device_file);
