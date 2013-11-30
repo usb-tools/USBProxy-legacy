@@ -28,9 +28,10 @@
 #include "USBHostProxy_GadgetFS.h"
 #include <cstring>
 #include <unistd.h>
-#include "TRACE.h"
 #include "GadgetFS_helpers.h"
 #include "errno.h"
+#include "TRACE.h"
+#include "FDInfo.h"
 
 USBHostProxy_GadgetFS::USBHostProxy_GadgetFS() {
 	mount_gadget();
