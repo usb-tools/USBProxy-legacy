@@ -41,7 +41,8 @@ static char *gadgetfs_path;
 
 /* Mount gadgetfs filesystem in a temporary directory */
 int mount_gadget() {
-	char** mounts=NULL;
+	char** mountDirs=NULL;
+	char** mountNames=NULL;
 	int mountCount=0;
 
 	FILE* mtab=setmntent("/etc/mtab","r");
@@ -51,20 +52,33 @@ int mount_gadget() {
 	while ((m=getmntent_r(mtab,&mnt,strings,sizeof(strings)))) {
 	    if (strcmp(mnt.mnt_type,"gadgetfs")==0) {
 	    	mountCount++;
-	    	if (mounts) {
-	    		mounts=realloc(mounts,sizeof(char*)*mountCount);
+	    	if (mountDirs) {
+	    		mountDirs=realloc(mountDirs,sizeof(char*)*mountCount);
+	    		mountNames=realloc(mountNames,sizeof(char*)*mountCount);
 	    	} else {
-	    		mounts=malloc(sizeof(char*));
+	    		mountDirs=malloc(sizeof(char*));
+	    		mountNames=malloc(sizeof(char*));
 	    	}
-	    	mounts[mountCount-1]=strdup(mnt.mnt_dir);
+	    	mountDirs[mountCount-1]=strdup(mnt.mnt_dir);
+	    	mountNames[mountCount-1]=strdup(mnt.mnt_fsname);
 	    }
 	}
 	endmntent(mtab);
 
 	int i;
 	for (i=0;i<mountCount;i++) {
-		umount2(mounts[i],0);
+		umount2(mountDirs[i],0);
 	}
+
+	for (i=0;i<mountCount;i++) {
+		if (strcmp(mountNames[i],"usb-mitm")!=0) {
+			mount(mountNames[i],mountDirs[i],"gadgetfs",0,"");
+		}
+		free(mountNames[i]);
+		free(mountDirs[i]);
+	}
+	free(mountNames);
+	free(mountDirs);
 
 	int status;
 	char mount_template[] = "/tmp/gadget-XXXXXX";
@@ -76,7 +90,7 @@ int mount_gadget() {
 	gadgetfs_path = mkdtemp(gadgetfs_path);
 	fprintf(stderr, "Made directory %s for gadget\n", gadgetfs_path);
 
-	status = mount(NULL, gadgetfs_path, "gadgetfs", 0, "");
+	status = mount("usb-mitm", gadgetfs_path, "gadgetfs", 0, "");
 	TRACE1(status)
 
 	return 0;
