@@ -48,6 +48,8 @@ int mount_gadget();
 /* Unmount gadgetfs filesystem and remove temporary directory */
 int unmount_gadget();
 
+void clean_tmp();
+
 #ifdef __cplusplus
 } // __cplusplus defined.
 #endif

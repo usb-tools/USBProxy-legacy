@@ -39,6 +39,54 @@
 
 static char *gadgetfs_path;
 
+void clean_tmp() {
+	DIR *dir;
+	struct dirent *entry;
+	struct dirent *result;
+	int i;
+	char **rmDirs=NULL;
+	int rmCount=0;
+
+	dir = opendir("/tmp");
+	if (!dir) return;
+
+	entry = malloc(offsetof(struct dirent, d_name) + pathconf("/tmp", _PC_NAME_MAX) + 1);
+
+	fprintf(stderr,"cleaning up /tmp\n",gadgetfs_path);
+
+	if (!entry) {
+		closedir (dir);
+		return;
+	}
+
+	while(1) {
+		if (readdir_r(dir, entry, &result) < 0) break;
+		if (!result) {break;}
+		if (strlen(entry->d_name)==13 && strncmp(entry->d_name,"gadget-",7)==0) {
+	    	rmCount++;
+	    	if (rmDirs) {
+	    		rmDirs=realloc(rmDirs,sizeof(char*)*rmCount);
+	    	} else {
+	    		rmDirs=malloc(sizeof(char*));
+	    	}
+	    	rmDirs[rmCount-1]=strdup(entry->d_name);
+		}
+	}
+	free(entry);
+
+	fprintf(stderr,"removing %d\n",rmCount);
+	for (i=0;i<rmCount;i++) {
+		char buf[20]={0x0};
+		strcat(buf,"/tmp/");
+		strcat(buf,rmDirs[i]);
+		rmdir(buf);
+		free(rmDirs[i]);
+	}
+	free(rmDirs);
+
+	closedir(dir);
+}
+
 /* Mount gadgetfs filesystem in a temporary directory */
 int mount_gadget() {
 	char** mountDirs=NULL;
@@ -79,6 +127,8 @@ int mount_gadget() {
 	}
 	free(mountNames);
 	free(mountDirs);
+
+	clean_tmp();
 
 	int status;
 	char mount_template[] = "/tmp/gadget-XXXXXX";
