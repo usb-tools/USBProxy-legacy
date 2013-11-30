@@ -32,11 +32,13 @@
 #include "errno.h"
 #include "TRACE.h"
 
-USBHostProxy_GadgetFS::USBHostProxy_GadgetFS() {
+USBHostProxy_GadgetFS::USBHostProxy_GadgetFS(int _debugLevel) {
 	mount_gadget();
 	p_is_connected = false;
 	p_device_file=0;
-	//Check path exists, permissions, etc
+	debugLevel=_debugLevel;
+	descriptor=NULL;
+	descriptorLength=0;
 }
 
 USBHostProxy_GadgetFS::~USBHostProxy_GadgetFS() {
@@ -44,14 +46,20 @@ USBHostProxy_GadgetFS::~USBHostProxy_GadgetFS() {
 		close(p_device_file);
 		p_device_file=0;
 	}
+	if (descriptor) {
+		free(descriptor);
+		descriptor=NULL;
+		descriptorLength=0;
+	}
 	unmount_gadget();
 }
 
-int USBHostProxy_GadgetFS::generate_descriptor(USBDevice* device,char* buf) {
+int USBHostProxy_GadgetFS::generate_descriptor(USBDevice* device) {
 	char *ptr;
 	int i;
+	descriptor=(char*)malloc(USB_BUFSIZE);
 
-	ptr = buf;
+	ptr = descriptor;
 	/* tag for device descriptor format */
 	ptr[0] = ptr[1] = ptr[2] = ptr[3] = 0;
 	ptr += 4;
@@ -93,27 +101,28 @@ int USBHostProxy_GadgetFS::generate_descriptor(USBDevice* device,char* buf) {
 	}
 	memcpy(ptr, (char *)device->get_descriptor(), sizeof(usb_device_descriptor));
 	ptr += sizeof(struct usb_device_descriptor);
-	return ptr-buf;
+	descriptorLength=ptr-descriptor;
+	descriptor=(char*)realloc(descriptor,descriptorLength);
+	return 0;
 }
 
 
 int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 	int i, status;
-	char descriptor_buf[USB_BUFSIZE];
 
 	if (p_is_connected) {fprintf(stderr,"GadgetFS already connected.\n"); return 0;}
 
-	int len=generate_descriptor(device,descriptor_buf);
-	if (len<=0) {return 1;}
+	if (generate_descriptor(device)!=0) {return 1;}
 
-	/* FINISH - remove this output */
-	for(i=0; i<len; i++) {
-		if(i%8 == 0)
+	if (debugLevel>0) {
+		for(i=0; i<descriptorLength; i++) {
+			if(i%8 == 0)
+				fprintf(stderr, "\n");
+			fprintf(stderr, " %02x", descriptor[i]);
+		}
+		if(i%8 != 0)
 			fprintf(stderr, "\n");
-		fprintf(stderr, " %02x", descriptor_buf[i]);
 	}
-	if(i%8 != 0)
-		fprintf(stderr, "\n");
 
 	p_device_file = find_gadget();
 	if (p_device_file < 0) {
@@ -121,7 +130,41 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 		return 1;
 	}
 
-	status = write(p_device_file, descriptor_buf, len);
+	status = write(p_device_file, descriptor, descriptorLength);
+	if (status < 0) {
+		fprintf(stderr,"Fail on write %d %s\n",errno,strerror(errno));
+		close(p_device_file);
+		p_device_file=0;
+		return 1;
+	}
+
+	p_is_connected = true;
+	return 0;
+}
+
+int USBHostProxy_GadgetFS::reconnect() {
+	int i, status;
+
+	if (p_is_connected) {fprintf(stderr,"GadgetFS already connected.\n"); return 0;}
+	if (!descriptor) {return 1;}
+
+	if (debugLevel>0) {
+		for(i=0; i<descriptorLength; i++) {
+			if(i%8 == 0)
+				fprintf(stderr, "\n");
+			fprintf(stderr, " %02x", descriptor[i]);
+		}
+		if(i%8 != 0)
+			fprintf(stderr, "\n");
+	}
+
+	p_device_file = find_gadget();
+	if (p_device_file < 0) {
+		fprintf(stderr,"Fail on open %d %s\n",errno,strerror(errno));
+		return 1;
+	}
+
+	status = write(p_device_file, descriptor, descriptorLength);
 	if (status < 0) {
 		fprintf(stderr,"Fail on write %d %s\n",errno,strerror(errno));
 		close(p_device_file);
@@ -134,10 +177,8 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 }
 
 void USBHostProxy_GadgetFS::disconnect() {
-	//FINISH
 	if (!p_is_connected) {fprintf(stderr,"GadgetFS not connected.\n"); return;}
 	
-	//FINISH - check if it's open
 	close(p_device_file);
 	p_device_file=0;
 	unmount_gadget();
@@ -146,7 +187,8 @@ void USBHostProxy_GadgetFS::disconnect() {
 }
 
 void USBHostProxy_GadgetFS::reset() {
-	//FINISH
+	disconnect();
+	reconnect();
 }
 
 bool USBHostProxy_GadgetFS::is_connected() {

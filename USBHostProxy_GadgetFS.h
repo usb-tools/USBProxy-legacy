@@ -35,10 +35,16 @@ class USBHostProxy_GadgetFS: public USBHostProxy {
 private:
 	bool p_is_connected;
 	int p_device_file;
-	int generate_descriptor(USBDevice* device,char* buf);
+	int debugLevel;
+
+	char* descriptor;
+	int descriptorLength;
+
+	int reconnect();
+	int generate_descriptor(USBDevice* device);
 
 public:
-	USBHostProxy_GadgetFS();
+	USBHostProxy_GadgetFS(int _debugLevel=0);
 	virtual ~USBHostProxy_GadgetFS();
 
 	int connect(USBDevice* device);

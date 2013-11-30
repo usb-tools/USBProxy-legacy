@@ -112,7 +112,7 @@ extern "C" int main(int argc, char **argv)
 	}
 
 	USBDeviceProxy* device_proxy=(USBDeviceProxy *)new USBDeviceProxy_LibUSB(vendorId,productId);
-	USBHostProxy* host_proxy=(USBHostProxy* )new USBHostProxy_GadgetFS();
+	USBHostProxy* host_proxy=(USBHostProxy* )new USBHostProxy_GadgetFS(1);
 	manager=new USBManager(device_proxy,host_proxy);
 
 	//USBPacketFilter_streamlog* logfilter=new USBPacketFilter_streamlog(stderr);
