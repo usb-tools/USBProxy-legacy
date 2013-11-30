@@ -129,10 +129,7 @@ size_t USBInterface::get_full_descriptor_length() {
 	size_t total=descriptor.bLength;
 	if (hid_descriptor) {total+=hid_descriptor->get_full_descriptor_length();}
 	int i=0;
-	while (generic_descriptors[i]) {
-		total+=generic_descriptors[i]->bLength;
-		i++;
-	}
+	for (i=0;i<generic_descriptor_count;i++) {total+=generic_descriptors[i]->bLength;}
 	for(i=0;i<descriptor.bNumEndpoints;i++) {total+=endpoints[i]->get_full_descriptor_length();}
 	return total;
 }
@@ -142,9 +139,9 @@ void USBInterface::get_full_descriptor(__u8** p) {
 	*p=*p+descriptor.bLength;
 	if (hid_descriptor) {hid_descriptor->get_full_descriptor(p);}
 	int i=0;
-	while (generic_descriptors[i]) {
+	for (i=0;i<generic_descriptor_count;i++) {
 		memcpy(*p,generic_descriptors[i],generic_descriptors[i]->bLength);
-		i++;
+		*p=*p+generic_descriptors[i]->bLength;
 	}
 	for(i=0;i<descriptor.bNumEndpoints;i++) {endpoints[i]->get_full_descriptor(p);}
 }
@@ -202,12 +199,11 @@ void USBInterface::print(__u8 tabs,bool active) {
 	}
 	if (hid_descriptor) {hid_descriptor->print(tabs+1);}
 	int j=0;
-	while (generic_descriptors[j]) {
+	for (j=0;j<generic_descriptor_count;j++) {
 		for(i=0;i<(tabs+1);i++) {putchar('\t');}
 		printf("Other(%02x):",generic_descriptors[j]->bDescriptorType);
 		for(i=0;i<generic_descriptors[j]->bLength;i++) {printf(" %02x",((__u8*)generic_descriptors[j])[i]);}
 		putchar('\n');
-		j++;
 	}
 	for(i=0;i<descriptor.bNumEndpoints;i++) {
 		if (endpoints[i]) {endpoints[i]->print(tabs+1);}
