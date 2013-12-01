@@ -153,7 +153,7 @@ public:
 		int i;
 		for(i=1;i<8;i++) {fprintf(file," %02x",((char*)&(packet->ctrl_req))[i]);}
 		fprintf(file,"]: ");
-		if (!(packet->ctrl_req.bRequestType & 0x80))
+		if (packet->data)
 				for(i=0;i<packet->ctrl_req.wLength;i++) {fprintf(file," %02x",packet->data[i]);}
 		fprintf(file,"\n");
 	}
