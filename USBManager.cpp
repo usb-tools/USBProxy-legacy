@@ -205,7 +205,6 @@ __u8 USBManager::get_filter_count(){
 
 
 void USBManager::start_relaying(){
-	TRACE;
 	//TODO this should exit immediately if already started, and wait (somehow) is stopping or setting up
 	status=USBM_SETUP;
 

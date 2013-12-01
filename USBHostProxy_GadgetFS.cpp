@@ -286,7 +286,12 @@ void USBHostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 		//FINISH for nonzero endpoints
 		fprintf(stderr,"trying to send %d bytes on EP %d\n",length,endpoint);
 	} else {
-		write(p_device_file,dataptr,length);
+		int rc=write(p_device_file,dataptr,length);
+		if (rc<0) {
+			fprintf(stderr,"Fail on EP0 write %d %s\n",errno,strerror(errno));
+		} else {
+			fprintf(stderr,"Send %d bytes on EP0\n",rc);
+		}
 	}
 }
 
