@@ -86,17 +86,23 @@ void USBRelayer::relay_ep0() {
 			if (p->transmit) {
 				if (ctrl_req.bRequestType&0x80) { //device->host
 					p->data=(__u8*)malloc(ctrl_req.wLength);
-					device->control_request(&(p->ctrl_req),&response_length,p->data);
+					if (device->control_request(&(p->ctrl_req),&response_length,p->data)==-1) {
+						host->stall_ep(0);
+					} else {
+						if (response_length) {
+							host->send_data(0,bmAttributes,maxPacketSize,p->data,response_length);
+						} else {
+							host->control_ack();
+						}
+					}
 				} else { //host->device
 					response_length=ctrl_req.wLength;
-					device->control_request(&(p->ctrl_req),&response_length,p->data);
-					response_length=0;
+					if (device->control_request(&(p->ctrl_req),&response_length,p->data)==-1) {
+						host->stall_ep(0);
+					} else {
+						host->control_ack();
+					}
 				}
-			}
-			if (response_length) {
-				host->send_data(0,bmAttributes,maxPacketSize,p->data,response_length);
-			} else {
-				host->send_data(0,bmAttributes,maxPacketSize,NULL,0);
 			}
 			delete(p);
 			/* not needed p=NULL; */

@@ -36,7 +36,7 @@ public:
 	virtual void reset()=0;
 	virtual bool is_connected()=0;
 
-	//this should be done synchronously
+	//return -1 to stall
 	virtual int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr)=0;
 	virtual void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length)=0;
 	virtual void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length)=0;

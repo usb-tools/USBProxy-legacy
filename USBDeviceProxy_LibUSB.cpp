@@ -192,6 +192,7 @@ int USBDeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, 
 	int rc=libusb_control_transfer(dev_handle,setup_packet->bRequestType,setup_packet->bRequest,setup_packet->wValue,setup_packet->wIndex,dataptr,setup_packet->wLength,1000);
 	if (rc<0) {
 		if (debugLevel) {fprintf(stderr,"Error %d[%s] sending setup packet.\n",rc,libusb_error_name(rc));}
+		if (rc==-9) return -1;
 		return rc;
 	}
 	if (debugLevel>1) {

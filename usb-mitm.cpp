@@ -111,6 +111,8 @@ extern "C" int main(int argc, char **argv)
 		}
 	}
 
+	USBDeviceProxy_LibUSB::debugLevel=1;
+
 	USBDeviceProxy* device_proxy=(USBDeviceProxy *)new USBDeviceProxy_LibUSB(vendorId,productId);
 	USBHostProxy* host_proxy=(USBHostProxy* )new USBHostProxy_GadgetFS(1);
 	manager=new USBManager(device_proxy,host_proxy);
