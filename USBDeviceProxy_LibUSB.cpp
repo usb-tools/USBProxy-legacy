@@ -174,9 +174,9 @@ const char* USBDeviceProxy_LibUSB::toString() {
 			return NULL;
 		}
 	}
-	size_t length=snprintf(NULL,0,"%04x:%04x@%02x %s - %s",desc.idVendor,desc.idProduct,address,str_mfr,str_prd);
+	size_t length=snprintf(NULL,0,"%04x:%04x@%02x %s - %s",desc.idVendor,desc.idProduct,address,(unsigned char*)(str_mfr?str_mfr:(unsigned char*)"N/A"),(unsigned char*)(str_prd?str_prd:(unsigned char*)"N/A"));
 	char *buf=(char  *)malloc(length);
-	sprintf(buf,"%04x:%04x@%02x %s - %s",desc.idVendor,desc.idProduct,address,str_mfr,str_prd);
+	sprintf(buf,"%04x:%04x@%02x %s - %s",desc.idVendor,desc.idProduct,address,(unsigned char*)(str_mfr?str_mfr:(unsigned char*)"N/A"),(unsigned char*)(str_prd?str_prd:(unsigned char*)"N/A"));
 	if (str_mfr) {free(str_mfr);/*not needed str_mfr=NULL;*/}
 	if (str_prd) {free(str_prd);/*not needed str_prd=NULL;*/}
 	return buf;
