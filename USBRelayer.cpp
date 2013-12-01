@@ -89,10 +89,20 @@ void USBRelayer::relay_ep0() {
 					if (device->control_request(&(p->ctrl_req),&response_length,p->data)==-1) {
 						host->stall_ep(0);
 					} else {
-						if (response_length) {
-							host->send_data(0,bmAttributes,maxPacketSize,p->data,response_length);
+						i=0;
+						p->ctrl_req.wLength=response_length;
+						while (i<filterCount && p->filter) {
+							if (filters[i]->test_setup_packet(p)) {filters[i]->filter_setup_packet(p);}
+							i++;
+						}
+						if (p->transmit) {
+							if (response_length) {
+								host->send_data(0,bmAttributes,maxPacketSize,p->data,response_length);
+							} else {
+								host->control_ack();
+							}
 						} else {
-							host->control_ack();
+							host->stall_ep(0);
 						}
 					}
 				} else { //host->device
