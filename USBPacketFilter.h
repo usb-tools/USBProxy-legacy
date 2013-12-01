@@ -148,7 +148,15 @@ public:
 		for(i=0;i<packet->wLength;i++) {fprintf(file," %02x",packet->data[i]);}
 		fprintf(file,"\n");
 	}
-	void filter_setup_packet(USBSetupPacket* packet) {return;}
+	void filter_setup_packet(USBSetupPacket* packet) {
+		fprintf(file,"[%02x",((char*)&(packet->ctrl_req))[0]);
+		int i;
+		for(i=1;i<8;i++) {fprintf(file," %02x",((char*)&(packet->ctrl_req))[i]);}
+		fprintf(file,"]: ");
+		if (!(packet->ctrl_req.bRequestType & 0x80))
+				for(i=0;i<packet->ctrl_req.wLength;i++) {fprintf(file," %02x",packet->data[i]);}
+		fprintf(file,"\n");
+	}
 	virtual char* toString() {return (char*)"Stream Log Filter";}
 };
 
