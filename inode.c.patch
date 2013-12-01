@@ -1,0 +1,25 @@
+--- inode.c	2013-11-18 14:46:25.255029000 -0500
++++ inode.c2	2013-11-19 06:30:36.579029000 -0500
+@@ -679,7 +679,9 @@
+ 			req->length = len;
+ 			req->complete = ep_aio_complete;
+ 			req->context = iocb;
++			spin_unlock_irq(&epdata->dev->lock);
+ 			value = usb_ep_queue(epdata->ep, req, GFP_ATOMIC);
++			spin_lock_irq(&epdata->dev->lock);
+ 			if (unlikely(0 != value))
+ 				usb_ep_free_request(epdata->ep, req);
+ 		} else
+@@ -1012,8 +1014,11 @@
+ 			struct usb_ep		*ep = dev->gadget->ep0;
+ 			struct usb_request	*req = dev->req;
+ 
+-			if ((retval = setup_req (ep, req, 0)) == 0)
++			if ((retval = setup_req (ep, req, 0)) == 0) {
++				spin_unlock_irq (&dev->lock);
+ 				retval = usb_ep_queue (ep, req, GFP_ATOMIC);
++				spin_lock_irq (&dev->lock);
++			}
+ 			dev->state = STATE_DEV_CONNECTED;
+ 
+ 			/* assume that was SET_CONFIGURATION */
