@@ -43,6 +43,8 @@ private:
 	int reconnect();
 	int generate_descriptor(USBDevice* device);
 
+	usb_ctrlrequest lastControl;
+
 public:
 	USBHostProxy_GadgetFS(int _debugLevel=0);
 	virtual ~USBHostProxy_GadgetFS();
@@ -56,6 +58,8 @@ public:
 	int control_request(usb_ctrlrequest *setup_packet, int *nbytes, __u8** dataptr);
 	void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length);
 	void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length);
+	void control_ack();
+	void stall_ep(__u8 endpoint);
 };
 
 #endif /* USBHOSTPROXYGADGETFS_H_ */

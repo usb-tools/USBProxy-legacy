@@ -28,6 +28,7 @@
 #include "USBHostProxy_GadgetFS.h"
 #include <cstring>
 #include <unistd.h>
+#include <poll.h>
 #include "GadgetFS_helpers.h"
 #include "errno.h"
 #include "TRACE.h"
@@ -39,6 +40,7 @@ USBHostProxy_GadgetFS::USBHostProxy_GadgetFS(int _debugLevel) {
 	debugLevel=_debugLevel;
 	descriptor=NULL;
 	descriptorLength=0;
+	lastControl.bRequest=0;
 }
 
 USBHostProxy_GadgetFS::~USBHostProxy_GadgetFS() {
@@ -204,6 +206,14 @@ int USBHostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *n
 	//FINISH we should make this timeout if possible, otherwise this relayer thread won't end nicely.
 	//FINISH we also may not be able to do reads, because a read may be interpreted as an ack, which we may need to handle explicitly
 	//FINISH this would likely include passing them through the relayer to the device so it can ack
+	struct pollfd fds;
+	fds.fd = p_device_file;
+	fds.events = POLLIN;
+	if (!poll(&fds, 1, 0) || !(fds.revents&POLLIN)) {
+		setup_packet->bRequest=0;
+		return 0;
+	}
+
 	ret = read (p_device_file, &events, sizeof(events));
 	if (ret < 0) {
 		setup_packet->bRequest=0;
@@ -215,17 +225,20 @@ int USBHostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *n
 	if (debugLevel>1) fprintf(stderr, "libusb-gadget: %d events received\n", nevent);
 
 	for (i = 0; i < nevent; i++) {
-		if (debugLevel>0) fprintf(stderr,"libusb-gadget: event %d\n", events[i].type);
+		if (debugLevel>0 && events[i].type!=3) fprintf(stderr,"libusb-gadget: event %d\n", events[i].type);
 		switch (events[i].type) {
 		case GADGETFS_SETUP:
-			//FINISH handle OUT setup with length>0
 			//FINISH handle IN setup with length>0
-			setup_packet->bRequestType=events[i].u.setup.bRequestType;
-			setup_packet->bRequest=events[i].u.setup.bRequest;
-			setup_packet->bRequest=events[i].u.setup.bRequest;
-			setup_packet->wIndex=events[i].u.setup.wIndex;
-			setup_packet->wValue=events[i].u.setup.wValue;
-			setup_packet->wLength=events[i].u.setup.wLength;
+			lastControl=events[i].u.setup;
+			setup_packet->bRequestType=lastControl.bRequestType;
+			setup_packet->bRequest=lastControl.bRequest;
+			setup_packet->wIndex=lastControl.wIndex;
+			setup_packet->wValue=lastControl.wValue;
+			setup_packet->wLength=lastControl.wLength;
+			if (!(lastControl.bRequestType&0x80) && lastControl.wLength) {
+				*dataptr=(__u8*)malloc(lastControl.wLength);
+				*nbytes=read(p_device_file,dataptr,lastControl.wLength);
+			}
 			return 0;
 			break;
 		case GADGETFS_NOP:
@@ -263,18 +276,43 @@ int USBHostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *n
 		}
 	}
 
-	//FINISH
 	setup_packet->bRequest=0;
 	return 0;
 }
 
 
 void USBHostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length) {
-	fprintf(stderr,"trying to send %d bytes on EP %d\n",length,endpoint);
-	//FINISH
+	if (endpoint) {
+		//FINISH for nonzero endpoints
+		fprintf(stderr,"trying to send %d bytes on EP %d\n",length,endpoint);
+	} else {
+		write(p_device_file,dataptr,length);
+	}
 }
 
 void USBHostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length) {
 	//fprintf(stderr,"trying to receive %d bytes on EP %d\n",length,endpoint);
 	//FINISH
+}
+
+void USBHostProxy_GadgetFS::control_ack() {
+	if (debugLevel) fprintf(stderr,"Sending ACK\n");
+	if (lastControl.bRequestType&0x80) {
+		write(p_device_file,0,0);
+	} else {
+		read(p_device_file,0,0);
+	}
+}
+
+void USBHostProxy_GadgetFS::stall_ep(__u8 endpoint) {
+	if (debugLevel) fprintf(stderr,"Stalling EP%d\n",endpoint);
+	if (endpoint) {
+		//FINISH for nonzero endpoint
+	} else {
+		if (lastControl.bRequestType&0x80) {
+			read(p_device_file,0,0);
+		} else {
+			write(p_device_file,0,0);
+		}
+	}
 }
