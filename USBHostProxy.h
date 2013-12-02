@@ -45,6 +45,8 @@ public:
 	virtual void control_ack()=0;
 	virtual void stall_ep(__u8 endpoint)=0;
 
+	virtual void setConfig(USBConfiguration* fs_cfg,USBConfiguration* hs_cfg,bool hs)=0;
+
 	virtual const char* toString() {return NULL;}
 };
 
