@@ -134,11 +134,11 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 
 	if (debugLevel>0) {
 		for(i=0; i<descriptorLength; i++) {
-			if(i%8 == 0)
+			if(i%16 == 0)
 				fprintf(stderr, "\n");
 			fprintf(stderr, " %02x", descriptor[i]);
 		}
-		if(i%8 != 0)
+		if(i%16 != 1)
 			fprintf(stderr, "\n");
 	}
 
@@ -266,7 +266,6 @@ int USBHostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *n
 			setup_packet->wValue=lastControl.wValue;
 			setup_packet->wLength=lastControl.wLength;
 			if (!(lastControl.bRequestType&0x80) && lastControl.wLength) {
-				TRACE;
 				*dataptr=(__u8*)malloc(lastControl.wLength);
 				*nbytes=read(p_device_file,*dataptr,lastControl.wLength);
 			}
