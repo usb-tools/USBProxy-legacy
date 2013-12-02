@@ -260,7 +260,7 @@ void USBManager::start_relaying(){
 				out_relayers[i]=new USBRelayer(out_endpoints[i],deviceProxy,hostProxy,out_queue[i]);
 			} else {
 				out_queue_ep0=new boost::lockfree::queue<USBSetupPacket*>(16);
-				out_relayers[i]=new USBRelayer(out_endpoints[i],deviceProxy,hostProxy,out_queue_ep0);
+				out_relayers[i]=new USBRelayer(this,out_endpoints[i],deviceProxy,hostProxy,out_queue_ep0);
 			}
 		}
 	}
@@ -386,4 +386,10 @@ void USBManager::stop_relaying(){
 	}
 
 	status=USBM_IDLE;
+}
+
+void USBManager::setConfig(__u8 index) {
+	device->set_active_configuration(index);
+	deviceProxy->setConfig(device->get_configuration(index),device->get_device_qualifier()->get_configuration(index),device->is_highspeed());
+	hostProxy->setConfig(device->get_configuration(index),device->get_device_qualifier()->get_configuration(index),device->is_highspeed());
 }

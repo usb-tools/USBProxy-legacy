@@ -39,6 +39,7 @@
 #include <pthread.h>
 
 class USBInjector;
+class USBRelayer;
 
 enum USBManager_status {
 	USBM_IDLE=0,
@@ -90,6 +91,8 @@ public:
 	void remove_filter(__u8 index,bool freeMemory=true);
 	USBPacketFilter* get_filter(__u8 index);
 	__u8 get_filter_count();
+
+	void setConfig(__u8 index);
 
 	enum USBManager_status get_status() {return status;}
 
