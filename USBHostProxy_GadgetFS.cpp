@@ -312,22 +312,58 @@ int USBHostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *n
 
 
 void USBHostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length) {
-	if (endpoint) {
-		//FINISH for nonzero endpoints
-		fprintf(stderr,"trying to send %d bytes on EP %d\n",length,endpoint);
-	} else {
+	if (!endpoint) {
 		int rc=write(p_device_file,dataptr,length);
 		if (rc<0) {
 			fprintf(stderr,"Fail on EP0 write %d %s\n",errno,strerror(errno));
 		} else {
 			fprintf(stderr,"Send %d bytes on EP0\n",rc);
 		}
+		return;
+	}
+	if (!(endpoint & 0x80)) {
+		fprintf(stderr,"trying to send %d bytes on an out EP%d\n",length,endpoint);
+		return;
+	}
+	int number=endpoint&0x0f;
+	if (!p_epin_file[number]) {
+		fprintf(stderr,"trying to send %d bytes on a non-open EP%d\n",length,endpoint);
+		return;
+	}
+
+	int rc=write(p_epin_file[number],dataptr,length);
+	if (rc<0) {
+		fprintf(stderr,"Fail on EP%d write %d %s\n",number,errno,strerror(errno));
+	} else {
+		fprintf(stderr,"Send %d bytes on EP%d\n",rc,number);
 	}
 }
 
 void USBHostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length) {
-	//fprintf(stderr,"trying to receive %d bytes on EP %d\n",length,endpoint);
-	//FINISH
+	if (!endpoint) {
+		fprintf(stderr,"trying to receive %d bytes on EP0\n",length);
+		return;
+	}
+	if (endpoint & 0x80) {
+		fprintf(stderr,"trying to receive %d bytes on an in EP%d\n",length,endpoint);
+		return;
+	}
+	int number=endpoint&0x0f;
+	if (!p_epout_file[number]) {
+		fprintf(stderr,"trying to receive %d bytes on a non-open EP%d\n",length,endpoint);
+		return;
+	}
+
+	*dataptr=(__u8*)malloc(USB_BUFSIZE);
+	int rc=read(p_epout_file[number],*dataptr,USB_BUFSIZE);
+	if (rc<0) {
+		fprintf(stderr,"Fail on EP%d read %d %s\n",number,errno,strerror(errno));
+	} else {
+		*dataptr=(__u8*)realloc(*dataptr,rc);
+		*length=rc;
+		fprintf(stderr,"Read %d bytes on EP%d\n",rc,number);
+	}
+
 }
 
 void USBHostProxy_GadgetFS::control_ack() {
@@ -353,6 +389,7 @@ void USBHostProxy_GadgetFS::stall_ep(__u8 endpoint) {
 }
 
 void USBHostProxy_GadgetFS::setConfig(USBConfiguration* fs_cfg,USBConfiguration* hs_cfg,bool hs) {
+TRACE;
 	int ifc_idx;
 	__u8 ifc_count=fs_cfg->get_descriptor()->bNumInterfaces;
 	for (ifc_idx=0;ifc_idx<ifc_count;ifc_idx++) {
@@ -369,8 +406,8 @@ void USBHostProxy_GadgetFS::setConfig(USBConfiguration* fs_cfg,USBConfiguration*
 			buf[0]=1;
 			__u8* p=buf+4;
 
-			memcpy(buf+4,&fs_ep,fs_ep->bLength);
-			memcpy(buf+4+fs_ep->bLength,&hs_ep,hs_ep->bLength);
+			memcpy(buf+4,fs_ep,fs_ep->bLength);
+			memcpy(buf+4+fs_ep->bLength,hs_ep,hs_ep->bLength);
 
 			__u8 epAddress=fs_ep->bEndpointAddress;
 
@@ -385,6 +422,9 @@ void USBHostProxy_GadgetFS::setConfig(USBConfiguration* fs_cfg,USBConfiguration*
 				p_epout_file[epAddress&0x0f]=fd;
 			}
 
+			int i;
+			for (i=0;i<bufSize;i++) {fprintf(stderr,"%02x ",buf[i]);}
+			fprintf(stderr,"\n");
 			write(fd,buf,bufSize);
 			fprintf(stderr,"Opened EP%d\n",epAddress);
 		}
