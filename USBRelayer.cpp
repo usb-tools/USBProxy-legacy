@@ -36,9 +36,10 @@ USBRelayer::USBRelayer(USBEndpoint* _endpoint,USBDeviceProxy* _device,USBHostPro
 	filters=NULL;
 	filterCount=0;
 	halt=false;
+	manager=NULL;
 }
 
-USBRelayer::USBRelayer(USBEndpoint* _endpoint,USBDeviceProxy* _device,USBHostProxy* _host,boost::lockfree::queue<USBSetupPacket*>* _queue) {
+USBRelayer::USBRelayer(USBManager* _manager,USBEndpoint* _endpoint,USBDeviceProxy* _device,USBHostProxy* _host,boost::lockfree::queue<USBSetupPacket*>* _queue) {
 	endpoint=_endpoint;
 	if (endpoint->get_descriptor()->bEndpointAddress) {fprintf(stderr,"Wrong queue type for EP0 relayer.\n");}
 	device=_device;
@@ -48,6 +49,7 @@ USBRelayer::USBRelayer(USBEndpoint* _endpoint,USBDeviceProxy* _device,USBHostPro
 	filters=NULL;
 	filterCount=0;
 	halt=false;
+	manager=_manager;
 }
 
 USBRelayer::~USBRelayer() {
@@ -96,6 +98,7 @@ void USBRelayer::relay_ep0() {
 							i++;
 						}
 						if (p->transmit) {
+							if (p->ctrl_req.bRequest==9 && p->ctrl_req.bRequestType==0) {manager->setConfig(p->ctrl_req.wValue);}
 							if (response_length) {
 								host->send_data(0,bmAttributes,maxPacketSize,p->data,response_length);
 							} else {

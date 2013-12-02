@@ -35,6 +35,9 @@
 #include "USBEndpoint.h"
 #include "USBPacket.h"
 #include "USBPacketFilter.h"
+#include "USBManager.h"
+
+class USBManager;
 
 class USBRelayer {
 private:
@@ -44,17 +47,19 @@ private:
 	USBDeviceProxy* device;
 	USBHostProxy* host;
 	USBPacketFilter** filters;
+	USBManager* manager;
 	__u8 filterCount;
 
 public:
 	bool halt;
 
 	USBRelayer(USBEndpoint* _endpoint,USBDeviceProxy* _device,USBHostProxy* _host,boost::lockfree::queue<USBPacket*>* _queue);
-	USBRelayer(USBEndpoint* _endpoint,USBDeviceProxy* _device,USBHostProxy* _host,boost::lockfree::queue<USBSetupPacket*>* _queue);
+	USBRelayer(USBManager* _manager,USBEndpoint* _endpoint,USBDeviceProxy* _device,USBHostProxy* _host,boost::lockfree::queue<USBSetupPacket*>* _queue);
 	virtual ~USBRelayer();
 	void relay();
 	void relay_ep0();
 	void add_filter(USBPacketFilter* filter);
+	void set_manager(USBManager* _manager) {manager=_manager;}
 
 	static void* relay_helper(void* context);
 };
