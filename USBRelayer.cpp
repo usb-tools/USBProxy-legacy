@@ -98,7 +98,6 @@ void USBRelayer::relay_ep0() {
 							i++;
 						}
 						if (p->transmit) {
-							if (p->ctrl_req.bRequest==9 && p->ctrl_req.bRequestType==0) {manager->setConfig(p->ctrl_req.wValue);}
 							if (response_length) {
 								host->send_data(0,bmAttributes,maxPacketSize,p->data,response_length);
 							} else {
@@ -113,6 +112,7 @@ void USBRelayer::relay_ep0() {
 					if (device->control_request(&(p->ctrl_req),&response_length,p->data)==-1) {
 						host->stall_ep(0);
 					} else {
+						if (p->ctrl_req.bRequest==9 && p->ctrl_req.bRequestType==0) {manager->setConfig(p->ctrl_req.wValue);}
 						host->control_ack();
 					}
 				}
