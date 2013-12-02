@@ -35,6 +35,8 @@ class USBHostProxy_GadgetFS: public USBHostProxy {
 private:
 	bool p_is_connected;
 	int p_device_file;
+	int p_epin_file[16];
+	int p_epout_file[16];
 	int debugLevel;
 
 	char* descriptor;
@@ -60,6 +62,7 @@ public:
 	void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length);
 	void control_ack();
 	void stall_ep(__u8 endpoint);
+	void setConfig(USBConfiguration* fs_cfg,USBConfiguration* hs_cfg,bool hs);
 };
 
 #endif /* USBHOSTPROXYGADGETFS_H_ */

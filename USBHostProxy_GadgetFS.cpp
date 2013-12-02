@@ -41,12 +41,28 @@ USBHostProxy_GadgetFS::USBHostProxy_GadgetFS(int _debugLevel) {
 	descriptor=NULL;
 	descriptorLength=0;
 	lastControl.bRequest=0;
+	int i;
+	for (i=0;i<16;i++) {
+		p_epin_file[i]=0;
+		p_epout_file[i]=0;
+	}
 }
 
 USBHostProxy_GadgetFS::~USBHostProxy_GadgetFS() {
 	if (p_device_file) {
 		close(p_device_file);
 		p_device_file=0;
+	}
+	int i;
+	for (i=0;i<16;i++) {
+		if (p_epin_file[i]) {
+			close(p_epin_file[i]);
+			p_epin_file[i]=0;
+		}
+		if (p_epout_file[i]) {
+			close(p_epout_file[i]);
+			p_epout_file[i]=0;
+		}
 	}
 	if (descriptor) {
 		free(descriptor);
@@ -126,7 +142,7 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 			fprintf(stderr, "\n");
 	}
 
-	p_device_file = find_gadget();
+	p_device_file = open_gadget();
 	if (p_device_file < 0) {
 		fprintf(stderr,"Fail on open %d %s\n",errno,strerror(errno));
 		return 1;
@@ -160,7 +176,7 @@ int USBHostProxy_GadgetFS::reconnect() {
 			fprintf(stderr, "\n");
 	}
 
-	p_device_file = find_gadget();
+	p_device_file = open_gadget();
 	if (p_device_file < 0) {
 		fprintf(stderr,"Fail on open %d %s\n",errno,strerror(errno));
 		return 1;
@@ -180,9 +196,23 @@ int USBHostProxy_GadgetFS::reconnect() {
 
 void USBHostProxy_GadgetFS::disconnect() {
 	if (!p_is_connected) {fprintf(stderr,"GadgetFS not connected.\n"); return;}
-	
-	close(p_device_file);
-	p_device_file=0;
+
+	if (p_device_file) {
+		close(p_device_file);
+		p_device_file=0;
+	}
+	int i;
+	for (i=0;i<16;i++) {
+		if (p_epin_file[i]) {
+			close(p_epin_file[i]);
+			p_epin_file[i]=0;
+		}
+		if (p_epout_file[i]) {
+			close(p_epout_file[i]);
+			p_epout_file[i]=0;
+		}
+	}
+
 	unmount_gadget();
 	
 	p_is_connected = false;
@@ -225,7 +255,7 @@ int USBHostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *n
 	if (debugLevel>1) fprintf(stderr, "libusb-gadget: %d events received\n", nevent);
 
 	for (i = 0; i < nevent; i++) {
-		if (debugLevel>0 && events[i].type!=3) fprintf(stderr,"libusb-gadget: event %d\n", events[i].type);
+		if (debugLevel>0) fprintf(stderr,"libusb-gadget: event %d\n", events[i].type);
 		switch (events[i].type) {
 		case GADGETFS_SETUP:
 			//FINISH handle IN setup with length>0
@@ -318,6 +348,45 @@ void USBHostProxy_GadgetFS::stall_ep(__u8 endpoint) {
 			read(p_device_file,0,0);
 		} else {
 			write(p_device_file,0,0);
+		}
+	}
+}
+
+void USBHostProxy_GadgetFS::setConfig(USBConfiguration* fs_cfg,USBConfiguration* hs_cfg,bool hs) {
+	int ifc_idx;
+	__u8 ifc_count=fs_cfg->get_descriptor()->bNumInterfaces;
+	for (ifc_idx=0;ifc_idx<ifc_count;ifc_idx++) {
+		USBInterface* fs_ifc=fs_cfg->get_interface(ifc_idx);
+		USBInterface* hs_ifc=hs_cfg?hs_cfg->get_interface(ifc_idx):fs_ifc;
+		hs_ifc=hs_ifc?hs_ifc:fs_ifc;
+		__u8 ep_count=fs_ifc->get_endpoint_count();
+		int ep_idx;
+		for (ep_idx=0;ep_idx<ep_count;ep_idx++) {
+			const usb_endpoint_descriptor* fs_ep=fs_ifc->get_endpoint_by_idx(ep_idx)->get_descriptor();
+			const usb_endpoint_descriptor* hs_ep=(hs_ifc->get_endpoint_by_idx(ep_idx))?hs_ifc->get_endpoint_by_idx(ep_idx)->get_descriptor():fs_ep;
+			__u8 bufSize=4+fs_ep->bLength+hs_ep->bLength;
+			__u8* buf=(__u8*)calloc(1,bufSize);
+			buf[0]=1;
+			__u8* p=buf+4;
+
+			memcpy(buf+4,&fs_ep,fs_ep->bLength);
+			memcpy(buf+4+fs_ep->bLength,&hs_ep,hs_ep->bLength);
+
+			__u8 epAddress=fs_ep->bEndpointAddress;
+
+			int fd=open_endpoint(epAddress);
+			if (fd<0) {
+				fprintf(stderr,"Fail on open EP%d %d %s\n",epAddress,errno,strerror(errno));
+				return;
+			}
+			if (epAddress & 0x80) {
+				p_epin_file[epAddress&0x0f]=fd;
+			} else {
+				p_epout_file[epAddress&0x0f]=fd;
+			}
+
+			write(fd,buf,bufSize);
+			fprintf(stderr,"Opened EP%d\n",epAddress);
 		}
 	}
 }
