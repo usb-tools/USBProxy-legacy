@@ -390,6 +390,12 @@ void USBManager::stop_relaying(){
 
 void USBManager::setConfig(__u8 index) {
 	device->set_active_configuration(index);
-	deviceProxy->setConfig(device->get_configuration(index),device->get_device_qualifier()->get_configuration(index),device->is_highspeed());
-	hostProxy->setConfig(device->get_configuration(index),device->get_device_qualifier()->get_configuration(index),device->is_highspeed());
+	USBDeviceQualifier* qualifier=device->get_device_qualifier();
+	if (qualifier) {
+		deviceProxy->setConfig(device->get_configuration(index),device->get_device_qualifier()->get_configuration(index),device->is_highspeed());
+		hostProxy->setConfig(device->get_configuration(index),device->get_device_qualifier()->get_configuration(index),device->is_highspeed());
+	} else {
+		deviceProxy->setConfig(device->get_configuration(index),NULL,device->is_highspeed());
+		hostProxy->setConfig(device->get_configuration(index),NULL,device->is_highspeed());
+	}
 }
