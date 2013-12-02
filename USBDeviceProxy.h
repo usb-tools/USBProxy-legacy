@@ -24,8 +24,9 @@
 #define _USBDeviceProxy_
 
 #include <linux/usb/ch9.h>
+#include "USBConfiguration.h"
 
-typedef void (*statusCallback)();
+class USBConfiguration;
 
 class USBDeviceProxy{
 public:
@@ -40,6 +41,8 @@ public:
 	virtual int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr)=0;
 	virtual void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length)=0;
 	virtual void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length)=0;
+
+	virtual void setConfig(USBConfiguration* fs_cfg,USBConfiguration* hs_cfg,bool hs)=0;
 
 	virtual void claim_interface(__u8 interface)=0;
 	virtual void release_interface(__u8 interface)=0;

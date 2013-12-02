@@ -57,6 +57,8 @@ public:
 	void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length);
 	void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length);
 
+	void setConfig(USBConfiguration* fs_cfg,USBConfiguration* hs_cfg,bool hs) {}
+
 	void claim_interface(__u8 interface);
 	void release_interface(__u8 interface);
 
