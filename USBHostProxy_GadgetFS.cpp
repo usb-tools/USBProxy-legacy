@@ -266,8 +266,9 @@ int USBHostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *n
 			setup_packet->wValue=lastControl.wValue;
 			setup_packet->wLength=lastControl.wLength;
 			if (!(lastControl.bRequestType&0x80) && lastControl.wLength) {
+				TRACE;
 				*dataptr=(__u8*)malloc(lastControl.wLength);
-				*nbytes=read(p_device_file,dataptr,lastControl.wLength);
+				*nbytes=read(p_device_file,*dataptr,lastControl.wLength);
 			}
 			return 0;
 			break;
@@ -422,9 +423,6 @@ TRACE;
 				p_epout_file[epAddress&0x0f]=fd;
 			}
 
-			int i;
-			for (i=0;i<bufSize;i++) {fprintf(stderr,"%02x ",buf[i]);}
-			fprintf(stderr,"\n");
 			write(fd,buf,bufSize);
 			fprintf(stderr,"Opened EP%d\n",epAddress);
 		}
