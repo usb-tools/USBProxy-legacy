@@ -30,6 +30,8 @@
 #include <stdio.h>
 #include "USBDeviceProxy.h"
 
+class USBDeviceProxy;
+
 class USBString {
 private:
 	usb_string_descriptor* descriptor;

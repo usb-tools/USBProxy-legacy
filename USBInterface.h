@@ -45,6 +45,7 @@ struct USBGenericDescriptor {
 
 class USBConfiguration;
 class USBEndpoint;
+class USBString;
 
 class USBInterface {
 	private:

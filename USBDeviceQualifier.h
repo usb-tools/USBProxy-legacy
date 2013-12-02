@@ -32,6 +32,7 @@
 
 class USBDevice;
 class USBConfiguration;
+class USBDeviceProxy;
 
 class USBDeviceQualifier {
 private:

@@ -36,6 +36,7 @@
 
 class USBDevice;
 class USBInterfaceGroup;
+class USBDeviceProxy;
 
 class USBConfiguration {
 	private:
