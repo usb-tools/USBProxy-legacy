@@ -39,8 +39,11 @@ extern "C"
  */
 #define	USB_BUFSIZE	(7 * 1024)
 
-/* Find the appropriate gadget file on the GadgetFS filesystem */
-int find_gadget();
+/* Find & open the appropriate gadget file on the GadgetFS filesystem */
+int open_gadget();
+
+/* Find & open an endpoint file */
+int open_endpoint(__u8 epAddress);
 
 /* Mount gadgetfs filesystem in a temporary directory */
 int mount_gadget();

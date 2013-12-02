@@ -34,7 +34,8 @@
 #include <stdio.h>
 #include <sys/mount.h>
 #include <fcntl.h>
-#include "mntent.h"
+#include <linux/types.h>
+#include <mntent.h>
 #include "TRACE.h"
 
 static char *gadgetfs_path;
@@ -52,7 +53,7 @@ void clean_tmp() {
 
 	entry = malloc(offsetof(struct dirent, d_name) + pathconf("/tmp", _PC_NAME_MAX) + 1);
 
-	fprintf(stderr,"cleaning up /tmp\n",gadgetfs_path);
+	fprintf(stderr,"cleaning up /tmp\n");
 
 	if (!entry) {
 		closedir (dir);
@@ -151,7 +152,9 @@ int unmount_gadget() {
 	if (gadgetfs_path) {
 		int status;
 		status=umount2(gadgetfs_path,0);
-		status = rmdir (gadgetfs_path);
+		if (status!=0) {fprintf(stderr,"Error unmounting gadgetfs from [%s].\n",gadgetfs_path);}
+		status=rmdir (gadgetfs_path);
+		if (status!=0) {fprintf(stderr,"Error removing directory [%s].\n",gadgetfs_path);}
 		free(gadgetfs_path);
 		gadgetfs_path=NULL;
 	}
@@ -159,7 +162,7 @@ int unmount_gadget() {
 }
 
 /* Find the appropriate gadget file on the GadgetFS filesystem */
-int find_gadget() {
+int open_gadget() {
 	const char *filename = NULL;
 	DIR *dir;
 	struct dirent *entry;
@@ -219,5 +222,20 @@ int find_gadget() {
 	char path[256];
 	sprintf(path, "%s/%s", gadgetfs_path, filename);
 	
+	return open(path, O_CLOEXEC | O_RDWR);
+}
+
+int open_endpoint(__u8 epAddress) {
+	int number=epAddress&0xf;
+	if (number==0) return -1;
+	char* direction=NULL;
+	if (number>12) {
+		direction="";
+	} else {
+		direction=(epAddress&0x80)?"in":"out";
+	}
+
+	char path[256];
+	sprintf(path, "%s/ep%d%s", gadgetfs_path, number,direction);
 	return open(path, O_CLOEXEC | O_RDWR);
 }
