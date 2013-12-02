@@ -32,7 +32,6 @@
 //CLEANUP handle any endpoints that become inactive upon set configuration request
 //CLEANUP what happends if device is HS but host is not, in terms of correct config to use,etc.
 
-
 USBDevice::USBDevice(USBDeviceProxy* _proxy) {
 	hostConfigurationIndex=-1;
 	hostAddress=-1;
@@ -364,6 +363,11 @@ USBConfiguration* USBDevice::get_active_configuration() {
 	if (deviceConfigurationIndex<0) {return NULL;}
 	if (qualifier) {return qualifier->get_configuration(deviceConfigurationIndex);}
 	return get_configuration(deviceConfigurationIndex);
+}
+
+void USBDevice::set_active_configuration(__u8 index) {
+	if (index>descriptor.bNumConfigurations || index<1) {deviceConfigurationIndex=-1;return;}
+	deviceConfigurationIndex=index;
 }
 
 USBDeviceQualifier* USBDevice::get_device_qualifier() {

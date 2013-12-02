@@ -38,6 +38,7 @@
 
 class USBConfiguration;
 class USBDeviceQualifier;
+class USBString;
 
 class USBDevice {
 private:
@@ -67,6 +68,8 @@ public:
 	const usb_device_descriptor* get_descriptor();
 	void add_configuration(USBConfiguration* config);
 	USBConfiguration* get_configuration(__u8 index);
+	void set_active_configuration(__u8 index);
+
 	void print(__u8 tabs=0);
 	void add_string(USBString* string);
 	//adds via proxy
