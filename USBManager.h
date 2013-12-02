@@ -74,6 +74,7 @@ private:
 	pthread_t out_relayerThreads[16];
 	boost::lockfree::queue<USBPacket*>* out_queue[16];
 	boost::lockfree::queue<USBSetupPacket*>* out_queue_ep0;
+	void start_data_relaying();
 
 public:
 	USBManager(USBDeviceProxy* _deviceProxy,USBHostProxy* _hostProxy);
@@ -96,7 +97,7 @@ public:
 
 	enum USBManager_status get_status() {return status;}
 
-	void start_relaying();
+	void start_control_relaying();
 	void stop_relaying();
 };
 

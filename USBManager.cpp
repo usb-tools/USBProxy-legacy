@@ -204,7 +204,7 @@ __u8 USBManager::get_filter_count(){
 }
 
 
-void USBManager::start_relaying(){
+void USBManager::start_control_relaying(){
 	//TODO this should exit immediately if already started, and wait (somehow) is stopping or setting up
 	status=USBM_SETUP;
 
@@ -214,6 +214,51 @@ void USBManager::start_relaying(){
 	//populate device model
 	device=new USBDevice(deviceProxy);
 
+	//create EP0 endpoint object
+	usb_endpoint_descriptor desc_ep0;
+	desc_ep0.bLength=7;
+	desc_ep0.bDescriptorType=USB_DT_ENDPOINT;
+	desc_ep0.bEndpointAddress=0;
+	desc_ep0.bmAttributes=0;
+	desc_ep0.wMaxPacketSize=device->get_descriptor()->bMaxPacketSize0;
+	desc_ep0.bInterval=0;
+	out_endpoints[0]=new USBEndpoint((USBInterface*)NULL,&desc_ep0);
+
+	//set up queues,relayers,and filters
+	out_queue_ep0=new boost::lockfree::queue<USBSetupPacket*>(16);
+	out_relayers[0]=new USBRelayer(this,out_endpoints[0],deviceProxy,hostProxy,out_queue_ep0);
+
+
+	//apply filters to relayers
+	int i;
+	for(i=0;i<filterCount;i++) {
+		if (filters[i]->test_device(device)) {
+			if (out_endpoints[0] && filters[i]->test_endpoint(out_endpoints[0]) ) {
+				out_relayers[0]->add_filter(filters[i]);
+			}
+		}
+	}
+
+	if (hostProxy->connect(device)!=0) {
+		stop_relaying();
+		return;
+	}
+
+	if (injectorCount) {
+		injectorThreads=(pthread_t *)calloc(injectorCount,sizeof(pthread_t));
+		for(i=0;i<injectorCount;i++) {
+			pthread_create(&injectorThreads[i],NULL,&USBInjector::listen_helper,injectors[i]);
+		}
+	}
+
+	if (out_relayers[0]) {
+		pthread_create(&out_relayerThreads[0],NULL,&USBRelayer::relay_helper,out_relayers[0]);
+	}
+
+	status=USBM_RELAYING;
+}
+
+void USBManager::start_data_relaying() {
 	//enumerate endpoints
 	USBConfiguration* cfg=device->get_active_configuration();
 	int ifc_idx;
@@ -233,19 +278,9 @@ void USBManager::start_relaying(){
 		}
 	}
 
-	//create EP0 endpoint object
-	usb_endpoint_descriptor desc_ep0;
-	desc_ep0.bLength=7;
-	desc_ep0.bDescriptorType=USB_DT_ENDPOINT;
-	desc_ep0.bEndpointAddress=0;
-	desc_ep0.bmAttributes=0;
-	desc_ep0.wMaxPacketSize=device->get_descriptor()->bMaxPacketSize0;
-	desc_ep0.bInterval=0;
-	out_endpoints[0]=new USBEndpoint((USBInterface*)NULL,&desc_ep0);
-
 	//set up queues,relayers,and filters
 	int i,j;
-	for (i=0;i<16;i++) {
+	for (i=1;i<16;i++) {
 		if (in_endpoints[i]) {
 			//USBRelayer(USBEndpoint* _endpoint,USBDeviceProxy* _device,USBHostProxy* _host,boost::lockfree::queue<USBSetupPacket*>* _queue);
 			in_queue[i]=new boost::lockfree::queue<USBPacket*>(16);
@@ -280,25 +315,13 @@ void USBManager::start_relaying(){
 		}
 	}
 
-	if (hostProxy->connect(device)!=0) {
-		stop_relaying();
-		return;
-	}
-
-	if (injectorCount) {
-		injectorThreads=(pthread_t *)calloc(injectorCount,sizeof(pthread_t));
-		for(i=0;i<injectorCount;i++) {
-			pthread_create(&injectorThreads[i],NULL,&USBInjector::listen_helper,injectors[i]);
-		}
-	}
-
 	//Claim interfaces
 	for (ifc_idx=0;ifc_idx<ifc_cnt;ifc_idx++) {
 		deviceProxy->claim_interface(ifc_idx);
 	}
 
 	//TODO set back to <16
-	for(i=0;i<16;i++) {
+	for(i=1;i<16;i++) {
 		if (in_relayers[i]) {
 			pthread_create(&in_relayerThreads[i],NULL,&USBRelayer::relay_helper,in_relayers[i]);
 		}
@@ -307,7 +330,6 @@ void USBManager::start_relaying(){
 		}
 	}
 
-	status=USBM_RELAYING;
 }
 
 void USBManager::stop_relaying(){
@@ -398,4 +420,5 @@ void USBManager::setConfig(__u8 index) {
 		deviceProxy->setConfig(device->get_configuration(index),NULL,device->is_highspeed());
 		hostProxy->setConfig(device->get_configuration(index),NULL,device->is_highspeed());
 	}
+	start_data_relaying();
 }

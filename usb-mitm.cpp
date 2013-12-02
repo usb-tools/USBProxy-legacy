@@ -75,7 +75,7 @@ void handle_signal(int signum)
 		case SIGHUP:
 			printf("Received SIGHUP, restarting relaying...\n");
 			if (manager) {manager->stop_relaying();}
-			if (manager) {manager->start_relaying();}
+			if (manager) {manager->start_control_relaying();}
 			break;
 	}
 }
@@ -127,7 +127,7 @@ extern "C" int main(int argc, char **argv)
 	//manager->add_filter(keyfilter);
 	manager->add_injector(udpinjector);
 
-	manager->start_relaying();
+	manager->start_control_relaying();
 
 	while (manager->get_status()==USBM_RELAYING) {sleep(1);}
 
