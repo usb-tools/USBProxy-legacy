@@ -37,7 +37,7 @@ USBInjector_UDP::USBInjector_UDP(__u16 _port) {
 
 USBInjector_UDP::~USBInjector_UDP() {
 	if (sck) {close(sck);sck=0;}
-	if (buf) {free(buf);}
+	if (buf) {free(buf);buf=NULL;}
 }
 
 void USBInjector_UDP::start_injector() {
@@ -62,7 +62,7 @@ void USBInjector_UDP::start_injector() {
 
 void USBInjector_UDP::stop_injector() {
 	if (sck) {close(sck);sck=0;}
-	if (buf) {free(buf);}
+	if (buf) {free(buf);buf=NULL;}
 }
 
 USBPacket* USBInjector_UDP::get_packets() {

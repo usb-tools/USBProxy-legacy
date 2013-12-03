@@ -26,6 +26,7 @@
 #include "USBDevice.h"
 #include "DefinitionErrors.h"
 #include "TRACE.h"
+#include "HexString.h"
 
 //CLEANUP update active endpoints in proxied device upon set configuration request
 //CLEANUP update active configuration for the class upon set configuration request
@@ -213,9 +214,11 @@ USBConfiguration* USBDevice::get_configuration(__u8 index) {
 void USBDevice::print(__u8 tabs) {
 	int i;
 	for(i=0;i<tabs;i++) {putchar('\t');}
-	printf("Device:");
-	for(i=0;i<(int)sizeof(descriptor);i++) {printf(" %02x",((__u8 *)&descriptor)[i]);}
-	putchar('\n');
+
+	char* hex=hex_string(&descriptor,sizeof(descriptor));
+	printf("Device: %s\n",hex);
+	free(hex);
+
 	USBString* s;
 	if (descriptor.iManufacturer) {
 		s=get_manufacturer_string();

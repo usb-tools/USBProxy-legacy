@@ -28,6 +28,7 @@
 #include <memory.h>
 #include <stdio.h>
 #include "USBInterface.h"
+#include "HexString.h"
 
 //CLEANUP update active interface in interfacegroup upon set interface request
 //CLEANUP update active endpoints in proxied device upon set interface request
@@ -185,9 +186,9 @@ void USBInterface::print(__u8 tabs,bool active) {
 	unsigned int i;
 	for(i=0;i<tabs;i++) {putchar('\t');}
 	if (active) {putchar('*');}
-	printf("Alt(%d):",descriptor.bAlternateSetting);
-	for(i=0;i<sizeof(descriptor);i++) {printf(" %02x",((__u8*)&descriptor)[i]);}
-	putchar('\n');
+	char* hex=hex_string(&descriptor,sizeof(descriptor));
+	printf("Alt(%d): %s\n",descriptor.bAlternateSetting,hex);
+	free(hex);
 	if (descriptor.iInterface) {
 		USBString* s=get_interface_string();
 		if (s) {
@@ -201,9 +202,9 @@ void USBInterface::print(__u8 tabs,bool active) {
 	int j=0;
 	for (j=0;j<generic_descriptor_count;j++) {
 		for(i=0;i<(tabs+1);i++) {putchar('\t');}
-		printf("Other(%02x):",generic_descriptors[j]->bDescriptorType);
-		for(i=0;i<generic_descriptors[j]->bLength;i++) {printf(" %02x",((__u8*)generic_descriptors[j])[i]);}
-		putchar('\n');
+		char* hex=hex_string((void*)generic_descriptors[j],generic_descriptors[j]->bLength);
+		printf("Other(%02x): %s\n",generic_descriptors[j]->bDescriptorType,hex);
+		free(hex);
 	}
 	for(i=0;i<descriptor.bNumEndpoints;i++) {
 		if (endpoints[i]) {endpoints[i]->print(tabs+1);}

@@ -32,6 +32,7 @@
 #include "GadgetFS_helpers.h"
 #include "errno.h"
 #include "TRACE.h"
+#include "HexString.h"
 
 USBHostProxy_GadgetFS::USBHostProxy_GadgetFS(int _debugLevel) {
 	mount_gadget();
@@ -45,6 +46,8 @@ USBHostProxy_GadgetFS::USBHostProxy_GadgetFS(int _debugLevel) {
 	for (i=0;i<16;i++) {
 		p_epin_file[i]=0;
 		p_epout_file[i]=0;
+		p_epout_io[i]=NULL;
+		p_epout_buf[i]=NULL;
 	}
 }
 
@@ -70,7 +73,7 @@ USBHostProxy_GadgetFS::~USBHostProxy_GadgetFS() {
 		}
 		if (p_epout_buf[i]) {
 			free(p_epout_buf[i]);
-			p_epout_buf[i];
+			p_epout_buf[i]=NULL;
 		}
 	}
 	if (descriptor) {
@@ -149,13 +152,9 @@ int USBHostProxy_GadgetFS::connect(USBDevice* device) {
 	if (generate_descriptor(device)!=0) {return 1;}
 
 	if (debugLevel>0) {
-		for(i=0; i<descriptorLength; i++) {
-			if(i%16 == 0)
-				fprintf(stderr, "\n");
-			fprintf(stderr, " %02x", descriptor[i]);
-		}
-		if(i%16 != 1)
-			fprintf(stderr, "\n");
+		char* hex=hex_string((void*)descriptor,descriptorLength);
+		fprintf(stderr,"%s\n",hex);
+		free(hex);
 	}
 
 	p_device_file = open_gadget();
@@ -183,13 +182,9 @@ int USBHostProxy_GadgetFS::reconnect() {
 	if (!descriptor) {return 1;}
 
 	if (debugLevel>0) {
-		for(i=0; i<descriptorLength; i++) {
-			if(i%8 == 0)
-				fprintf(stderr, "\n");
-			fprintf(stderr, " %02x", descriptor[i]);
-		}
-		if(i%8 != 0)
-			fprintf(stderr, "\n");
+		char* hex=hex_string((void*)descriptor,descriptorLength);
+		fprintf(stderr,"%s\n",hex);
+		free(hex);
 	}
 
 	p_device_file = open_gadget();
@@ -234,7 +229,7 @@ void USBHostProxy_GadgetFS::disconnect() {
 		}
 		if (p_epout_buf[i]) {
 			free(p_epout_buf[i]);
-			p_epout_buf[i];
+			p_epout_buf[i]=NULL;
 		}
 	}
 
@@ -342,9 +337,9 @@ void USBHostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 	if (!endpoint) {
 		int rc=write(p_device_file,dataptr,length);
 		if (rc<0) {
-			fprintf(stderr,"Fail on EP0 write %d %s\n",errno,strerror(errno));
+			fprintf(stderr,"Fail on EP00 write %d %s\n",errno,strerror(errno));
 		} else {
-			fprintf(stderr,"Send %d bytes on EP0\n",rc);
+			fprintf(stderr,"Sent %d bytes on EP00\n",rc);
 		}
 		return;
 	}
@@ -362,13 +357,13 @@ void USBHostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 	if (rc<0) {
 		fprintf(stderr,"Fail on EP%02x write %d %s\n",number,errno,strerror(errno));
 	} else {
-		fprintf(stderr,"Send %d bytes on EP%02x\n",rc,number);
+		fprintf(stderr,"Sent %d bytes on EP%02x\n",rc,number);
 	}
 }
 
 void USBHostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length) {
 	if (!endpoint) {
-		fprintf(stderr,"trying to receive %d bytes on EP0\n",length);
+		fprintf(stderr,"trying to receive %d bytes on EP00\n",length);
 		return;
 	}
 	if (endpoint & 0x80) {
@@ -385,10 +380,14 @@ void USBHostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 max
 		aiocb* aio=new aiocb();
 		aio->aio_fildes=p_epout_file[number];
 		aio->aio_offset=0;
-		if(!p_epout_buf[number]) {p_epout_buf[number]=(__u8*)malloc(maxPacketSize);}
+		if(!p_epout_buf[number]) {
+			p_epout_buf[number]=(__u8*)malloc(maxPacketSize);
+			fprintf(stderr,"Created AIO BUFFER for %02x at %d\n",number,p_epout_buf[number]);
+		}
 		aio->aio_buf=p_epout_buf[number];
 		aio->aio_nbytes=maxPacketSize;
 		aio->aio_sigevent.sigev_notify=SIGEV_NONE;
+		fprintf(stderr,"Start AIO Read on EP%02x for %d bytes at %d\n",number,aio->aio_nbytes,aio->aio_buf);
 		int rc=aio_read(aio);
 		if (rc) {
 			delete(aio);fprintf(stderr,"Error submitting aio %d %s\n",number,errno,strerror(errno));
@@ -404,14 +403,18 @@ void USBHostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 max
 		} else {
 			rc=aio_return(aio);
 			*dataptr=(__u8*)malloc(rc);
+			if (!*dataptr) {fprintf(stderr,"MALLOC FAILURE IN AIO\n");}
 			memcpy(*dataptr,p_epout_buf[number],rc);
 			*length=rc;
 			fprintf(stderr,"Read %d bytes on EP%02x\n",rc,number);
-			aio_read(aio);
+			aio->aio_offset+=rc;
+			int rc=aio_read(aio);
+			if (rc) {
+				delete(aio);fprintf(stderr,"Error submitting aio %d %s\n",number,errno,strerror(errno));
+				p_epout_io[number]=NULL;
+			}
 		}
 	}
-
-
 
 	//FIXME THIS DOES NOT WORK!!
 	/*

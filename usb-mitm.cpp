@@ -133,6 +133,12 @@ extern "C" int main(int argc, char **argv)
 
 	manager->stop_relaying();
 
+	delete(udpinjector);
+	udpinjector=NULL;
+
+	delete(logfilter);
+	logfilter=NULL;
+
 	delete(manager);
 	manager=NULL;
 	delete(host_proxy);

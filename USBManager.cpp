@@ -102,7 +102,10 @@ USBManager::~USBManager() {
 				injectorThreads[i]=0;
 			}
 		}
+		free(injectorThreads);
+		injectorThreads=NULL;
 	}
+
 }
 
 void USBManager::inject_packet(USBPacket *packet) {
@@ -354,6 +357,8 @@ void USBManager::stop_relaying(){
 				injectorThreads[i]=0;
 			}
 		}
+		free(injectorThreads);
+		injectorThreads=NULL;
 	}
 
 	//wait for all relayer threads to stop, then delete relayer objects

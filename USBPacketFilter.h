@@ -32,6 +32,7 @@
 #include "USBInterface.h"
 #include "USBEndpoint.h"
 #include "USBPacket.h"
+#include "HexString.h"
 
 struct packet_filter_endpoint {
 	__u8 address;
@@ -143,19 +144,22 @@ private:
 public:
 	USBPacketFilter_streamlog(FILE* _file) {file=_file;}
 	void filter_packet(USBPacket* packet) {
-		fprintf(file,"%02x[%d]:",packet->bEndpoint,packet->wLength);
-		int i;
-		for(i=0;i<packet->wLength;i++) {fprintf(file," %02x",packet->data[i]);}
-		fprintf(file,"\n");
+		char* hex=hex_string((void*)packet->data,packet->wLength);
+		fprintf(file,"%02x[%d]: %s\n",packet->bEndpoint,packet->wLength,hex);
+		free(hex);
 	}
 	void filter_setup_packet(USBSetupPacket* packet) {
-		fprintf(file,"[%02x",((char*)&(packet->ctrl_req))[0]);
-		int i;
-		for(i=1;i<8;i++) {fprintf(file," %02x",((char*)&(packet->ctrl_req))[i]);}
-		fprintf(file,"]: ");
-		if (packet->data)
-				for(i=0;i<packet->ctrl_req.wLength;i++) {fprintf(file," %02x",packet->data[i]);}
-		fprintf(file,"\n");
+		if (packet->ctrl_req.wLength && packet->data) {
+			char* hex_setup=hex_string(&(packet->ctrl_req),sizeof(packet->ctrl_req));
+			char* hex_data=hex_string((void*)(packet->data),packet->ctrl_req.wLength);
+			fprintf(file,"[%s]: %s\n",hex_setup,hex_data);
+			free(hex_data);
+			free(hex_setup);
+		} else {
+			char* hex_setup=hex_string(&(packet->ctrl_req),sizeof(packet->ctrl_req));
+			fprintf(file,"[%s]\n",hex_setup);
+			free(hex_setup);
+		}
 	}
 	virtual char* toString() {return (char*)"Stream Log Filter";}
 };

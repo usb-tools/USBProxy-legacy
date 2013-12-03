@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <memory.h>
 #include "USBEndpoint.h"
+#include "HexString.h"
 
 USBEndpoint::USBEndpoint(USBInterface* _interface,const __u8* p) {
 	interface=_interface;
@@ -68,9 +69,9 @@ void USBEndpoint::get_full_descriptor(__u8** p) {
 void USBEndpoint::print(__u8 tabs) {
 	unsigned int i;
 	for(i=0;i<tabs;i++) {putchar('\t');}
-	printf("EP(%02x):",descriptor.bEndpointAddress);
-	for(i=0;i<descriptor.bLength;i++) {printf(" %02x",((__u8*)&descriptor)[i]);}
-	putchar('\n');
+	char* hex=hex_string(&descriptor,descriptor.bLength);
+	printf("EP(%02x): %s\n",descriptor.bEndpointAddress,hex);
+	free(hex);
 }
 
 const definition_error USBEndpoint::is_defined(__u8 configId,__u8 interfaceNum,__u8 interfaceAlternate) {

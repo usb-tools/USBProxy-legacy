@@ -70,9 +70,10 @@ void USBRelayer::add_filter(USBPacketFilter* filter) {
 }
 
 void USBRelayer::relay_ep0() {
+	fprintf(stderr,"Starting relaying for EP0.\n");
 	__u8 bmAttributes=endpoint->get_descriptor()->bmAttributes;
 	__u16 maxPacketSize=endpoint->get_descriptor()->wMaxPacketSize;
-	__u8* buf;
+	__u8* buf=NULL;
 	int response_length=0;
 	USBSetupPacket* p;
 	usb_ctrlrequest ctrl_req;
@@ -147,15 +148,17 @@ void USBRelayer::relay_ep0() {
 			/* not needed p=NULL; */
 		}
 	}
+	fprintf(stderr,"Finished relaying for EP0.\n");
 }
 
 void USBRelayer::relay() {
 	__u8 epAddress=endpoint->get_descriptor()->bEndpointAddress;
 	if (!epAddress) {relay_ep0();return;}
+	fprintf(stderr,"Starting relaying for EP%02x.\n",epAddress);
 	__u8 bmAttributes=endpoint->get_descriptor()->bmAttributes;
 	__u16 maxPacketSize=endpoint->get_descriptor()->wMaxPacketSize;
-	__u8* buf;
-	int length;
+	__u8* buf=NULL;
+	int length=0;
 	USBPacket* p;
 	if (epAddress&0x80) { //device->host
 		while (!halt) {
@@ -194,7 +197,7 @@ void USBRelayer::relay() {
 				}
 				if (p->transmit) {device->send_data(epAddress,bmAttributes,maxPacketSize,p->data,p->wLength);}
 				delete(p);
-				/* not needed p=NULL; */
+				p=NULL;
 			}
 			if (queue->pop(p)) {
 				__u8 i=0;
@@ -204,10 +207,11 @@ void USBRelayer::relay() {
 				}
 				if (p->transmit) {device->send_data(epAddress,bmAttributes,maxPacketSize,p->data,p->wLength);}
 				delete(p);
-				/* not needed p=NULL; */
+				p=NULL;
 			}
 		}
 	}
+	fprintf(stderr,"Finished relaying for EP%02x.\n",epAddress);
 }
 
 void* USBRelayer::relay_helper(void* context) {

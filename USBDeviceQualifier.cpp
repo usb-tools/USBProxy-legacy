@@ -26,6 +26,7 @@
 
 #include "USBDeviceQualifier.h"
 #include "DefinitionErrors.h"
+#include "HexString.h"
 
 USBDeviceQualifier::USBDeviceQualifier(USBDevice* _device,USBDeviceProxy* proxy) {
 	device=_device;
@@ -112,9 +113,9 @@ USBConfiguration* USBDeviceQualifier::get_configuration(__u8 index) {
 void USBDeviceQualifier::print(__u8 tabs) {
 	int i;
 	for(i=0;i<tabs;i++) {putchar('\t');}
-	printf("HS Qualifier:");
-	for(i=0;i<(int)sizeof(descriptor);i++) {printf(" %02x",((__u8 *)&descriptor)[i]);}
-	putchar('\n');
+	char* hex=hex_string(&descriptor,sizeof(descriptor));
+	printf("HS Qualifier: %s\n",hex);
+	free(hex);
 	for(i=0;i<descriptor.bNumConfigurations;i++) {
 		if (configurations[i]) {configurations[i]->print(tabs+1,(configurations[i]==device->get_active_configuration())?true:false);}
 	}

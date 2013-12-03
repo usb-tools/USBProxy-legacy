@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include "USBDeviceProxy_LibUSB.h"
 #include "TRACE.h"
+#include "HexString.h"
 
 int USBDeviceProxy_LibUSB::debugLevel=0;
 
@@ -127,6 +128,13 @@ int USBDeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) 
 	libusb_free_device_list(list,1);
 	libusb_set_auto_detach_kernel_driver(dev_handle,1);
 
+	//check that device is responsive
+	rc=libusb_get_string_descriptor(dev_handle,0,0,(unsigned char*)&rc,4);
+	if (rc<0) {
+		fprintf(stderr,"Device unresponsive.\n");
+		return rc;
+	}
+
 	if (debugLevel) {
 		char *device_desc=toString();
 		fprintf(stdout,"Connected to device: %s\n",device_desc);
@@ -189,10 +197,10 @@ char* USBDeviceProxy_LibUSB::toString() {
 
 int USBDeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr) {
 	if (debugLevel>1) {
-		printf("LibUSB>");
 		unsigned int i;
-		for(i=0;i<sizeof(*setup_packet);i++) {printf("%02x",((uint8_t *)setup_packet)[i]);}
-		printf("\n");
+		char* hex=hex_string((void*)setup_packet,sizeof(*setup_packet));
+		printf("LibUSB> %s\n",hex);
+		free(hex);
 	}
 	int rc=libusb_control_transfer(dev_handle,setup_packet->bRequestType,setup_packet->bRequest,setup_packet->wValue,setup_packet->wIndex,dataptr,setup_packet->wLength,1000);
 	if (rc<0) {
@@ -201,10 +209,9 @@ int USBDeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, 
 		return rc;
 	}
 	if (debugLevel>1) {
-		printf("LibUSB<");
-		int i;
-		for(i=0;i<rc;i++) {printf("%02x",dataptr[i]);}
-		printf("\n");
+		char* hex=hex_string((void*)dataptr,rc);
+		printf("LibUSB< %s\n",hex);
+		free(hex);
 	}
 	*nbytes=rc;
 	return 0;

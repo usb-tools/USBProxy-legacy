@@ -31,6 +31,7 @@ USBInjector::USBInjector() {
 }
 
 void USBInjector::listen() {
+	fprintf(stderr,"Starting injector thread for [%s].\n",this->toString());
 	start_injector();
 	while (!halt) {
 		//TODO we also need to handle setup packets and getting the response back
@@ -38,6 +39,7 @@ void USBInjector::listen() {
 		if (p) {manager->inject_packet(p);}
 	}
 	stop_injector();
+	fprintf(stderr,"Finished injector thread for [%s].\n",this->toString());
 }
 
 void* USBInjector::listen_helper(void* context) {

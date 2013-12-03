@@ -30,6 +30,7 @@
 #include "USBConfiguration.h"
 #include "DefinitionErrors.h"
 #include "TRACE.h"
+#include "HexString.h"
 
 USBConfiguration::USBConfiguration(USBDevice* _device,USBDeviceProxy* proxy, int idx,bool highSpeed)
 {
@@ -162,9 +163,9 @@ void USBConfiguration::print(__u8 tabs,bool active) {
 	unsigned int i;
 	for(i=0;i<tabs;i++) {putchar('\t');}
 	if (active) {putchar('*');}
-	printf("Config(%d):",descriptor.bConfigurationValue);
-	for(i=0;i<sizeof(descriptor);i++) {printf(" %02x",((__u8*)&descriptor)[i]);}
-	putchar('\n');
+	char* hex=hex_string(&descriptor,sizeof(descriptor));
+	printf("Config(%d): %s\n",descriptor.bConfigurationValue,hex);
+	free(hex);
 	if (descriptor.iConfiguration) {
 		USBString* s=get_config_string();
 		if (s) {

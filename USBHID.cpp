@@ -28,8 +28,7 @@
 #include <memory.h>
 #include <stdio.h>
 #include "USBHID.h"
-
-
+#include "HexString.h"
 
 USBHID::USBHID(const __u8* p) {
 	descriptor=(usb_hid_descriptor *)malloc(p[0]);
@@ -75,7 +74,7 @@ void USBHID::get_full_descriptor(__u8** p) {
 void USBHID::print(__u8 tabs) {
 	unsigned int i;
 	for(i=0;i<tabs;i++) {putchar('\t');}
-	printf("HID:");
-	for(i=0;i<descriptor->bLength;i++) {printf(" %02x",((__u8*)descriptor)[i]);}
-	putchar('\n');
+	char* hex=hex_string((void*)descriptor,descriptor->bLength);
+	printf("HID: %s\n",hex);
+	free(hex);
 }
