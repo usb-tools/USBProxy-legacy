@@ -439,7 +439,7 @@ TRACE;
 
 			write(fd,buf,bufSize);
 			free(buf);
-			fprintf(stderr,"Opened EP%d\n",epAddress);
+			fprintf(stderr,"Opened EP%02x\n",epAddress);
 		}
 	}
 }
