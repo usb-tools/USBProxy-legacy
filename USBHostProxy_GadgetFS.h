@@ -29,17 +29,47 @@
 extern "C" {
 #include <linux/usb/gadgetfs.h>
 }
-#include <aio.h>
 #include "USBHostProxy.h"
+#include <pthread.h>
+#include <unistd.h>
+#include <boost/atomic.hpp>
+
+struct async_read_data {
+	pthread_t thread;
+	int fd;
+	boost::atomic_bool ready;
+	int rc;
+	int bufSize;
+	__u8* buf;
+
+	async_read_data(int _fd,int packetSize) : thread(0), fd(_fd), ready(false), rc(0), bufSize(packetSize), buf((__u8*)malloc(packetSize)) {}
+
+	~async_read_data() {
+		if (thread) {pthread_cancel(thread);thread=0;}
+		if (buf) {free(buf);buf=NULL;}
+		if (fd) {close(fd);fd=0;}
+	}
+
+	void start_read() {
+		ready=false;
+		pthread_create(&thread,NULL,&async_read_data::do_read,this);
+	}
+
+	static void* do_read(void* context) {
+		async_read_data* ard=(async_read_data*)context;
+		ard->rc=read(ard->fd,ard->buf,ard->bufSize);
+		ard->ready=true;
+		return 0;
+	}
+};
 
 class USBHostProxy_GadgetFS: public USBHostProxy {
 private:
 	bool p_is_connected;
 	int p_device_file;
 	int p_epin_file[16];
-	int p_epout_file[16];
-	struct aiocb* p_epout_io[16];
-	__u8* p_epout_buf[16];
+	struct async_read_data* p_epout_async[16];
+
 
 	int debugLevel;
 
