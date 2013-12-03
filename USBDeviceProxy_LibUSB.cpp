@@ -197,7 +197,6 @@ char* USBDeviceProxy_LibUSB::toString() {
 
 int USBDeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr) {
 	if (debugLevel>1) {
-		unsigned int i;
 		char* hex=hex_string((void*)setup_packet,sizeof(*setup_packet));
 		printf("LibUSB> %s\n",hex);
 		free(hex);

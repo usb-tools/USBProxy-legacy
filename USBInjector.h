@@ -26,6 +26,7 @@
 #ifndef USBINJECTOR_H_
 #define USBINJECTOR_H_
 
+#include <boost/atomic.hpp>
 #include "USBManager.h"
 #include "USBPacket.h"
 
@@ -41,7 +42,7 @@ protected:
 	virtual void stop_injector() {}
 
 public:
-	bool halt;
+	boost::atomic_bool halt;
 
 	USBInjector();
 	virtual ~USBInjector() {}

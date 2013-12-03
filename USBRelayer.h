@@ -29,6 +29,7 @@
 #include "linux/types.h"
 #include <unistd.h>
 #include <stdio.h>
+#include <boost/atomic.hpp>
 #include <boost/lockfree/queue.hpp>
 #include "USBDeviceProxy.h"
 #include "USBHostProxy.h"
@@ -51,7 +52,7 @@ private:
 	__u8 filterCount;
 
 public:
-	bool halt;
+	boost::atomic_bool halt;
 
 	USBRelayer(USBEndpoint* _endpoint,USBDeviceProxy* _device,USBHostProxy* _host,boost::lockfree::queue<USBPacket*>* _queue);
 	USBRelayer(USBManager* _manager,USBEndpoint* _endpoint,USBDeviceProxy* _device,USBHostProxy* _host,boost::lockfree::queue<USBSetupPacket*>* _queue);
