@@ -87,20 +87,25 @@ int USBHostProxy_GadgetFS::generate_descriptor(USBDevice* device) {
 		USBConfiguration* cfg=device->get_configuration(i);
 		if (cfg) {
 			int length=cfg->get_full_descriptor_length();
-			memcpy(ptr,cfg->get_full_descriptor(),length);
-			((usb_config_descriptor *)ptr)->bmAttributes=((usb_config_descriptor *)ptr)->bmAttributes & (~USB_CONFIG_ATT_WAKEUP);
+			usb_config_descriptor* buf=(usb_config_descriptor*)(cfg->get_full_descriptor());
+			buf->bmAttributes&=(~USB_CONFIG_ATT_WAKEUP);
+			buf->wTotalLength=length;
+			memcpy(ptr,buf,length);
+			free(buf);
 			ptr+=length;
-			((usb_config_descriptor *)header_ptr)->wTotalLength = __cpu_to_le16(ptr - header_ptr);
 		}
 	}
 	if (device->is_highspeed() && device->get_device_qualifier()) {
 	  for (i=1;i<=device->get_descriptor()->bNumConfigurations;i++) {
 		USBConfiguration* cfg=device->get_device_qualifier()->get_configuration(i);
 		if (cfg) {
-			 int length=cfg->get_full_descriptor_length();
-			memcpy(ptr,cfg->get_full_descriptor(),length);
-			((usb_config_descriptor *)ptr)->bDescriptorType=USB_DT_CONFIG;
-			((usb_config_descriptor *)ptr)->bmAttributes=((usb_config_descriptor *)ptr)->bmAttributes & (~USB_CONFIG_ATT_WAKEUP);
+			int length=cfg->get_full_descriptor_length();
+			usb_config_descriptor* buf=(usb_config_descriptor*)(cfg->get_full_descriptor());
+			buf->bDescriptorType=USB_DT_CONFIG;
+			buf->bmAttributes&=(~USB_CONFIG_ATT_WAKEUP);
+			buf->wTotalLength=length;
+			memcpy(ptr,buf,length);
+			free(buf);
 			ptr+=length;
 		}
 	  }
@@ -110,10 +115,12 @@ int USBHostProxy_GadgetFS::generate_descriptor(USBDevice* device) {
 			USBConfiguration* cfg=device->get_configuration(i);
 			if (cfg) {
 				int length=cfg->get_full_descriptor_length();
-				memcpy(ptr,cfg->get_full_descriptor(),length);
-				((usb_config_descriptor *)ptr)->bmAttributes=((usb_config_descriptor *)ptr)->bmAttributes & (~USB_CONFIG_ATT_WAKEUP);
+				usb_config_descriptor* buf=(usb_config_descriptor*)(cfg->get_full_descriptor());
+				buf->bmAttributes&=(~USB_CONFIG_ATT_WAKEUP);
+				buf->wTotalLength=length;
+				memcpy(ptr,buf,length);
+				free(buf);
 				ptr+=length;
-				((usb_config_descriptor *)header_ptr)->wTotalLength = __cpu_to_le16(ptr - header_ptr);
 			}
 		}
 	}
@@ -258,7 +265,6 @@ int USBHostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *n
 		if (debugLevel>0) fprintf(stderr,"libusb-gadget: event %d\n", events[i].type);
 		switch (events[i].type) {
 		case GADGETFS_SETUP:
-			//FINISH handle IN setup with length>0
 			lastControl=events[i].u.setup;
 			setup_packet->bRequestType=lastControl.bRequestType;
 			setup_packet->bRequest=lastControl.bRequest;
@@ -268,6 +274,9 @@ int USBHostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *n
 			if (!(lastControl.bRequestType&0x80) && lastControl.wLength) {
 				*dataptr=(__u8*)malloc(lastControl.wLength);
 				*nbytes=read(p_device_file,*dataptr,lastControl.wLength);
+			} else {
+				*dataptr=NULL;
+				*nbytes=0;
 			}
 			return 0;
 			break;
@@ -354,6 +363,12 @@ void USBHostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 max
 		return;
 	}
 
+	//FIXME THIS DOES NOT WORK!!
+	struct pollfd fds;
+	fds.fd = p_epout_file[number];
+	fds.events = POLLIN;
+	if (!poll(&fds, 1, 0) || !(fds.revents&POLLIN)) {return;}
+
 	*dataptr=(__u8*)malloc(USB_BUFSIZE);
 	int rc=read(p_epout_file[number],*dataptr,USB_BUFSIZE);
 	if (rc<0) {
@@ -423,6 +438,7 @@ TRACE;
 			}
 
 			write(fd,buf,bufSize);
+			free(buf);
 			fprintf(stderr,"Opened EP%d\n",epAddress);
 		}
 	}

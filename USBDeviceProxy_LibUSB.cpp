@@ -126,7 +126,12 @@ int USBDeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) 
 
 	libusb_free_device_list(list,1);
 	libusb_set_auto_detach_kernel_driver(dev_handle,1);
-	if (debugLevel) {fprintf(stdout,"Connected to device: %s\n",toString());}
+
+	if (debugLevel) {
+		char *device_desc=toString();
+		fprintf(stdout,"Connected to device: %s\n",device_desc);
+		free(device_desc);
+	}
 	return 0;
 }
 
@@ -147,7 +152,7 @@ bool USBDeviceProxy_LibUSB::is_connected() {
 	if (dev_handle) {return true;} else {return false;}
 }
 
-const char* USBDeviceProxy_LibUSB::toString() {
+char* USBDeviceProxy_LibUSB::toString() {
 	unsigned char* str_mfr=NULL;
 	unsigned char* str_prd=NULL;
 	struct libusb_device_descriptor desc;
@@ -175,7 +180,7 @@ const char* USBDeviceProxy_LibUSB::toString() {
 		}
 	}
 	size_t length=snprintf(NULL,0,"%04x:%04x@%02x %s - %s",desc.idVendor,desc.idProduct,address,(unsigned char*)(str_mfr?str_mfr:(unsigned char*)"N/A"),(unsigned char*)(str_prd?str_prd:(unsigned char*)"N/A"));
-	char *buf=(char  *)malloc(length);
+	char *buf=(char  *)malloc(length+1);
 	sprintf(buf,"%04x:%04x@%02x %s - %s",desc.idVendor,desc.idProduct,address,(unsigned char*)(str_mfr?str_mfr:(unsigned char*)"N/A"),(unsigned char*)(str_prd?str_prd:(unsigned char*)"N/A"));
 	if (str_mfr) {free(str_mfr);/*not needed str_mfr=NULL;*/}
 	if (str_prd) {free(str_prd);/*not needed str_prd=NULL;*/}
@@ -253,14 +258,14 @@ void USBDeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 max
 		case USB_ENDPOINT_XFER_BULK:
 			*dataptr=(__u8*)malloc(maxPacketSize);
 			rc=libusb_bulk_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,1);
-			if (rc==LIBUSB_ERROR_TIMEOUT){length=0;return;}
-			if (rc) {fprintf(stderr,"Transfer error (%d) on Device EP%d\n",rc,endpoint);}
+			if (rc==LIBUSB_ERROR_TIMEOUT){free(*dataptr);*dataptr=NULL;*length=0;return;}
+			if (rc) {free(*dataptr);*dataptr=NULL;*length=0;fprintf(stderr,"Transfer error (%d) on Device EP%d\n",rc,endpoint);}
 			break;
 		case USB_ENDPOINT_XFER_INT:
 			*dataptr=(__u8*)malloc(maxPacketSize);
 			rc=libusb_interrupt_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,10);
-			if (rc==LIBUSB_ERROR_TIMEOUT){length=0;return;}
-			if (rc) {fprintf(stderr,"Transfer error (%d) on Device EP%d\n",rc,endpoint);}
+			if (rc==LIBUSB_ERROR_TIMEOUT){free(*dataptr);*dataptr=NULL;*length=0;return;}
+			if (rc) {free(*dataptr);*dataptr=NULL;*length=0;fprintf(stderr,"Transfer error (%d) on Device EP%d\n",rc,endpoint);}
 			break;
 	}
 }

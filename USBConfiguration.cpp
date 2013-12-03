@@ -56,6 +56,7 @@ USBConfiguration::USBConfiguration(USBDevice* _device,USBDeviceProxy* proxy, int
 	while (p<e) {
 		add_interface(new USBInterface(this,&p,e));
 	}
+	free(buf);
 
 	int i;
 	for (i=0;i<descriptor.bNumInterfaces;i++) {
@@ -119,7 +120,7 @@ size_t USBConfiguration::get_full_descriptor_length() {
 	return total;
 }
 
-const __u8* USBConfiguration::get_full_descriptor() {
+__u8* USBConfiguration::get_full_descriptor() {
 	__u8* buf=(__u8*)malloc(get_full_descriptor_length());
 	__u8* p=buf;
 	memcpy(p,&descriptor,descriptor.bLength);

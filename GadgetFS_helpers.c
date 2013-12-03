@@ -134,15 +134,12 @@ int mount_gadget() {
 	int status;
 	char mount_template[] = "/tmp/gadget-XXXXXX";
 
-
 	gadgetfs_path = malloc(sizeof(mount_template));
 	memcpy(gadgetfs_path, mount_template, sizeof(mount_template));
 
 	gadgetfs_path = mkdtemp(gadgetfs_path);
 	fprintf(stderr, "Made directory %s for gadget\n", gadgetfs_path);
-
 	status = mount("usb-mitm", gadgetfs_path, "gadgetfs", 0, "");
-	TRACE1(status)
 
 	return 0;
 }

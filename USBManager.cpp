@@ -348,14 +348,22 @@ void USBManager::stop_relaying(){
 
 	//wait for all injector threads to stop
 	if (injectorThreads) {
-		for(i=0;i<injectorCount;i++) {if (injectorThreads[i]) {pthread_join(injectorThreads[i],NULL);}}
+		for(i=0;i<injectorCount;i++) {
+			if (injectorThreads[i]) {
+				pthread_join(injectorThreads[i],NULL);
+				injectorThreads[i]=0;
+			}
+		}
 	}
 
 	//wait for all relayer threads to stop, then delete relayer objects
 	for(i=0;i<16;i++) {
 		if (in_endpoints[i]) {in_endpoints[i]=NULL;}
 		if (in_relayers[i]) {
-			if (in_relayerThreads[i]) {pthread_join(in_relayerThreads[i],NULL);}
+			if (in_relayerThreads[i]) {
+				pthread_join(in_relayerThreads[i],NULL);
+				in_relayerThreads[i]=0;
+			}
 			delete(in_relayers[i]);
 			in_relayers[i]=NULL;
 		}
@@ -366,7 +374,10 @@ void USBManager::stop_relaying(){
 			out_endpoints[i]=NULL;
 		}
 		if (out_relayers[i]) {
-			if (out_relayerThreads[i]) {pthread_join(out_relayerThreads[i],NULL);}
+			if (out_relayerThreads[i]) {
+				pthread_join(out_relayerThreads[i],NULL);
+				out_relayerThreads[i]=0;
+			}
 			delete(out_relayers[i]);
 			out_relayers[i]=NULL;
 		}

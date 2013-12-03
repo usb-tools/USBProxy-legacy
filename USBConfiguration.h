@@ -50,7 +50,7 @@ class USBConfiguration {
 		USBConfiguration(USBDevice* _device,__u16 wTotalLength,__u8 bNumInterfaces,__u8 bConfigurationValue,__u8 iConfiguration,__u8 bmAttributes,__u8 bMaxPower,bool highSpeed=false);
 		~USBConfiguration();
 		const usb_config_descriptor* get_descriptor();
-		const __u8* get_full_descriptor();
+		__u8* get_full_descriptor();
 		size_t get_full_descriptor_length();
 		void add_interface(USBInterface* interface);
 		USBInterface* get_interface_alternate(__u8 number,__u8 alternate);

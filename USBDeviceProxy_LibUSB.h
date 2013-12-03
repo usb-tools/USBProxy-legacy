@@ -63,7 +63,7 @@ public:
 	void release_interface(__u8 interface);
 
 	__u8 get_address();
-	const char* toString();
+	char* toString();
 };
 
 #endif
