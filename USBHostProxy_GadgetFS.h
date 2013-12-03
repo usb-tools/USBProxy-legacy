@@ -29,6 +29,7 @@
 extern "C" {
 #include <linux/usb/gadgetfs.h>
 }
+#include <aio.h>
 #include "USBHostProxy.h"
 
 class USBHostProxy_GadgetFS: public USBHostProxy {
@@ -37,6 +38,9 @@ private:
 	int p_device_file;
 	int p_epin_file[16];
 	int p_epout_file[16];
+	struct aiocb* p_epout_io[16];
+	__u8* p_epout_buf[16];
+
 	int debugLevel;
 
 	char* descriptor;

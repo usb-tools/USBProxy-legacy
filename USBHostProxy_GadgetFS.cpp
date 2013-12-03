@@ -63,6 +63,15 @@ USBHostProxy_GadgetFS::~USBHostProxy_GadgetFS() {
 			close(p_epout_file[i]);
 			p_epout_file[i]=0;
 		}
+		if (p_epout_io[i]) {
+			aio_cancel(p_epout_io[i]->aio_fildes,p_epout_io[i]);
+			delete(p_epout_io[i]);
+			p_epout_io[i]=NULL;
+		}
+		if (p_epout_buf[i]) {
+			free(p_epout_buf[i]);
+			p_epout_buf[i];
+		}
 	}
 	if (descriptor) {
 		free(descriptor);
@@ -218,6 +227,15 @@ void USBHostProxy_GadgetFS::disconnect() {
 			close(p_epout_file[i]);
 			p_epout_file[i]=0;
 		}
+		if (p_epout_io[i]) {
+			aio_cancel(p_epout_io[i]->aio_fildes,p_epout_io[i]);
+			delete(p_epout_io[i]);
+			p_epout_io[i]=NULL;
+		}
+		if (p_epout_buf[i]) {
+			free(p_epout_buf[i]);
+			p_epout_buf[i];
+		}
 	}
 
 	unmount_gadget();
@@ -331,20 +349,20 @@ void USBHostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 		return;
 	}
 	if (!(endpoint & 0x80)) {
-		fprintf(stderr,"trying to send %d bytes on an out EP%d\n",length,endpoint);
+		fprintf(stderr,"trying to send %d bytes on an out EP%02x\n",length,endpoint);
 		return;
 	}
 	int number=endpoint&0x0f;
 	if (!p_epin_file[number]) {
-		fprintf(stderr,"trying to send %d bytes on a non-open EP%d\n",length,endpoint);
+		fprintf(stderr,"trying to send %d bytes on a non-open EP%02x\n",length,endpoint);
 		return;
 	}
 
 	int rc=write(p_epin_file[number],dataptr,length);
 	if (rc<0) {
-		fprintf(stderr,"Fail on EP%d write %d %s\n",number,errno,strerror(errno));
+		fprintf(stderr,"Fail on EP%02x write %d %s\n",number,errno,strerror(errno));
 	} else {
-		fprintf(stderr,"Send %d bytes on EP%d\n",rc,number);
+		fprintf(stderr,"Send %d bytes on EP%02x\n",rc,number);
 	}
 }
 
@@ -354,31 +372,67 @@ void USBHostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 max
 		return;
 	}
 	if (endpoint & 0x80) {
-		fprintf(stderr,"trying to receive %d bytes on an in EP%d\n",length,endpoint);
+		fprintf(stderr,"trying to receive %d bytes on an in EP%02x\n",length,endpoint);
 		return;
 	}
 	int number=endpoint&0x0f;
 	if (!p_epout_file[number]) {
-		fprintf(stderr,"trying to receive %d bytes on a non-open EP%d\n",length,endpoint);
+		fprintf(stderr,"trying to receive %d bytes on a non-open EP%02x\n",length,endpoint);
 		return;
 	}
 
+	if (!p_epout_io[number]) {
+		aiocb* aio=new aiocb();
+		aio->aio_fildes=p_epout_file[number];
+		aio->aio_offset=0;
+		if(!p_epout_buf[number]) {p_epout_buf[number]=(__u8*)malloc(maxPacketSize);}
+		aio->aio_buf=p_epout_buf[number];
+		aio->aio_nbytes=maxPacketSize;
+		aio->aio_sigevent.sigev_notify=SIGEV_NONE;
+		int rc=aio_read(aio);
+		if (rc) {
+			delete(aio);fprintf(stderr,"Error submitting aio %d %s\n",number,errno,strerror(errno));
+		} else {
+			p_epout_io[number]=aio;
+		}
+	} else {
+		aiocb* aio=p_epout_io[number];
+		int rc=aio_error(aio);
+		if (rc) {
+			if (rc==EINPROGRESS) {return;}
+			fprintf(stderr,"Error during async aio %d %s\n",number,rc,strerror(rc));
+		} else {
+			rc=aio_return(aio);
+			*dataptr=(__u8*)malloc(rc);
+			memcpy(*dataptr,p_epout_buf[number],rc);
+			*length=rc;
+			fprintf(stderr,"Read %d bytes on EP%02x\n",rc,number);
+			aio_read(aio);
+		}
+	}
+
+
+
 	//FIXME THIS DOES NOT WORK!!
+	/*
 	struct pollfd fds;
 	fds.fd = p_epout_file[number];
 	fds.events = POLLIN;
 	if (!poll(&fds, 1, 0) || !(fds.revents&POLLIN)) {return;}
+	 */
 
+	/*
 	*dataptr=(__u8*)malloc(USB_BUFSIZE);
 	int rc=read(p_epout_file[number],*dataptr,USB_BUFSIZE);
+
 	if (rc<0) {
-		fprintf(stderr,"Fail on EP%d read %d %s\n",number,errno,strerror(errno));
+		fprintf(stderr,"Fail on EP%02x read %d %s\n",number,errno,strerror(errno));
 	} else {
 		*dataptr=(__u8*)realloc(*dataptr,rc);
 		*length=rc;
-		fprintf(stderr,"Read %d bytes on EP%d\n",rc,number);
+		fprintf(stderr,"Read %d bytes on EP%02x\n",rc,number);
 	}
-
+	 */
 }
 
 void USBHostProxy_GadgetFS::control_ack() {
@@ -391,7 +445,7 @@ void USBHostProxy_GadgetFS::control_ack() {
 }
 
 void USBHostProxy_GadgetFS::stall_ep(__u8 endpoint) {
-	if (debugLevel) fprintf(stderr,"Stalling EP%d\n",endpoint);
+	if (debugLevel) fprintf(stderr,"Stalling EP%02x\n",endpoint);
 	if (endpoint) {
 		//FINISH for nonzero endpoint
 	} else {
@@ -428,7 +482,7 @@ TRACE;
 
 			int fd=open_endpoint(epAddress);
 			if (fd<0) {
-				fprintf(stderr,"Fail on open EP%d %d %s\n",epAddress,errno,strerror(errno));
+				fprintf(stderr,"Fail on open EP%02x %d %s\n",epAddress,errno,strerror(errno));
 				return;
 			}
 			if (epAddress & 0x80) {
@@ -439,7 +493,7 @@ TRACE;
 
 			write(fd,buf,bufSize);
 			free(buf);
-			fprintf(stderr,"Opened EP%d\n",epAddress);
+			fprintf(stderr,"Opened EP%02x\n",epAddress);
 		}
 	}
 }
