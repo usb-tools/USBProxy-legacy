@@ -41,17 +41,14 @@ static char* hex_string_wide(void* buf,int length,int width=32) {
 	}
 	int lines=length/width;
 	if (length%width) lines++;
-	TRACE1(length*3+lines)
-	outbuf=(char* )malloc(length*3+lines+10);
+	outbuf=(char* )malloc(length*3+lines+1);
 	char* p=outbuf;
 	int i;
-	TRACE1(length)
 	for(i=0;i<length;i++) {
 			sprintf(p,(i%width)?" %02x":"\n\t%02x",((__u8*)buf)[i]);
 			p+=(i%width)?3:4;
 	}
 	*p=0;
-	TRACE1(strlen(outbuf))
 	return outbuf;
 }
 
@@ -63,7 +60,7 @@ static char* hex_string(void* buf,int length) {
 		return outbuf;
 	}
 	if (length>32) return hex_string_wide(buf,length);
-	outbuf=(char* )malloc(length*3);
+	outbuf=(char* )malloc(length*3+1);
 	char* p=outbuf;
 	int i;
 	for(i=0;i<length;i++) {
