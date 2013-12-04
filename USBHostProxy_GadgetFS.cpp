@@ -337,9 +337,6 @@ void USBHostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 }
 
 void USBHostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length) {
-	*length=0;
-	*dataptr=NULL;
-
 	if (!endpoint) {
 		fprintf(stderr,"trying to receive %d bytes on EP00\n",*length);
 		return;
@@ -358,18 +355,14 @@ void USBHostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 max
 
 	if (!ard->ready) {return;}
 
-	int rc=ard->rc;
+	int rc=ard->finish_read(dataptr);
 	if (rc<0) {
+		*length=0;
 		fprintf(stderr,"Error reading EP%02x %d %s\n",endpoint,errno,strerror(errno));
-	}
-	if (rc>0) {
-		*dataptr=(__u8*)malloc(rc);
-		memset(*dataptr,0,rc);
+	} else {
 		*length=rc;
 		fprintf(stderr,"Read %d bytes on EP%02x\n",rc,endpoint);
 	}
-	ard->start_read();
-
 }
 
 void USBHostProxy_GadgetFS::control_ack() {

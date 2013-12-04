@@ -57,6 +57,17 @@ struct async_read_data {
 		pthread_create(&thread,NULL,&async_read_data::do_read,this);
 	}
 
+	int finish_read(__u8** dataptr) {
+		if (rc>0) {
+			*dataptr=(__u8*)malloc(rc);
+			memcpy(*dataptr,buf,rc);
+		} else {
+			*dataptr=NULL;
+		}
+		start_read();
+		return rc;
+	}
+
 	static void* do_read(void* context) {
 		async_read_data* ard=(async_read_data*)context;
 		ard->rc=read(ard->fd,ard->buf,ard->bufSize);
@@ -64,6 +75,37 @@ struct async_read_data {
 		return 0;
 	}
 };
+
+struct async_write_data {
+	pthread_t thread;
+	int fd;
+	boost::atomic_bool ready;
+	int rc;
+	int bufSize;
+	__u8* buf;
+
+	async_write_data(int _fd) : thread(0), fd(_fd), ready(true), rc(0), bufSize(0), buf(NULL) {}
+
+	~async_write_data() {
+		if (thread) {pthread_cancel(thread);thread=0;}
+		if (buf) {free(buf);buf=NULL;}
+		if (fd) {close(fd);fd=0;}
+	}
+
+	void start_write(__u8* buf,int bufSize) {
+		TRACE1(fd)
+		ready=false;
+		pthread_create(&thread,NULL,&async_write_data::do_write,this);
+	}
+
+	static void* do_write(void* context) {
+		async_write_data* awd=(async_write_data*)context;
+		awd->rc=write(awd->fd,awd->buf,awd->bufSize);
+		awd->ready=true;
+		return 0;
+	}
+};
+
 
 class USBHostProxy_GadgetFS: public USBHostProxy {
 private:

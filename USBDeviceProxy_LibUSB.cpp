@@ -254,15 +254,11 @@ void USBDeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 max
 	switch (attributes & USB_ENDPOINT_XFERTYPE_MASK) {
 		case USB_ENDPOINT_XFER_CONTROL:
 			fprintf(stderr,"Can't send on a control endpoint.");
-			*dataptr=NULL;
-			*length=0;
 			return;
 			break;
 		case USB_ENDPOINT_XFER_ISOC:
 			//TODO handle isochronous
 			fprintf(stderr,"Isochronous endpoints unhandled.");
-			*dataptr=NULL;
-			*length=0;
 			return;
 			break;
 		case USB_ENDPOINT_XFER_BULK:

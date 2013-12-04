@@ -75,13 +75,13 @@ void USBRelayer::relay_ep0() {
 	fprintf(stderr,"Starting relaying for EP00.\n");
 	__u8 bmAttributes=endpoint->get_descriptor()->bmAttributes;
 	__u16 maxPacketSize=endpoint->get_descriptor()->wMaxPacketSize;
-	__u8* buf=NULL;
-	int response_length=0;
 	USBSetupPacket* p;
 	usb_ctrlrequest ctrl_req;
 	while (!halt) {
 		bool idle=true;
-		host->control_request(&ctrl_req,&response_length,&buf);
+		__u8* buf=NULL;
+		int length=0;
+		host->control_request(&ctrl_req,&length,&buf);
 		if (ctrl_req.bRequest) {
 			p=new USBSetupPacket(ctrl_req,buf);
 			__u8 i=0;
@@ -92,18 +92,18 @@ void USBRelayer::relay_ep0() {
 			if (p->transmit) {
 				if (ctrl_req.bRequestType&0x80) { //device->host
 					p->data=(__u8*)malloc(ctrl_req.wLength);
-					if (device->control_request(&(p->ctrl_req),&response_length,p->data)==-1) {
+					if (device->control_request(&(p->ctrl_req),&length,p->data)==-1) {
 						host->stall_ep(0);
 					} else {
 						i=0;
-						p->ctrl_req.wLength=response_length;
+						p->ctrl_req.wLength=length;
 						while (i<filterCount && p->filter) {
 							if (filters[i]->test_setup_packet(p)) {filters[i]->filter_setup_packet(p);}
 							i++;
 						}
 						if (p->transmit) {
-							if (response_length) {
-								host->send_data(0,bmAttributes,maxPacketSize,p->data,response_length);
+							if (length) {
+								host->send_data(0,bmAttributes,maxPacketSize,p->data,length);
 							} else {
 								host->control_ack();
 							}
@@ -112,8 +112,8 @@ void USBRelayer::relay_ep0() {
 						}
 					}
 				} else { //host->device
-					response_length=ctrl_req.wLength;
-					if (device->control_request(&(p->ctrl_req),&response_length,p->data)==-1) {
+					length=ctrl_req.wLength;
+					if (device->control_request(&(p->ctrl_req),&length,p->data)==-1) {
 						host->stall_ep(0);
 					} else {
 						if (p->ctrl_req.bRequest==9 && p->ctrl_req.bRequestType==0) {manager->setConfig(p->ctrl_req.wValue);}
@@ -134,15 +134,15 @@ void USBRelayer::relay_ep0() {
 			if (p->transmit) {
 				if (ctrl_req.bRequestType&0x80) { //device->host
 					p->data=(__u8*)malloc(ctrl_req.wLength);
-					device->control_request(&(p->ctrl_req),&response_length,p->data);
+					device->control_request(&(p->ctrl_req),&length,p->data);
 				} else { //host->device
-					response_length=ctrl_req.wLength;
-					device->control_request(&(p->ctrl_req),&response_length,p->data);
-					response_length=0;
+					length=ctrl_req.wLength;
+					device->control_request(&(p->ctrl_req),&length,p->data);
+					length=0;
 				}
 			}
-			if (response_length) {
-				host->send_data(0,bmAttributes,maxPacketSize,p->data,response_length);
+			if (length) {
+				host->send_data(0,bmAttributes,maxPacketSize,p->data,length);
 			} else {
 				host->send_data(0,bmAttributes,maxPacketSize,NULL,0);
 			}
@@ -163,11 +163,11 @@ void USBRelayer::relay() {
 	fprintf(stderr,"Starting relaying for EP%02x.\n",epAddress);
 	__u8 bmAttributes=endpoint->get_descriptor()->bmAttributes;
 	__u16 maxPacketSize=endpoint->get_descriptor()->wMaxPacketSize;
-	__u8* buf=NULL;
-	int length=0;
 	USBPacket* p;
 	if (epAddress&0x80) { //device->host
 		while (!halt) {
+			__u8* buf=NULL;
+			int length=0;
 			bool idle=true;
 			device->receive_data(epAddress,bmAttributes,maxPacketSize,&buf,&length);
 			if (length) {
@@ -197,6 +197,8 @@ void USBRelayer::relay() {
 		}
 	} else {
 		while (!halt) { //host->device
+			__u8* buf=NULL;
+			int length=0;
 			bool idle=true;
 			host->receive_data(epAddress,bmAttributes,maxPacketSize,&buf,&length);
 			if (length) {
