@@ -25,6 +25,7 @@
  */
 #include "USBRelayer.h"
 #include "TRACE.h"
+#include "get_tid.h"
 
 #define SLEEP_US 1000
 
@@ -72,7 +73,7 @@ void USBRelayer::add_filter(USBPacketFilter* filter) {
 }
 
 void USBRelayer::relay_ep0() {
-	fprintf(stderr,"Starting relaying for EP00.\n");
+	fprintf(stderr,"Starting relaying thread (%ld) for EP00.\n",gettid());
 	__u8 bmAttributes=endpoint->get_descriptor()->bmAttributes;
 	__u16 maxPacketSize=endpoint->get_descriptor()->wMaxPacketSize;
 	USBSetupPacket* p;
@@ -154,13 +155,13 @@ void USBRelayer::relay_ep0() {
 		}
 		if (idle) usleep(SLEEP_US);
 	}
-	fprintf(stderr,"Finished relaying for EP00.\n");
+	fprintf(stderr,"Finished relaying thread(%ld) for EP00.\n",gettid());
 }
 
 void USBRelayer::relay() {
 	__u8 epAddress=endpoint->get_descriptor()->bEndpointAddress;
 	if (!epAddress) {relay_ep0();return;}
-	fprintf(stderr,"Starting relaying for EP%02x.\n",epAddress);
+	fprintf(stderr,"Starting relaying thread (%ld) for EP%02x.\n",gettid(),epAddress);
 	__u8 bmAttributes=endpoint->get_descriptor()->bmAttributes;
 	__u16 maxPacketSize=endpoint->get_descriptor()->wMaxPacketSize;
 	USBPacket* p;
@@ -231,7 +232,7 @@ void USBRelayer::relay() {
 			if (idle) usleep(SLEEP_US);
 		}
 	}
-	fprintf(stderr,"Finished relaying for EP%02x.\n",epAddress);
+	fprintf(stderr,"Finished relaying thread (%ld) for EP%02x.\n",gettid(),epAddress);
 }
 
 void* USBRelayer::relay_helper(void* context) {

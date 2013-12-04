@@ -28,11 +28,13 @@
 #include "errno.h"
 #include "USBPacket.h"
 #include <memory.h>
+#include <poll.h>
 
 USBInjector_UDP::USBInjector_UDP(__u16 _port) {
 	port=_port;
 	sck=0;
 	buf=NULL;
+	spoll.events=POLLIN;
 }
 
 USBInjector_UDP::~USBInjector_UDP() {
@@ -42,8 +44,9 @@ USBInjector_UDP::~USBInjector_UDP() {
 
 void USBInjector_UDP::start_injector() {
 	fprintf(stderr,"Opening injection UDP socket on port %d.\n",port);
-	sck=socket(AF_INET,SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC,IPPROTO_UDP);
-	if (socket<0) {
+	sck=socket(AF_INET,SOCK_DGRAM | SOCK_CLOEXEC,IPPROTO_UDP);
+	spoll.fd=sck;
+	if (sck<0) {
 		fprintf(stderr,"Error creating socket.\n");
 		sck=0;
 	}
@@ -66,6 +69,10 @@ void USBInjector_UDP::stop_injector() {
 }
 
 USBPacket* USBInjector_UDP::get_packets() {
+	if (!poll(&spoll, 1, 100) || !(spoll.revents&POLLIN)) {
+		return NULL;
+	}
+
 	ssize_t len=recv(sck,buf,UDP_BUFFER_SIZE,0);
 	if (len>0) {
 		__u16 usblen=buf[2]<<8 | buf[3];
@@ -75,7 +82,7 @@ USBPacket* USBInjector_UDP::get_packets() {
 		p->transmit=buf[1]&0x02?false:true;
 		return p;
 	}
-	if (len<0 && errno!=EWOULDBLOCK && errno!=EAGAIN ) {
+	if (len<0) {
 		fprintf(stderr,"Socket read error [%s].\n",strerror(errno));
 	}
 	return NULL;

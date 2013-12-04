@@ -251,7 +251,7 @@ int USBHostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *n
 	struct pollfd fds;
 	fds.fd = p_device_file;
 	fds.events = POLLIN;
-	if (!poll(&fds, 1, 0) || !(fds.revents&POLLIN)) {
+	if (!poll(&fds, 1, 100) || !(fds.revents&POLLIN)) {
 		setup_packet->bRequest=0;
 		return 0;
 	}

@@ -27,7 +27,8 @@
 #define USBINJECTORUDP_H_
 
 #include "USBInjector.h"
-#include "sys/socket.h"
+#include <sys/socket.h>
+#include <poll.h>
 
 #define UDP_BUFFER_SIZE 1472
 
@@ -36,6 +37,7 @@ private:
 	__u16 port;
 	int sck;
 	__u8* buf;
+	struct pollfd spoll;
 
 protected:
 	void start_injector();
