@@ -61,7 +61,11 @@ USBHostProxy_GadgetFS::~USBHostProxy_GadgetFS() {
 			p_epin_async[i]=NULL;
 		}
 		if (p_epout_async[i]) {
-			delete(p_epout_async[i]);
+			aiocb* aio=p_epout_async[i];
+			if (aio->aio_nbytes) {aio_cancel(aio->aio_fildes,aio);aio->aio_nbytes=0;}
+			if (aio->aio_fildes) {close(aio->aio_fildes);aio->aio_fildes=0;}
+			if (aio->aio_buf) {free((void*)(aio->aio_buf));aio->aio_buf=NULL;}
+			delete(aio);
 			p_epout_async[i]=NULL;
 		}
 	}
@@ -206,7 +210,11 @@ void USBHostProxy_GadgetFS::disconnect() {
 			p_epin_async[i]=NULL;
 		}
 		if (p_epout_async[i]) {
-			delete(p_epout_async[i]);
+			aiocb* aio=p_epout_async[i];
+			if (aio->aio_nbytes) {aio_cancel(aio->aio_fildes,aio);aio->aio_nbytes=0;}
+			if (aio->aio_fildes) {close(aio->aio_fildes);aio->aio_fildes=0;}
+			if (aio->aio_buf) {free((void*)(aio->aio_buf));aio->aio_buf=NULL;}
+			delete(aio);
 			p_epout_async[i]=NULL;
 		}
 	}
@@ -374,18 +382,21 @@ void USBHostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 max
 		return;
 	}
 
-	async_read_data* ard=p_epout_async[number];
+	aiocb* aio=p_epout_async[number];
 
-	if (!ard->ready) return;
-
-	int rc=ard->finish_read(dataptr);
-	if (rc<0) {
-		*length=0;
-		fprintf(stderr,"Error reading EP%02x %d %s\n",endpoint,errno,strerror(errno));
+	int rc=aio_error(aio);
+	if (rc) {
+		if (rc==EINPROGRESS) {return;}
+		fprintf(stderr,"Error during async aio on EP %02x %d %s\n",endpoint,rc,strerror(rc));
 	} else {
+		rc=aio_return(aio);
+		*dataptr=(__u8*)malloc(rc);
+		memcpy(*dataptr,(void*)(aio->aio_buf),rc);
 		*length=rc;
-		fprintf(stderr,"Read %d bytes on EP%02x\n",rc,endpoint);
+		fprintf(stderr,"Read %d bytes on EP%02x\n",rc,number);
+		aio_read(aio);
 	}
+
 }
 
 void USBHostProxy_GadgetFS::control_ack() {
@@ -440,8 +451,18 @@ TRACE;
 			if (epAddress & 0x80) {
 				p_epin_async[epAddress&0x0f]=new async_write_data(fd);
 			} else {
-				p_epout_async[epAddress&0x0f]=new async_read_data(fd,(fs_ep->wMaxPacketSize)>(hs_ep->wMaxPacketSize)?fs_ep->wMaxPacketSize:hs_ep->wMaxPacketSize);
-				p_epout_async[epAddress&0x0f]->start_read();
+				aiocb* aio=new aiocb();
+				aio->aio_fildes=fd;
+				aio->aio_offset=0;
+				aio->aio_nbytes=(fs_ep->wMaxPacketSize)>(hs_ep->wMaxPacketSize)?fs_ep->wMaxPacketSize:hs_ep->wMaxPacketSize;
+				aio->aio_buf=malloc(aio->aio_nbytes);
+				aio->aio_sigevent.sigev_notify=SIGEV_NONE;
+				int rc=aio_read(aio);
+				if (rc) {
+					delete(aio);fprintf(stderr,"Error submitting aio for EP%02x %d %s\n",epAddress,errno,strerror(errno));
+				} else {
+					p_epout_async[epAddress&0x0f]=aio;
+				}
 			}
 
 			write(fd,buf,bufSize);

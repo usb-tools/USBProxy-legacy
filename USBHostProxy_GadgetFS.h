@@ -35,6 +35,7 @@ extern "C" {
 #include <boost/atomic.hpp>
 #include "TRACE.h"
 #include "errno.h"
+#include "aio.h"
 
 struct async_read_data {
 	pthread_t thread;
@@ -122,8 +123,7 @@ private:
 	bool p_is_connected;
 	int p_device_file;
 	struct async_write_data* p_epin_async[16];
-	struct async_read_data* p_epout_async[16];
-
+	struct aiocb* p_epout_async[16];
 
 	int debugLevel;
 
