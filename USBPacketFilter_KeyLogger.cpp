@@ -28,7 +28,6 @@
 
 USBPacketFilter_KeyLogger::USBPacketFilter_KeyLogger(FILE* _file) {
 	file=_file;
-	__u8 i;
 	keyMap[0x04]="a";
 	keyMap[0x05]="b";
 	keyMap[0x06]="c";

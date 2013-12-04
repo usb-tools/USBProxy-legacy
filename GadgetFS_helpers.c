@@ -140,6 +140,7 @@ int mount_gadget() {
 	gadgetfs_path = mkdtemp(gadgetfs_path);
 	fprintf(stderr, "Made directory %s for gadget\n", gadgetfs_path);
 	status = mount("usb-mitm", gadgetfs_path, "gadgetfs", 0, "");
+	if (status!=0) {fprintf(stderr,"Error mounting gadgetfs from [%s].\n",gadgetfs_path);return 1;}
 
 	return 0;
 }
