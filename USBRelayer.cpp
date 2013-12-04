@@ -26,6 +26,8 @@
 #include "USBRelayer.h"
 #include "TRACE.h"
 
+#define SLEEP_US 1000
+
 USBRelayer::USBRelayer(USBEndpoint* _endpoint,USBDeviceProxy* _device,USBHostProxy* _host,boost::lockfree::queue<USBPacket*>* _queue) {
 	endpoint=_endpoint;
 	if (!endpoint->get_descriptor()->bEndpointAddress) {fprintf(stderr,"Wrong queue type for EP%d relayer.\n",endpoint->get_descriptor()->bEndpointAddress);}
@@ -70,7 +72,7 @@ void USBRelayer::add_filter(USBPacketFilter* filter) {
 }
 
 void USBRelayer::relay_ep0() {
-	fprintf(stderr,"Starting relaying for EP0.\n");
+	fprintf(stderr,"Starting relaying for EP00.\n");
 	__u8 bmAttributes=endpoint->get_descriptor()->bmAttributes;
 	__u16 maxPacketSize=endpoint->get_descriptor()->wMaxPacketSize;
 	__u8* buf=NULL;
@@ -78,6 +80,7 @@ void USBRelayer::relay_ep0() {
 	USBSetupPacket* p;
 	usb_ctrlrequest ctrl_req;
 	while (!halt) {
+		bool idle=true;
 		host->control_request(&ctrl_req,&response_length,&buf);
 		if (ctrl_req.bRequest) {
 			p=new USBSetupPacket(ctrl_req,buf);
@@ -120,6 +123,7 @@ void USBRelayer::relay_ep0() {
 			}
 			delete(p);
 			/* not needed p=NULL; */
+			idle=false;
 		}
 		if (queue_ep0->pop(p)) {
 			__u8 i=0;
@@ -146,9 +150,11 @@ void USBRelayer::relay_ep0() {
 			//TODO send this data back to the injector somehow
 			delete(p);
 			/* not needed p=NULL; */
+			idle=false;
 		}
+		if (idle) usleep(SLEEP_US);
 	}
-	fprintf(stderr,"Finished relaying for EP0.\n");
+	fprintf(stderr,"Finished relaying for EP00.\n");
 }
 
 void USBRelayer::relay() {
@@ -162,6 +168,7 @@ void USBRelayer::relay() {
 	USBPacket* p;
 	if (epAddress&0x80) { //device->host
 		while (!halt) {
+			bool idle=true;
 			device->receive_data(epAddress,bmAttributes,maxPacketSize,&buf,&length);
 			if (length) {
 				p=new USBPacket(epAddress,buf,length);
@@ -173,6 +180,7 @@ void USBRelayer::relay() {
 				if (p->transmit) {host->send_data(epAddress,bmAttributes,maxPacketSize,p->data,p->wLength);}
 				delete(p);
 				/* not needed p=NULL; */
+				idle=false;
 			}
 			if (queue->pop(p)) {
 				__u8 i=0;
@@ -183,10 +191,13 @@ void USBRelayer::relay() {
 				if (p->transmit) {host->send_data(epAddress,bmAttributes,maxPacketSize,p->data,p->wLength);}
 				delete(p);
 				/* not needed p=NULL; */
+				idle=false;
 			}
+			if (idle) usleep(SLEEP_US);
 		}
 	} else {
 		while (!halt) { //host->device
+			bool idle=true;
 			host->receive_data(epAddress,bmAttributes,maxPacketSize,&buf,&length);
 			if (length) {
 				p=new USBPacket(epAddress,buf,length);
@@ -197,7 +208,8 @@ void USBRelayer::relay() {
 				}
 				if (p->transmit) {device->send_data(epAddress,bmAttributes,maxPacketSize,p->data,p->wLength);}
 				delete(p);
-				p=NULL;
+				/* not needed p=NULL; */
+				idle=false;
 			}
 			if (queue->pop(p)) {
 				__u8 i=0;
@@ -207,8 +219,10 @@ void USBRelayer::relay() {
 				}
 				if (p->transmit) {device->send_data(epAddress,bmAttributes,maxPacketSize,p->data,p->wLength);}
 				delete(p);
-				p=NULL;
+				/* not needed p=NULL; */
+				idle=false;
 			}
+			if (idle) usleep(SLEEP_US);
 		}
 	}
 	fprintf(stderr,"Finished relaying for EP%02x.\n",epAddress);

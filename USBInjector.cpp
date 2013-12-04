@@ -25,6 +25,8 @@
  */
 #include "USBInjector.h"
 
+#define SLEEP_US 1000
+
 USBInjector::USBInjector() {
 	halt=false;
 	manager=NULL;
@@ -34,9 +36,11 @@ void USBInjector::listen() {
 	fprintf(stderr,"Starting injector thread for [%s].\n",this->toString());
 	start_injector();
 	while (!halt) {
+		bool idle=true;
 		//TODO we also need to handle setup packets and getting the response back
 		USBPacket* p=get_packets();
-		if (p) {manager->inject_packet(p);}
+		if (p) {manager->inject_packet(p);idle=false;}
+		if (idle) usleep(SLEEP_US);
 	}
 	stop_injector();
 	fprintf(stderr,"Finished injector thread for [%s].\n",this->toString());
