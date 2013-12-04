@@ -59,7 +59,7 @@ USBHostProxy_GadgetFS::~USBHostProxy_GadgetFS() {
 	for (i=0;i<16;i++) {
 		if (p_epin_async[i]) {
 			aiocb* aio=p_epin_async[i];
-			if (p_epin_active[i]) {aio_cancel(aio->aio_fildes,aio);aio->aio_nbytes=0;}
+			if (p_epin_active[i]) {aio_cancel(aio->aio_fildes,aio);}
 			if (aio->aio_fildes) {close(aio->aio_fildes);aio->aio_fildes=0;}
 			if (aio->aio_buf) {free((void*)(aio->aio_buf));aio->aio_buf=NULL;}
 			delete(aio);
@@ -67,7 +67,7 @@ USBHostProxy_GadgetFS::~USBHostProxy_GadgetFS() {
 		}
 		if (p_epout_async[i]) {
 			aiocb* aio=p_epout_async[i];
-			aio_cancel(aio->aio_fildes,aio);aio->aio_nbytes=0;
+			aio_cancel(aio->aio_fildes,aio);
 			if (aio->aio_fildes) {close(aio->aio_fildes);aio->aio_fildes=0;}
 			if (aio->aio_buf) {free((void*)(aio->aio_buf));aio->aio_buf=NULL;}
 			delete(aio);
@@ -212,7 +212,7 @@ void USBHostProxy_GadgetFS::disconnect() {
 	for (i=0;i<16;i++) {
 		if (p_epin_async[i]) {
 			aiocb* aio=p_epin_async[i];
-			if (p_epin_active[i]) {aio_cancel(aio->aio_fildes,aio);aio->aio_nbytes=0;}
+			if (p_epin_active[i]) {aio_cancel(aio->aio_fildes,aio);}
 			if (aio->aio_fildes) {close(aio->aio_fildes);aio->aio_fildes=0;}
 			if (aio->aio_buf) {free((void*)(aio->aio_buf));aio->aio_buf=NULL;}
 			delete(aio);
@@ -220,7 +220,7 @@ void USBHostProxy_GadgetFS::disconnect() {
 		}
 		if (p_epout_async[i]) {
 			aiocb* aio=p_epout_async[i];
-			aio_cancel(aio->aio_fildes,aio);aio->aio_nbytes=0;
+			aio_cancel(aio->aio_fildes,aio);
 			if (aio->aio_fildes) {close(aio->aio_fildes);aio->aio_fildes=0;}
 			if (aio->aio_buf) {free((void*)(aio->aio_buf));aio->aio_buf=NULL;}
 			delete(aio);
@@ -375,8 +375,11 @@ bool USBHostProxy_GadgetFS::send_complete(__u8 endpoint) {
 	aiocb* aio=p_epin_async[number];
 
 	int rc=aio_error(aio);
+	if (rc==EINPROGRESS) {return false;}
+	free((void*)(aio->aio_buf));
+	aio->aio_buf=NULL;
+	aio->aio_nbytes=0;
 	if (rc) {
-		if (rc==EINPROGRESS) {return false;}
 		fprintf(stderr,"Error during async aio on EP %02x %d %s\n",endpoint,rc,strerror(rc));
 		p_epin_active[number]=false;
 		return true;
