@@ -250,7 +250,7 @@ int USBHostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *n
 	if (debugLevel>1) fprintf(stderr, "libusb-gadget: %d events received\n", nevent);
 
 	for (i = 0; i < nevent; i++) {
-		if (debugLevel>0) fprintf(stderr,"libusb-gadget: event %d\n", events[i].type);
+		if (debugLevel>0 && events[i].type!=GADGETFS_SETUP) fprintf(stderr,"libusb-gadget: event %d\n", events[i].type);
 		switch (events[i].type) {
 		case GADGETFS_SETUP:
 			lastControl=events[i].u.setup;
@@ -330,13 +330,16 @@ void USBHostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 
 	int rc=write(p_epin_file[number],dataptr,length);
 	if (rc<0) {
-		fprintf(stderr,"Fail on EP%02x write %d %s\n",number,errno,strerror(errno));
+		fprintf(stderr,"Fail on EP%02x write %d %s\n",endpoint,errno,strerror(errno));
 	} else {
-		fprintf(stderr,"Sent %d bytes on EP%02x\n",rc,number);
+		fprintf(stderr,"Sent %d bytes on EP%02x\n",rc,endpoint);
 	}
 }
 
 void USBHostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length) {
+	*length=0;
+	*dataptr=NULL;
+
 	if (!endpoint) {
 		fprintf(stderr,"trying to receive %d bytes on EP00\n",*length);
 		return;
@@ -357,13 +360,13 @@ void USBHostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 max
 
 	int rc=ard->rc;
 	if (rc<0) {
-		fprintf(stderr,"Error reading EP%02x %d %s\n",number,errno,strerror(errno));
+		fprintf(stderr,"Error reading EP%02x %d %s\n",endpoint,errno,strerror(errno));
 	}
 	if (rc>0) {
 		*dataptr=(__u8*)malloc(rc);
-		memcpy(*dataptr,ard->buf,rc);
+		memset(*dataptr,0,rc);
 		*length=rc;
-		fprintf(stderr,"Read %d bytes on EP%02x\n",rc,number);
+		fprintf(stderr,"Read %d bytes on EP%02x\n",rc,endpoint);
 	}
 	ard->start_read();
 

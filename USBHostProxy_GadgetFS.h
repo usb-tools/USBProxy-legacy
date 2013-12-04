@@ -33,6 +33,7 @@ extern "C" {
 #include <pthread.h>
 #include <unistd.h>
 #include <boost/atomic.hpp>
+#include "TRACE.h"
 
 struct async_read_data {
 	pthread_t thread;
@@ -51,6 +52,7 @@ struct async_read_data {
 	}
 
 	void start_read() {
+		TRACE1(fd)
 		ready=false;
 		pthread_create(&thread,NULL,&async_read_data::do_read,this);
 	}
