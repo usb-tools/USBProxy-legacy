@@ -122,8 +122,9 @@ class USBHostProxy_GadgetFS: public USBHostProxy {
 private:
 	bool p_is_connected;
 	int p_device_file;
-	struct async_write_data* p_epin_async[16];
+	struct aiocb* p_epin_async[16];
 	struct aiocb* p_epout_async[16];
+	bool p_epin_active[16];
 
 	int debugLevel;
 

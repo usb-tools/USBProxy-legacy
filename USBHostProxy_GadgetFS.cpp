@@ -44,7 +44,8 @@ USBHostProxy_GadgetFS::USBHostProxy_GadgetFS(int _debugLevel) {
 	lastControl.bRequest=0;
 	int i;
 	for (i=0;i<16;i++) {
-		p_epin_async[i]=0;
+		p_epin_async[i]=NULL;
+		p_epin_active[i]=false;
 		p_epout_async[i]=NULL;
 	}
 }
@@ -57,12 +58,16 @@ USBHostProxy_GadgetFS::~USBHostProxy_GadgetFS() {
 	int i;
 	for (i=0;i<16;i++) {
 		if (p_epin_async[i]) {
-			delete(p_epin_async[i]);
+			aiocb* aio=p_epin_async[i];
+			if (p_epin_active[i]) {aio_cancel(aio->aio_fildes,aio);aio->aio_nbytes=0;}
+			if (aio->aio_fildes) {close(aio->aio_fildes);aio->aio_fildes=0;}
+			if (aio->aio_buf) {free((void*)(aio->aio_buf));aio->aio_buf=NULL;}
+			delete(aio);
 			p_epin_async[i]=NULL;
 		}
 		if (p_epout_async[i]) {
 			aiocb* aio=p_epout_async[i];
-			if (aio->aio_nbytes) {aio_cancel(aio->aio_fildes,aio);aio->aio_nbytes=0;}
+			aio_cancel(aio->aio_fildes,aio);aio->aio_nbytes=0;
 			if (aio->aio_fildes) {close(aio->aio_fildes);aio->aio_fildes=0;}
 			if (aio->aio_buf) {free((void*)(aio->aio_buf));aio->aio_buf=NULL;}
 			delete(aio);
@@ -206,12 +211,16 @@ void USBHostProxy_GadgetFS::disconnect() {
 	int i;
 	for (i=0;i<16;i++) {
 		if (p_epin_async[i]) {
-			delete(p_epin_async[i]);
+			aiocb* aio=p_epin_async[i];
+			if (p_epin_active[i]) {aio_cancel(aio->aio_fildes,aio);aio->aio_nbytes=0;}
+			if (aio->aio_fildes) {close(aio->aio_fildes);aio->aio_fildes=0;}
+			if (aio->aio_buf) {free((void*)(aio->aio_buf));aio->aio_buf=NULL;}
+			delete(aio);
 			p_epin_async[i]=NULL;
 		}
 		if (p_epout_async[i]) {
 			aiocb* aio=p_epout_async[i];
-			if (aio->aio_nbytes) {aio_cancel(aio->aio_fildes,aio);aio->aio_nbytes=0;}
+			aio_cancel(aio->aio_fildes,aio);aio->aio_nbytes=0;
 			if (aio->aio_fildes) {close(aio->aio_fildes);aio->aio_fildes=0;}
 			if (aio->aio_buf) {free((void*)(aio->aio_buf));aio->aio_buf=NULL;}
 			delete(aio);
@@ -336,10 +345,17 @@ void USBHostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 		return;
 	}
 
-	async_write_data* awd=p_epin_async[number];
+	aiocb* aio=p_epin_async[number];
+	aio->aio_buf=malloc(length);
+	memcpy((void*)(aio->aio_buf),dataptr,length);
+	aio->aio_nbytes=length;
 
-	if (!awd->ready) return;
-	awd->start_write(dataptr,length);
+	int rc=aio_write(aio);
+	if (rc) {
+		fprintf(stderr,"Error submitting aio for EP%02x %d %s\n",endpoint,errno,strerror(errno));
+	} else {
+		p_epin_active[number]=true;
+	}
 }
 
 bool USBHostProxy_GadgetFS::send_complete(__u8 endpoint) {
@@ -354,17 +370,23 @@ bool USBHostProxy_GadgetFS::send_complete(__u8 endpoint) {
 		return false;
 	}
 
-	async_write_data* awd=p_epin_async[number];
+	if (!p_epin_active[number]) return true;
 
-	if (!awd->ready) return false;
-	int rc=awd->finish_write();
-	if (!rc) return true;
-	if (rc<0) {
-		fprintf(stderr,"Fail on EP%02x write %d %s\n",endpoint,awd->awd_errno,strerror(awd->awd_errno));
+	aiocb* aio=p_epin_async[number];
+
+	int rc=aio_error(aio);
+	if (rc) {
+		if (rc==EINPROGRESS) {return false;}
+		fprintf(stderr,"Error during async aio on EP %02x %d %s\n",endpoint,rc,strerror(rc));
+		p_epin_active[number]=false;
+		return true;
 	} else {
+		rc=aio_return(aio);
+		if (!rc) return true;
 		fprintf(stderr,"Sent %d bytes on EP%02x\n",rc,endpoint);
+		p_epin_active[number]=false;
+		return true;
 	}
-	return true;
 }
 
 void USBHostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length) {
@@ -394,7 +416,11 @@ void USBHostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 max
 		memcpy(*dataptr,(void*)(aio->aio_buf),rc);
 		*length=rc;
 		fprintf(stderr,"Read %d bytes on EP%02x\n",rc,number);
-		aio_read(aio);
+		int rc=aio_read(aio);
+		if (rc) {
+			delete(aio);fprintf(stderr,"Error submitting aio for EP%02x %d %s\n",endpoint,errno,strerror(errno));
+			p_epout_async[number]=NULL;
+		}
 	}
 
 }
@@ -449,7 +475,13 @@ TRACE;
 				return;
 			}
 			if (epAddress & 0x80) {
-				p_epin_async[epAddress&0x0f]=new async_write_data(fd);
+				aiocb* aio=new aiocb();
+				aio->aio_fildes=fd;
+				aio->aio_offset=0;
+				aio->aio_nbytes=0;
+				aio->aio_buf=NULL;
+				aio->aio_sigevent.sigev_notify=SIGEV_NONE;
+				p_epin_async[epAddress&0x0f]=aio;
 			} else {
 				aiocb* aio=new aiocb();
 				aio->aio_fildes=fd;
