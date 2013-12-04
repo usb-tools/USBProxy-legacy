@@ -34,6 +34,7 @@ extern "C" {
 #include <unistd.h>
 #include <boost/atomic.hpp>
 #include "TRACE.h"
+#include "errno.h"
 
 struct async_read_data {
 	pthread_t thread;
@@ -52,7 +53,6 @@ struct async_read_data {
 	}
 
 	void start_read() {
-		TRACE1(fd)
 		ready=false;
 		pthread_create(&thread,NULL,&async_read_data::do_read,this);
 	}
@@ -81,10 +81,11 @@ struct async_write_data {
 	int fd;
 	boost::atomic_bool ready;
 	int rc;
+	int awd_errno;
 	int bufSize;
 	__u8* buf;
 
-	async_write_data(int _fd) : thread(0), fd(_fd), ready(true), rc(0), bufSize(0), buf(NULL) {}
+	async_write_data(int _fd) : thread(0), fd(_fd), ready(true), rc(0), awd_errno(0), bufSize(0), buf(NULL) {}
 
 	~async_write_data() {
 		if (thread) {pthread_cancel(thread);thread=0;}
@@ -92,15 +93,24 @@ struct async_write_data {
 		if (fd) {close(fd);fd=0;}
 	}
 
-	void start_write(__u8* buf,int bufSize) {
-		TRACE1(fd)
+	void start_write(__u8* inBuf,int inBufSize) {
 		ready=false;
+		bufSize=inBufSize;
+		buf=(__u8*)malloc(bufSize);
+		memcpy(buf,inBuf,bufSize);
 		pthread_create(&thread,NULL,&async_write_data::do_write,this);
+	}
+
+	int finish_write() {
+		int old_rc=rc;
+		rc=0;
+		return old_rc;
 	}
 
 	static void* do_write(void* context) {
 		async_write_data* awd=(async_write_data*)context;
 		awd->rc=write(awd->fd,awd->buf,awd->bufSize);
+		if (awd->rc<0) awd->awd_errno=errno;
 		awd->ready=true;
 		return 0;
 	}
@@ -111,7 +121,7 @@ class USBHostProxy_GadgetFS: public USBHostProxy {
 private:
 	bool p_is_connected;
 	int p_device_file;
-	int p_epin_file[16];
+	struct async_write_data* p_epin_async[16];
 	struct async_read_data* p_epout_async[16];
 
 
@@ -137,6 +147,7 @@ public:
 	//return 0 in usb_ctrlrequest->brequest if there is no request
 	int control_request(usb_ctrlrequest *setup_packet, int *nbytes, __u8** dataptr);
 	void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length);
+	bool send_complete(__u8 endpoint);
 	void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length);
 	void control_ack();
 	void stall_ep(__u8 endpoint);

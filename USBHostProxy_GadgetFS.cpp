@@ -44,7 +44,7 @@ USBHostProxy_GadgetFS::USBHostProxy_GadgetFS(int _debugLevel) {
 	lastControl.bRequest=0;
 	int i;
 	for (i=0;i<16;i++) {
-		p_epin_file[i]=0;
+		p_epin_async[i]=0;
 		p_epout_async[i]=NULL;
 	}
 }
@@ -56,9 +56,9 @@ USBHostProxy_GadgetFS::~USBHostProxy_GadgetFS() {
 	}
 	int i;
 	for (i=0;i<16;i++) {
-		if (p_epin_file[i]) {
-			close(p_epin_file[i]);
-			p_epin_file[i]=0;
+		if (p_epin_async[i]) {
+			delete(p_epin_async[i]);
+			p_epin_async[i]=NULL;
 		}
 		if (p_epout_async[i]) {
 			delete(p_epout_async[i]);
@@ -201,9 +201,9 @@ void USBHostProxy_GadgetFS::disconnect() {
 	}
 	int i;
 	for (i=0;i<16;i++) {
-		if (p_epin_file[i]) {
-			close(p_epin_file[i]);
-			p_epin_file[i]=0;
+		if (p_epin_async[i]) {
+			delete(p_epin_async[i]);
+			p_epin_async[i]=NULL;
 		}
 		if (p_epout_async[i]) {
 			delete(p_epout_async[i]);
@@ -323,17 +323,40 @@ void USBHostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 		return;
 	}
 	int number=endpoint&0x0f;
-	if (!p_epin_file[number]) {
+	if (!p_epin_async[number]) {
 		fprintf(stderr,"trying to send %d bytes on a non-open EP%02x\n",length,endpoint);
 		return;
 	}
 
-	int rc=write(p_epin_file[number],dataptr,length);
+	async_write_data* awd=p_epin_async[number];
+
+	if (!awd->ready) return;
+	awd->start_write(dataptr,length);
+}
+
+bool USBHostProxy_GadgetFS::send_complete(__u8 endpoint) {
+	if (!endpoint) return true;
+	if (!(endpoint & 0x80)) {
+		fprintf(stderr,"trying to check send on an out EP%02x\n",endpoint);
+		return false;
+	}
+	int number=endpoint&0x0f;
+	if (!p_epin_async[number]) {
+		fprintf(stderr,"trying to check send on a non-open EP%02x\n",endpoint);
+		return false;
+	}
+
+	async_write_data* awd=p_epin_async[number];
+
+	if (!awd->ready) return false;
+	int rc=awd->finish_write();
+	if (!rc) return true;
 	if (rc<0) {
-		fprintf(stderr,"Fail on EP%02x write %d %s\n",endpoint,errno,strerror(errno));
+		fprintf(stderr,"Fail on EP%02x write %d %s\n",endpoint,awd->awd_errno,strerror(awd->awd_errno));
 	} else {
 		fprintf(stderr,"Sent %d bytes on EP%02x\n",rc,endpoint);
 	}
+	return true;
 }
 
 void USBHostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length) {
@@ -353,7 +376,7 @@ void USBHostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 max
 
 	async_read_data* ard=p_epout_async[number];
 
-	if (!ard->ready) {return;}
+	if (!ard->ready) return;
 
 	int rc=ard->finish_read(dataptr);
 	if (rc<0) {
@@ -415,7 +438,7 @@ TRACE;
 				return;
 			}
 			if (epAddress & 0x80) {
-				p_epin_file[epAddress&0x0f]=fd;
+				p_epin_async[epAddress&0x0f]=new async_write_data(fd);
 			} else {
 				p_epout_async[epAddress&0x0f]=new async_read_data(fd,(fs_ep->wMaxPacketSize)>(hs_ep->wMaxPacketSize)?fs_ep->wMaxPacketSize:hs_ep->wMaxPacketSize);
 				p_epout_async[epAddress&0x0f]->start_read();

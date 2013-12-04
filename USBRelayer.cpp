@@ -166,21 +166,23 @@ void USBRelayer::relay() {
 	USBPacket* p;
 	if (epAddress&0x80) { //device->host
 		while (!halt) {
-			__u8* buf=NULL;
-			int length=0;
 			bool idle=true;
-			device->receive_data(epAddress,bmAttributes,maxPacketSize,&buf,&length);
-			if (length) {
-				p=new USBPacket(epAddress,buf,length);
-				__u8 i=0;
-				while (i<filterCount && p->filter) {
-					if (filters[i]->test_packet(p)) {filters[i]->filter_packet(p);}
-					i++;
+			if (host->send_complete(epAddress)) {
+				__u8* buf=NULL;
+				int length=0;
+				device->receive_data(epAddress,bmAttributes,maxPacketSize,&buf,&length);
+				if (length) {
+					p=new USBPacket(epAddress,buf,length);
+					__u8 i=0;
+					while (i<filterCount && p->filter) {
+						if (filters[i]->test_packet(p)) {filters[i]->filter_packet(p);}
+						i++;
+					}
+					if (p->transmit) {host->send_data(epAddress,bmAttributes,maxPacketSize,p->data,p->wLength);}
+					delete(p);
+					/* not needed p=NULL; */
+					idle=false;
 				}
-				if (p->transmit) {host->send_data(epAddress,bmAttributes,maxPacketSize,p->data,p->wLength);}
-				delete(p);
-				/* not needed p=NULL; */
-				idle=false;
 			}
 			if (queue->pop(p)) {
 				__u8 i=0;
@@ -197,21 +199,23 @@ void USBRelayer::relay() {
 		}
 	} else {
 		while (!halt) { //host->device
-			__u8* buf=NULL;
-			int length=0;
 			bool idle=true;
-			host->receive_data(epAddress,bmAttributes,maxPacketSize,&buf,&length);
-			if (length) {
-				p=new USBPacket(epAddress,buf,length);
-				__u8 i=0;
-				while (i<filterCount && p->filter) {
-					if (filters[i]->test_packet(p)) {filters[i]->filter_packet(p);}
-					i++;
+			if (device->send_complete(epAddress)) {
+				__u8* buf=NULL;
+				int length=0;
+				host->receive_data(epAddress,bmAttributes,maxPacketSize,&buf,&length);
+				if (length) {
+					p=new USBPacket(epAddress,buf,length);
+					__u8 i=0;
+					while (i<filterCount && p->filter) {
+						if (filters[i]->test_packet(p)) {filters[i]->filter_packet(p);}
+						i++;
+					}
+					if (p->transmit) {device->send_data(epAddress,bmAttributes,maxPacketSize,p->data,p->wLength);}
+					delete(p);
+					/* not needed p=NULL; */
+					idle=false;
 				}
-				if (p->transmit) {device->send_data(epAddress,bmAttributes,maxPacketSize,p->data,p->wLength);}
-				delete(p);
-				/* not needed p=NULL; */
-				idle=false;
 			}
 			if (queue->pop(p)) {
 				__u8 i=0;
