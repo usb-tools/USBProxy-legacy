@@ -61,12 +61,16 @@ USBManager::~USBManager() {
 		free(filters);
 		filters=NULL;
 	}
-	if (injectors) {
-		free(injectors);
-		injectors=NULL;
-	}
 	int i;
 	for (i=0;i<16;i++) {
+		if (in_relayerThreads[i]) {
+			pthread_cancel(in_relayerThreads[i]);
+			in_relayerThreads[i]=0;
+		}
+		if (out_relayerThreads[i]) {
+			pthread_cancel(out_relayerThreads[i]);
+			out_relayerThreads[i]=0;
+		}
 		if (in_relayers[i]) {
 			delete(in_relayers[i]);
 			in_relayers[i]=NULL;
@@ -86,14 +90,6 @@ USBManager::~USBManager() {
 			delete(out_queue[i]);
 			out_queue[i]=NULL;
 		}
-		if (in_relayerThreads[i]) {
-			pthread_cancel(in_relayerThreads[i]);
-			in_relayerThreads[i]=0;
-		}
-		if (out_relayerThreads[i]) {
-			pthread_cancel(out_relayerThreads[i]);
-			out_relayerThreads[i]=0;
-		}
 	}
 	if (injectorThreads) {
 		for (i=0;i<injectorCount;i++) {
@@ -104,6 +100,10 @@ USBManager::~USBManager() {
 		}
 		free(injectorThreads);
 		injectorThreads=NULL;
+	}
+	if (injectors) {
+		free(injectors);
+		injectors=NULL;
 	}
 
 }
