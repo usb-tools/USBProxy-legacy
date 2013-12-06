@@ -28,7 +28,7 @@
 
 PacketFilter_KeyLogger::PacketFilter_KeyLogger(FILE* _file) {
 	file=_file;
-	keyMap[0x04]='a';
+	keyMap[0x04]="a";
 	keyMap[0x05]="b";
 	keyMap[0x06]="c";
 	keyMap[0x07]="d";
