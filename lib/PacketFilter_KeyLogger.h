@@ -34,8 +34,8 @@ private:
 	FILE* file;
 	char lastReport[8];
 	void keyPressed(__u8 keyCode,__u8 mods);
-	char* keyMap[0x66];
-	char* shiftKeyMap[0x66];
+	const char* keyMap[0x66];
+	const char* shiftKeyMap[0x66];
 public:
 	PacketFilter_KeyLogger(FILE* _file);
 	void filter_packet(Packet* packet);

