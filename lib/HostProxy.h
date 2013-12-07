@@ -42,7 +42,7 @@ public:
 	virtual int control_request(usb_ctrlrequest *setup_packet, int *nbytes, __u8** dataptr)=0;
 	virtual void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length)=0;
 	virtual bool send_complete(__u8 endpoint) {return true;}
-	virtual void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length)=0;
+	virtual void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length,int timeout=0)=0;
 	virtual void control_ack()=0;
 	virtual void stall_ep(__u8 endpoint)=0;
 

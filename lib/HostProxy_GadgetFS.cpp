@@ -392,7 +392,7 @@ bool HostProxy_GadgetFS::send_complete(__u8 endpoint) {
 	}
 }
 
-void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length) {
+void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length, int timeout) {
 	if (!endpoint) {
 		fprintf(stderr,"trying to receive %d bytes on EP00\n",*length);
 		return;
@@ -410,6 +410,16 @@ void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 	aiocb* aio=p_epout_async[number];
 
 	int rc=aio_error(aio);
+	if (rc==EINPROGRESS && timeout) {
+		struct timespec ts;
+		ts.tv_sec=0;
+		ts.tv_nsec=1000000*timeout;
+		if (aio_suspend(&aio,1,&ts)) {
+			return;
+		} else {
+			rc=aio_error(aio);
+		}
+	}
 	if (rc) {
 		if (rc==EINPROGRESS) {return;}
 		fprintf(stderr,"Error during async aio on EP %02x %d %s\n",endpoint,rc,strerror(rc));
