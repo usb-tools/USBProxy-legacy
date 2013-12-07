@@ -263,7 +263,7 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 			break;
 		case USB_ENDPOINT_XFER_BULK:
 			*dataptr=(__u8*)malloc(maxPacketSize);
-			rc=libusb_bulk_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,1);
+			rc=libusb_bulk_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,10);
 			if (rc==LIBUSB_ERROR_TIMEOUT){free(*dataptr);*dataptr=NULL;*length=0;return;}
 			if (rc) {free(*dataptr);*dataptr=NULL;*length=0;fprintf(stderr,"Transfer error (%d) on Device EP%d\n",rc,endpoint);}
 			break;
