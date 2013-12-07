@@ -204,7 +204,7 @@ void Relayer::relay() {
 			if (device->send_complete(epAddress)) {
 				__u8* buf=NULL;
 				int length=0;
-				host->receive_data(epAddress,bmAttributes,maxPacketSize,&buf,&length);
+				host->receive_data(epAddress,bmAttributes,maxPacketSize,&buf,&length,10);
 				if (length) {
 					p=new Packet(epAddress,buf,length);
 					__u8 i=0;
