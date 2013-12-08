@@ -36,7 +36,7 @@
 #include "PacketFilter.h"
 #include "Manager.h"
 
-#define SLEEP_US 1000
+#define SLEEP_US 10
 
 Relayer::Relayer(Endpoint* _endpoint,DeviceProxy* _device,HostProxy* _host,boost::lockfree::queue<Packet*>* _queue) {
 	endpoint=_endpoint;
@@ -162,7 +162,7 @@ void Relayer::relay_ep0() {
 			/* not needed p=NULL; */
 			idle=false;
 		}
-		if (idle) usleep(SLEEP_US);
+		if (idle) sched_yield();
 	}
 	fprintf(stderr,"Finished relaying thread(%ld) for EP00.\n",gettid());
 }
@@ -180,7 +180,7 @@ void Relayer::relay() {
 			if (host->send_wait_complete(epAddress)) {
 				__u8* buf=NULL;
 				int length=0;
-				device->receive_data(epAddress,bmAttributes,maxPacketSize,&buf,&length);
+				device->receive_data(epAddress,bmAttributes,maxPacketSize,&buf,&length,10);
 				if (length) {
 					p=new Packet(epAddress,buf,length);
 					__u8 i=0;
@@ -205,7 +205,7 @@ void Relayer::relay() {
 				/* not needed p=NULL; */
 				idle=false;
 			}
-			if (idle) usleep(SLEEP_US);
+			if (idle) sched_yield();
 		}
 	} else {
 		while (!halt) { //host->device
@@ -238,7 +238,7 @@ void Relayer::relay() {
 				/* not needed p=NULL; */
 				idle=false;
 			}
-			if (idle) usleep(SLEEP_US);
+			if (idle) sched_yield();
 		}
 	}
 	fprintf(stderr,"Finished relaying thread (%ld) for EP%02x.\n",gettid(),epAddress);
