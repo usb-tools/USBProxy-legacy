@@ -26,6 +26,7 @@
 #ifndef USBPROXY_GET_TID_H
 #define USBPROXY_GET_TID_H
 
+#include <unistd.h>
 #include <sys/syscall.h>
 #include <asm/unistd.h>
 

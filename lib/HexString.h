@@ -26,6 +26,8 @@
 #ifndef USBPROXY_HEXSTRING_H
 #define USBPROXY_HEXSTRING_H
 
+#include <linux/types.h>
+#include <stdlib.h>
 #include "TRACE.h"
 #include <string.h>
 

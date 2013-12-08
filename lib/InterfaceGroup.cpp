@@ -27,8 +27,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
-#include "InterfaceGroup.h"
 #include "TRACE.h"
+
+#include "InterfaceGroup.h"
+
+#include "Device.h"
+#include "Interface.h"
 
 InterfaceGroup::InterfaceGroup(__u8 _number) {
 	number=_number;

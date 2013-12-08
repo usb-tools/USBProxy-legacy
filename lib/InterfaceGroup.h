@@ -26,9 +26,8 @@
 #ifndef USBPROXY_INTERFACEGROUP_H
 #define USBPROXY_INTERFACEGROUP_H
 
+#include <linux/types.h>
 #include <stdlib.h>
-#include "Device.h"
-#include "Interface.h"
 #include "DefinitionErrors.h"
 
 class Device;

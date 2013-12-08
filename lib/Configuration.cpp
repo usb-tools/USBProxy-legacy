@@ -27,10 +27,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
-#include "Configuration.h"
-#include "DefinitionErrors.h"
 #include "TRACE.h"
 #include "HexString.h"
+#include "DefinitionErrors.h"
+
+#include "Configuration.h"
+
+#include "Device.h"
+#include "InterfaceGroup.h"
+#include "Interface.h"
+
+#include "DeviceProxy.h"
+#include "USBString.h"
 
 Configuration::Configuration(Device* _device,DeviceProxy* proxy, int idx,bool highSpeed)
 {

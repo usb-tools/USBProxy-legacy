@@ -28,11 +28,10 @@
 
 #include <linux/usb/ch9.h>
 #include <stdlib.h>
-#include "DeviceProxy.h"
-#include "Interface.h"
 #include "DefinitionErrors.h"
 
 class Interface;
+class DeviceProxy;
 
 class Endpoint {
 	private:

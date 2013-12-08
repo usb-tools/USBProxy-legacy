@@ -24,9 +24,16 @@
  * Created on: Nov 9, 2013
  */
 
-#include "DeviceQualifier.h"
 #include "DefinitionErrors.h"
 #include "HexString.h"
+
+#include "DeviceQualifier.h"
+
+#include "Device.h"
+#include "Configuration.h"
+#include "Interface.h"
+
+#include "DeviceProxy.h"
 
 DeviceQualifier::DeviceQualifier(Device* _device,DeviceProxy* proxy) {
 	device=_device;

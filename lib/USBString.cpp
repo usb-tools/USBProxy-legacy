@@ -28,6 +28,7 @@
 #include <memory.h>
 #include <stdio.h>
 #include "USBString.h"
+#include "DeviceProxy.h"
 
 USBString::USBString(DeviceProxy* proxy,__u8 _index,__u16 _languageId) {
 	index=_index;

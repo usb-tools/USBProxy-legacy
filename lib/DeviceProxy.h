@@ -19,16 +19,15 @@
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
  */
-
 #ifndef USBPROXY_DEVICEPROXY_H
 #define USBPROXY_DEVICEPROXY_H
 
 #include <linux/usb/ch9.h>
-#include "Configuration.h"
+#include "Proxy.h"
 
 class Configuration;
 
-class DeviceProxy{
+class DeviceProxy : public Proxy {
 public:
 	virtual ~DeviceProxy() {}
 
@@ -43,14 +42,13 @@ public:
 	virtual void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length)=0;
 	virtual bool send_wait_complete(__u8 endpoint,int timeout=0) {return true;}
 	virtual void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length,int timeout=0)=0;
-
 	virtual void setConfig(Configuration* fs_cfg,Configuration* hs_cfg,bool hs)=0;
+	virtual char* toString() {return NULL;}
 
 	virtual void claim_interface(__u8 interface)=0;
 	virtual void release_interface(__u8 interface)=0;
 
 	virtual __u8 get_address()=0;
-	virtual char* toString() {return NULL;}
 };
 
 #endif /* USBPROXY_DEVICEPROXY_H */

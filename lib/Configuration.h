@@ -26,17 +26,17 @@
 #ifndef USBPROXY_CONFIGURATION_H
 #define USBPROXY_CONFIGURATION_H
 
+#include <stddef.h>
+#include <linux/types.h>
 #include <linux/usb/ch9.h>
-#include "DeviceProxy.h"
-#include "Device.h"
-#include "InterfaceGroup.h"
-#include "Interface.h"
-#include "USBString.h"
 #include "DefinitionErrors.h"
 
 class Device;
 class InterfaceGroup;
+class Interface;
+
 class DeviceProxy;
+class USBString;
 
 class Configuration {
 	private:

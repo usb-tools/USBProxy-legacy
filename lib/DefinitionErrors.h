@@ -26,6 +26,8 @@
 #ifndef USBPROXY_DEFINITIONERRORS_H
 #define USBPROXY_DEFINITIONERRORS_H
 
+#include <linux/types.h>
+
 //0xff0000   object num2
 //0xff0000   object num
 //0xff00 object type

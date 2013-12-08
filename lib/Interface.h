@@ -26,16 +26,16 @@
 #ifndef USBPROXY_INTERFACE_H
 #define USBPROXY_INTERFACE_H
 
+#include <stddef.h>
+#include <linux/types.h>
 #include <linux/usb/ch9.h>
-#include "DeviceProxy.h"
-
-#include "Configuration.h"
-#include "Endpoint.h"
-#include "HID.h"
-#include "USBString.h"
 #include "DefinitionErrors.h"
 
+class DeviceProxy;
 class Device;
+class Configuration;
+class HID;
+class USBString;
 
 struct GenericDescriptor {
 	__u8  bLength;

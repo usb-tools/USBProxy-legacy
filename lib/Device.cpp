@@ -23,10 +23,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <memory.h>
-#include "Device.h"
 #include "DefinitionErrors.h"
 #include "TRACE.h"
 #include "HexString.h"
+
+#include "Device.h"
+#include "DeviceQualifier.h"
+#include "Configuration.h"
+#include "Interface.h"
+
+#include "USBString.h"
+#include "DeviceProxy.h"
 
 //CLEANUP update active endpoints in proxied device upon set configuration request
 //CLEANUP update active configuration for the class upon set configuration request

@@ -23,10 +23,6 @@
 #define USBPROXY_DEVICE_H
 
 #include <linux/usb/ch9.h>
-#include "DeviceProxy.h"
-#include "Configuration.h"
-#include "DeviceQualifier.h"
-#include "USBString.h"
 #include "DefinitionErrors.h"
 
 //CLEANUP error checking on malloc/calloc/realloc
@@ -39,6 +35,7 @@
 class Configuration;
 class DeviceQualifier;
 class USBString;
+class DeviceProxy;
 
 class Device {
 private:

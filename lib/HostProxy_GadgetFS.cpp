@@ -34,6 +34,11 @@
 #include "TRACE.h"
 #include "HexString.h"
 
+#include "DeviceQualifier.h"
+#include "Configuration.h"
+#include "Interface.h"
+#include "Endpoint.h"
+
 HostProxy_GadgetFS::HostProxy_GadgetFS(int _debugLevel) {
 	mount_gadget();
 	p_is_connected = false;

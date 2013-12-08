@@ -27,6 +27,17 @@
 #include "pthread.h"
 #include "TRACE.h"
 
+#include "Device.h"
+#include "DeviceQualifier.h"
+#include "Endpoint.h"
+#include "Packet.h"
+
+#include "DeviceProxy.h"
+#include "HostProxy.h"
+#include "PacketFilter.h"
+#include "Relayer.h"
+#include "Injector.h"
+
 Manager::Manager(DeviceProxy* _deviceProxy,HostProxy* _hostProxy) {
 	status=USBM_IDLE;
 	deviceProxy=_deviceProxy;

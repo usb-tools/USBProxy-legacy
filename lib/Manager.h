@@ -27,19 +27,20 @@
 #define USBPROXY_MANAGER_H
 
 #include <linux/usb/ch9.h>
-#include "DeviceProxy.h"
-#include "HostProxy.h"
-#include "Relayer.h"
-#include "Injector.h"
-#include "PacketFilter.h"
-
-#include "Device.h"
-#include "Endpoint.h"
-#include "Packet.h"
 #include <pthread.h>
+#include <boost/atomic.hpp>
+#include <boost/lockfree/queue.hpp>
 
 class Injector;
 class Relayer;
+class Device;
+class Endpoint;
+
+class Packet;
+class SetupPacket;
+class DeviceProxy;
+class HostProxy;
+class PacketFilter;
 
 enum Manager_status {
 	USBM_IDLE=0,

@@ -26,18 +26,21 @@
 #ifndef USBPROXY_RELAYER_H
 #define USBPROXY_RELAYER_H
 
+//FIXME remove unnecessary includes
+
 #include "linux/types.h"
 #include <unistd.h>
 #include <stdio.h>
 #include <boost/atomic.hpp>
 #include <boost/lockfree/queue.hpp>
-#include "DeviceProxy.h"
-#include "HostProxy.h"
-#include "Endpoint.h"
-#include "Packet.h"
-#include "PacketFilter.h"
-#include "Manager.h"
 
+class Manager;
+class DeviceProxy;
+class HostProxy;
+class Endpoint;
+class Packet;
+class SetupPacket;
+class PacketFilter;
 class Manager;
 
 class Relayer {

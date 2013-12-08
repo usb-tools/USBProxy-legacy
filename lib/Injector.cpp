@@ -23,8 +23,12 @@
  *
  * Created on: Nov 12, 2013
  */
-#include "Injector.h"
+
+#include <stdio.h>
 #include "get_tid.h"
+
+#include "Injector.h"
+
 #define SLEEP_US 1000
 
 Injector::Injector() {

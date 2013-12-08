@@ -23,9 +23,18 @@
  *
  * Created on: Nov 11, 2013
  */
-#include "Relayer.h"
 #include "TRACE.h"
 #include "get_tid.h"
+
+#include "Relayer.h"
+
+#include "Endpoint.h"
+
+#include "DeviceProxy.h"
+#include "HostProxy.h"
+#include "Packet.h"
+#include "PacketFilter.h"
+#include "Manager.h"
 
 #define SLEEP_US 1000
 

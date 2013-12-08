@@ -27,8 +27,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
-#include "Endpoint.h"
+#include "DeviceProxy.h"
 #include "HexString.h"
+
+#include "Endpoint.h"
+#include "Interface.h"
 
 Endpoint::Endpoint(Interface* _interface,const __u8* p) {
 	interface=_interface;

@@ -27,7 +27,6 @@
 #define USBPROXY_DEVICEQUALIFIER_H
 
 #include <linux/usb/ch9.h>
-#include "Configuration.h"
 #include "DefinitionErrors.h"
 
 class Device;

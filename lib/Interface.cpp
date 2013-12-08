@@ -27,8 +27,18 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <stdio.h>
-#include "Interface.h"
 #include "HexString.h"
+
+#include "Device.h"
+#include "Interface.h"
+#include "Endpoint.h"
+
+#include "DeviceProxy.h"
+#include "HID.h"
+#include "USBString.h"
+
+#include "Configuration.h"
+
 
 //CLEANUP update active interface in interfacegroup upon set interface request
 //CLEANUP update active endpoints in proxied device upon set interface request

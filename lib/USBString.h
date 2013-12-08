@@ -28,7 +28,6 @@
 
 #include <linux/usb/ch9.h>
 #include <stdio.h>
-#include "DeviceProxy.h"
 
 class DeviceProxy;
 
