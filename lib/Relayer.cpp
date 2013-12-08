@@ -168,7 +168,7 @@ void Relayer::relay() {
 	if (epAddress&0x80) { //device->host
 		while (!halt) {
 			bool idle=true;
-			if (host->send_complete(epAddress)) {
+			if (host->send_wait_complete(epAddress)) {
 				__u8* buf=NULL;
 				int length=0;
 				device->receive_data(epAddress,bmAttributes,maxPacketSize,&buf,&length);
@@ -201,7 +201,7 @@ void Relayer::relay() {
 	} else {
 		while (!halt) { //host->device
 			bool idle=true;
-			if (device->send_complete(epAddress)) {
+			if (device->send_wait_complete(epAddress)) {
 				__u8* buf=NULL;
 				int length=0;
 				host->receive_data(epAddress,bmAttributes,maxPacketSize,&buf,&length,10);

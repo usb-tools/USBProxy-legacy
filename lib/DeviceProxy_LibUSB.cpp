@@ -249,8 +249,9 @@ void DeviceProxy_LibUSB::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacket
 	}
 }
 
-void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length) {
+void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length,int timeout) {
 	int rc;
+	if (timeout<10) timeout=10;
 	switch (attributes & USB_ENDPOINT_XFERTYPE_MASK) {
 		case USB_ENDPOINT_XFER_CONTROL:
 			fprintf(stderr,"Can't send on a control endpoint.");

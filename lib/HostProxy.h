@@ -41,7 +41,7 @@ public:
 	//return 0 in usb_ctrlrequest->brequest if there is no request
 	virtual int control_request(usb_ctrlrequest *setup_packet, int *nbytes, __u8** dataptr)=0;
 	virtual void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length)=0;
-	virtual bool send_complete(__u8 endpoint) {return true;}
+	virtual bool send_wait_complete(__u8 endpoint,int timeout=0) {return true;}
 	virtual void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length,int timeout=0)=0;
 	virtual void control_ack()=0;
 	virtual void stall_ep(__u8 endpoint)=0;
