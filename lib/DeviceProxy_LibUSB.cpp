@@ -160,6 +160,12 @@ bool DeviceProxy_LibUSB::is_connected() {
 	if (dev_handle) {return true;} else {return false;}
 }
 
+bool DeviceProxy_LibUSB::is_highspeed() {
+	libusb_device* dvc=libusb_get_device(dev_handle);
+	int speed=libusb_get_device_speed(dvc);
+	return (speed==LIBUSB_SPEED_HIGH) || (speed=LIBUSB_SPEED_SUPER);
+}
+
 char* DeviceProxy_LibUSB::toString() {
 	unsigned char* str_mfr=NULL;
 	unsigned char* str_prd=NULL;
@@ -238,13 +244,13 @@ void DeviceProxy_LibUSB::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacket
 			rc=libusb_bulk_transfer(dev_handle,endpoint,dataptr,length,&transferred,0);
 			if (rc) {fprintf(stderr,"Transfer error (%d) on Device EP%d\n",rc,endpoint);}
 			//TODO retry transfer if incomplete
-			if (transferred!=length) {fprintf(stderr,"Incomplete Bulk transfer on EP%d\n",endpoint);}
+			if (transferred!=length) {fprintf(stderr,"Incomplete Bulk transfer on EP%02x\n",endpoint);}
 			break;
 		case USB_ENDPOINT_XFER_INT:
 			rc=libusb_interrupt_transfer(dev_handle,endpoint,dataptr,length,&transferred,0);
 			if (rc) {fprintf(stderr,"Transfer error (%d) on Device EP%d\n",rc,endpoint);}
 			//TODO retry transfer if incomplete
-			if (transferred!=length) {fprintf(stderr,"Incomplete Interrupt transfer on EP%d\n",endpoint);}
+			if (transferred!=length) {fprintf(stderr,"Incomplete Interrupt transfer on EP%02x\n",endpoint);}
 			break;
 	}
 }
@@ -263,16 +269,17 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 			return;
 			break;
 		case USB_ENDPOINT_XFER_BULK:
-			*dataptr=(__u8*)malloc(maxPacketSize);
-			rc=libusb_bulk_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,10);
+			timeout=100;
+			*dataptr=(__u8*)malloc(maxPacketSize*8);
+			rc=libusb_bulk_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,timeout);
 			if (rc==LIBUSB_ERROR_TIMEOUT){free(*dataptr);*dataptr=NULL;*length=0;return;}
-			if (rc) {free(*dataptr);*dataptr=NULL;*length=0;fprintf(stderr,"Transfer error (%d) on Device EP%d\n",rc,endpoint);}
+			if (rc) {free(*dataptr);*dataptr=NULL;*length=0;fprintf(stderr,"Transfer error (%d) on Device EP%02x\n",rc,endpoint);}
 			break;
 		case USB_ENDPOINT_XFER_INT:
 			*dataptr=(__u8*)malloc(maxPacketSize);
-			rc=libusb_interrupt_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,10);
+			rc=libusb_interrupt_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,timeout);
 			if (rc==LIBUSB_ERROR_TIMEOUT){free(*dataptr);*dataptr=NULL;*length=0;return;}
-			if (rc) {free(*dataptr);*dataptr=NULL;*length=0;fprintf(stderr,"Transfer error (%d) on Device EP%d\n",rc,endpoint);}
+			if (rc) {free(*dataptr);*dataptr=NULL;*length=0;fprintf(stderr,"Transfer error (%d) on Device EP%02x\n",rc,endpoint);}
 			break;
 	}
 }

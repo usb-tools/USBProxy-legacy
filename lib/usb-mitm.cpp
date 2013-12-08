@@ -125,7 +125,7 @@ extern "C" int main(int argc, char **argv)
 	manager->add_filter(logfilter);
 	//manager->add_filter(rotfilter);
 	//manager->add_filter(keyfilter);
-	manager->add_injector(udpinjector);
+	//manager->add_injector(udpinjector);
 
 	manager->start_control_relaying();
 

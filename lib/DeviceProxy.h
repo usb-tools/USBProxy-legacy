@@ -36,6 +36,8 @@ public:
 	virtual void reset()=0;
 	virtual bool is_connected()=0;
 
+	virtual bool is_highspeed()=0;
+
 	//return -1 to stall
 	virtual int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr)=0;
 

@@ -97,21 +97,14 @@ int HostProxy_GadgetFS::generate_descriptor(Device* device) {
 	ptr[0] = ptr[1] = ptr[2] = ptr[3] = 0;
 	ptr += 4;
 
+
+	Configuration* cfg;
 	for (i=1;i<=device->get_descriptor()->bNumConfigurations;i++) {
-		Configuration* cfg=device->get_configuration(i);
-		if (cfg) {
-			int length=cfg->get_full_descriptor_length();
-			usb_config_descriptor* buf=(usb_config_descriptor*)(cfg->get_full_descriptor());
-			buf->bmAttributes&=(~USB_CONFIG_ATT_WAKEUP);
-			buf->wTotalLength=length;
-			memcpy(ptr,buf,length);
-			free(buf);
-			ptr+=length;
+		if (device->is_highspeed() && device->get_device_qualifier()) {
+			cfg=device->get_device_qualifier()->get_configuration(i);
+		} else {
+			cfg=device->get_configuration(i);
 		}
-	}
-	if (device->is_highspeed() && device->get_device_qualifier()) {
-	  for (i=1;i<=device->get_descriptor()->bNumConfigurations;i++) {
-		Configuration* cfg=device->get_device_qualifier()->get_configuration(i);
 		if (cfg) {
 			int length=cfg->get_full_descriptor_length();
 			usb_config_descriptor* buf=(usb_config_descriptor*)(cfg->get_full_descriptor());
@@ -122,21 +115,26 @@ int HostProxy_GadgetFS::generate_descriptor(Device* device) {
 			free(buf);
 			ptr+=length;
 		}
-	  }
-	} else {
-		for (i=1;i<=device->get_descriptor()->bNumConfigurations;i++) {
-			Configuration* cfg=device->get_configuration(i);
-			if (cfg) {
-				int length=cfg->get_full_descriptor_length();
-				usb_config_descriptor* buf=(usb_config_descriptor*)(cfg->get_full_descriptor());
-				buf->bmAttributes&=(~USB_CONFIG_ATT_WAKEUP);
-				buf->wTotalLength=length;
-				memcpy(ptr,buf,length);
-				free(buf);
-				ptr+=length;
-			}
+	}
+
+	for (i=1;i<=device->get_descriptor()->bNumConfigurations;i++) {
+		if (!device->is_highspeed() && device->get_device_qualifier()) {
+			cfg=device->get_device_qualifier()->get_configuration(i);
+		} else {
+			cfg=device->get_configuration(i);
+		}
+		if (cfg) {
+			int length=cfg->get_full_descriptor_length();
+			usb_config_descriptor* buf=(usb_config_descriptor*)(cfg->get_full_descriptor());
+			buf->bDescriptorType=USB_DT_CONFIG;
+			buf->bmAttributes&=(~USB_CONFIG_ATT_WAKEUP);
+			buf->wTotalLength=length;
+			memcpy(ptr,buf,length);
+			free(buf);
+			ptr+=length;
 		}
 	}
+
 	memcpy(ptr, (char *)device->get_descriptor(), sizeof(usb_device_descriptor));
 	ptr += sizeof(struct usb_device_descriptor);
 	descriptorLength=ptr-descriptor;
@@ -433,7 +431,7 @@ void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 		*dataptr=(__u8*)malloc(rc);
 		memcpy(*dataptr,(void*)(aio->aio_buf),rc);
 		*length=rc;
-		fprintf(stderr,"Read %d bytes on EP%02x\n",rc,number);
+		//fprintf(stderr,"Read %d bytes on EP%02x\n",rc,number);
 		int rc=aio_read(aio);
 		if (rc) {
 			delete(aio);fprintf(stderr,"Error submitting aio for EP%02x %d %s\n",endpoint,errno,strerror(errno));
@@ -466,7 +464,6 @@ void HostProxy_GadgetFS::stall_ep(__u8 endpoint) {
 }
 
 void HostProxy_GadgetFS::setConfig(Configuration* fs_cfg,Configuration* hs_cfg,bool hs) {
-TRACE;
 	int ifc_idx;
 	__u8 ifc_count=fs_cfg->get_descriptor()->bNumInterfaces;
 	for (ifc_idx=0;ifc_idx<ifc_count;ifc_idx++) {
@@ -504,7 +501,11 @@ TRACE;
 				aiocb* aio=new aiocb();
 				aio->aio_fildes=fd;
 				aio->aio_offset=0;
-				aio->aio_nbytes=(fs_ep->wMaxPacketSize)>(hs_ep->wMaxPacketSize)?fs_ep->wMaxPacketSize:hs_ep->wMaxPacketSize;
+				if (hs) {
+					if (hs_ep->bmAttributes&0x02) {aio->aio_nbytes=(hs_ep->bmAttributes&0x02)?hs_ep->wMaxPacketSize:hs_ep->wMaxPacketSize;}
+				} else {
+					if (fs_ep->bmAttributes&0x02) {aio->aio_nbytes=(fs_ep->bmAttributes&0x02)?fs_ep->wMaxPacketSize:fs_ep->wMaxPacketSize;}
+				}
 				aio->aio_buf=malloc(aio->aio_nbytes);
 				aio->aio_sigevent.sigev_notify=SIGEV_NONE;
 				int rc=aio_read(aio);

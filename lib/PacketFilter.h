@@ -144,9 +144,11 @@ private:
 public:
 	PacketFilter_streamlog(FILE* _file) {file=_file;}
 	void filter_packet(Packet* packet) {
-		char* hex=hex_string((void*)packet->data,packet->wLength);
-		fprintf(file,"%02x[%d]: %s\n",packet->bEndpoint,packet->wLength,hex);
-		free(hex);
+		if (packet->wLength<=64) {
+			char* hex=hex_string((void*)packet->data,packet->wLength);
+			fprintf(file,"%02x[%d]: %s\n",packet->bEndpoint,packet->wLength,hex);
+			free(hex);
+		}
 	}
 	void filter_setup_packet(SetupPacket* packet) {
 		if (packet->ctrl_req.wLength && packet->data) {

@@ -94,6 +94,7 @@ Device::Device(DeviceProxy* _proxy) {
 
 	deviceState=USB_STATE_DEFAULT;
 	deviceAddress=proxy->get_address();
+	highspeed=proxy->is_highspeed();
 	if (deviceAddress) {
 		setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
 		setup_packet.bRequest=USB_REQ_GET_CONFIGURATION;
@@ -108,8 +109,6 @@ Device::Device(DeviceProxy* _proxy) {
 		deviceState=USB_STATE_ADDRESS;
 		deviceConfigurationIndex=0;
 	}
-
-
 }
 
 Device::Device(const usb_device_descriptor* _descriptor) {
@@ -117,6 +116,7 @@ Device::Device(const usb_device_descriptor* _descriptor) {
 	hostAddress=-1;
 	hostState=USB_STATE_NOTATTACHED;
     maxStringIdx=0;
+    highspeed=false;
 
     proxy=NULL;
 	qualifier=NULL;
@@ -138,6 +138,7 @@ Device::Device(__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	__u8  b
 	hostAddress=-1;
 	hostState=USB_STATE_NOTATTACHED;
     maxStringIdx=0;
+    highspeed=false;
 
 	proxy=NULL;
 	qualifier=NULL;
@@ -371,7 +372,6 @@ int Device::get_language_count() {
 
 Configuration* Device::get_active_configuration() {
 	if (deviceConfigurationIndex<0) {return NULL;}
-	if (qualifier) {return qualifier->get_configuration(deviceConfigurationIndex);}
 	return get_configuration(deviceConfigurationIndex);
 }
 
@@ -388,7 +388,7 @@ void Device::set_device_qualifier(DeviceQualifier* _qualifier) {
 	qualifier=_qualifier;
 }
 bool Device::is_highspeed() {
-	return qualifier?true:false;
+	return highspeed;
 }
 
 const definition_error Device::is_string_defined(__u8 index) {

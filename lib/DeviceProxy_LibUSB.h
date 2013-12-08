@@ -52,6 +52,8 @@ public:
 	void disconnect();
 	void reset();
 	bool is_connected();
+	bool is_highspeed();
+
 
 	int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr);
 	void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length);

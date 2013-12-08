@@ -227,6 +227,7 @@ void Manager::start_control_relaying(){
 
 	//populate device model
 	device=new Device(deviceProxy);
+	device->print(0);
 
 	//create EP0 endpoint object
 	usb_endpoint_descriptor desc_ep0;
@@ -274,7 +275,8 @@ void Manager::start_control_relaying(){
 
 void Manager::start_data_relaying() {
 	//enumerate endpoints
-	Configuration* cfg=device->get_active_configuration();
+	Configuration* cfg;
+	cfg=device->get_active_configuration();
 	int ifc_idx;
 	int ifc_cnt=cfg->get_descriptor()->bNumInterfaces;
 	for (ifc_idx=0;ifc_idx<ifc_cnt;ifc_idx++) {
@@ -441,8 +443,13 @@ void Manager::setConfig(__u8 index) {
 	device->set_active_configuration(index);
 	DeviceQualifier* qualifier=device->get_device_qualifier();
 	if (qualifier) {
-		deviceProxy->setConfig(device->get_configuration(index),device->get_device_qualifier()->get_configuration(index),device->is_highspeed());
-		hostProxy->setConfig(device->get_configuration(index),device->get_device_qualifier()->get_configuration(index),device->is_highspeed());
+		if (device->is_highspeed()) {
+			deviceProxy->setConfig(device->get_device_qualifier()->get_configuration(index),device->get_configuration(index),true);
+			hostProxy->setConfig(device->get_device_qualifier()->get_configuration(index),device->get_configuration(index),true);
+		} else {
+			deviceProxy->setConfig(device->get_configuration(index),device->get_device_qualifier()->get_configuration(index),false);
+			hostProxy->setConfig(device->get_configuration(index),device->get_device_qualifier()->get_configuration(index),false);
+		}
 	} else {
 		deviceProxy->setConfig(device->get_configuration(index),NULL,device->is_highspeed());
 		hostProxy->setConfig(device->get_configuration(index),NULL,device->is_highspeed());

@@ -43,6 +43,7 @@ private:
 	int deviceAddress;
 	usb_device_state hostState;
 	usb_device_state deviceState;
+	bool highspeed;
 
 	int hostConfigurationIndex;
 	int deviceConfigurationIndex;
