@@ -33,76 +33,7 @@
 #include "Endpoint.h"
 #include "Packet.h"
 #include "HexString.h"
-
-struct packet_filter_endpoint {
-	__u8 address;
-	__u8 addressMask;
-	__u8 attributes;
-	__u8 attributesMask;
-	__u16 packetSizeMin;
-	__u16 packetSizeMax;
-	__u8 intervalMin;
-	__u8 intervalMax;
-
-	packet_filter_endpoint():
-		address(0),
-		addressMask(0),
-		attributes(0),
-		attributesMask(0),
-		packetSizeMin(0),
-		packetSizeMax(65535),
-		intervalMin(0),
-		intervalMax(255) {}
-};
-
-struct packet_filter_interface {
-	short number;
-	short alternate;
-	short deviceClass;
-	short subClass;
-	short protocol;
-
-	packet_filter_interface():
-		number(-1),
-		alternate(-1),
-		deviceClass(-1),
-		subClass(-1),
-		protocol(-1) {}
-};
-
-struct packet_filter_configuration {
-	short number;
-	__u8 attributes;
-	__u8 attributesMask;
-	__u8 highSpeed;
-
-	packet_filter_configuration():
-		number(-1),
-		attributes(0),
-		attributesMask(0),
-		highSpeed(255) {}
-};
-
-struct packet_filter_device {
-	short deviceClass;
-	short subClass;
-	short protocol;
-	__u8 ep0packetSizeMin;
-	__u8 ep0packetSizeMax;
-	int vendor;
-	int product;
-	int release;
-
-	packet_filter_device():
-		deviceClass(-1),
-		subClass(-1),
-		protocol(-1),
-		ep0packetSizeMin(0),
-		ep0packetSizeMax(255),
-		vendor(-1),
-		product(-1),
-		release(-1) {}
-};
+#include "Criteria.h"
 
 class PacketFilter {
 private:
@@ -111,11 +42,10 @@ private:
 	__u8 packetHeaderMaskLength;
 
 public:
-	packet_filter_endpoint endpoint;
-	packet_filter_interface interface;
-	packet_filter_configuration configuration;
-	packet_filter_device device;
-
+	struct criteria_endpoint endpoint;
+	struct criteria_interface interface;
+	struct criteria_configuration configuration;
+	struct criteria_device device;
 
 	PacketFilter() {
 		int i;
@@ -127,10 +57,6 @@ public:
 	virtual void filter_packet(Packet* packet) {}
 	virtual void filter_setup_packet(SetupPacket* packet) {}
 
-	bool test_device(Device* _device);
-	bool test_configuration(Configuration* _configuration);
-	bool test_interface(Interface* _interface);
-	bool test_endpoint(Endpoint* _endpoint);
 	bool test_packet(Packet* packet);
 	bool test_setup_packet(SetupPacket* packet);
 	void set_packet_filter(__u8 header[4],__u8 mask[4]);

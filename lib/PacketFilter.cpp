@@ -28,44 +28,6 @@
 #include "PacketFilter.h"
 #include "TRACE.h"
 
-bool PacketFilter::test_device(Device* _device) {
-	const usb_device_descriptor* desc=_device->get_descriptor();
-	if (device.deviceClass!=-1 && device.deviceClass!=desc->bDeviceClass) {return false;}
-	if (device.subClass!=-1 && device.subClass!=desc->bDeviceSubClass) {return false;}
-	if (device.protocol!=-1 && device.protocol!=desc->bDeviceProtocol) {return false;}
-	if (device.ep0packetSizeMin>desc->bMaxPacketSize0 || device.ep0packetSizeMax<desc->bMaxPacketSize0) {return false;}
-	if (device.vendor!=-1 && device.vendor!=desc->idVendor) {return false;}
-	if (device.product!=-1 && device.product!=desc->idProduct) {return false;}
-	if (device.release!=-1 && device.release!=desc->bcdDevice) {return false;}
-	return true;
-}
-bool PacketFilter::test_configuration(Configuration* _configuration) {
-	const usb_config_descriptor* desc=_configuration->get_descriptor();
-	if (configuration.number!=-1 && configuration.number!=desc->bConfigurationValue) {return false;}
-	if (configuration.highSpeed!=255 && (configuration.highSpeed?USB_DT_OTHER_SPEED_CONFIG:USB_DT_CONFIG)!=desc->bDescriptorType) {return false;}
-	if ((configuration.attributesMask&configuration.attributes)!=(configuration.attributesMask&desc->bmAttributes)) {return false;}
-	return true;
-}
-
-bool PacketFilter::test_interface(Interface* _interface) {
-	const usb_interface_descriptor* desc=_interface->get_descriptor();
-	if (interface.number!=-1 && interface.number!=desc->bInterfaceNumber) {return false;}
-	if (interface.alternate!=-1 && interface.alternate!=desc->bAlternateSetting) {return false;}
-	if (interface.deviceClass!=-1 && interface.deviceClass!=desc->bInterfaceClass) {return false;}
-	if (interface.subClass!=-1 && interface.subClass!=desc->bInterfaceSubClass) {return false;}
-	if (interface.protocol!=-1 && interface.protocol!=desc->bInterfaceProtocol) {return false;}
-	return true;
-}
-
-bool PacketFilter::test_endpoint(Endpoint* _endpoint) {
-	const usb_endpoint_descriptor* desc=_endpoint->get_descriptor();
-	if ((endpoint.addressMask&endpoint.address)!=(endpoint.addressMask&desc->bEndpointAddress)) {return false;}
-	if ((endpoint.attributesMask&endpoint.attributes)!=(endpoint.attributesMask&desc->bmAttributes)) {return false;}
-	if (endpoint.packetSizeMin>desc->wMaxPacketSize || endpoint.packetSizeMax<desc->wMaxPacketSize) {return false;}
-	if (endpoint.intervalMin>desc->bInterval || endpoint.intervalMax<desc->bInterval) {return false;}
-	return true;
-}
-
 void PacketFilter::set_packet_filter(__u8 header[8],__u8 mask[8]) {
 	int i;
 	packetHeaderMaskLength=1;

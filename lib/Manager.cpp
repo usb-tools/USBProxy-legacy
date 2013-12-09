@@ -247,8 +247,8 @@ void Manager::start_control_relaying(){
 	//apply filters to relayers
 	int i;
 	for(i=0;i<filterCount;i++) {
-		if (filters[i]->test_device(device)) {
-			if (out_endpoints[0] && filters[i]->test_endpoint(out_endpoints[0]) ) {
+		if (filters[i]->device.test(device)) {
+			if (out_endpoints[0] && filters[i]->endpoint.test(out_endpoints[0]) ) {
 				out_relayers[0]->add_filter(filters[i]);
 			}
 		}
@@ -319,12 +319,12 @@ void Manager::start_data_relaying() {
 
 	//apply filters to relayers
 	for(i=0;i<filterCount;i++) {
-		if (filters[i]->test_device(device) && filters[i]->test_configuration(cfg)) {
+		if (filters[i]->device.test(device) && filters[i]->configuration.test(cfg)) {
 			for (j=0;j<16;j++) {
-				if (in_endpoints[j] && filters[i]->test_endpoint(in_endpoints[j]) && filters[i]->test_interface(in_endpoints[j]->get_interface())) {
+				if (in_endpoints[j] && filters[i]->endpoint.test(in_endpoints[j]) && filters[i]->interface.test(in_endpoints[j]->get_interface())) {
 					in_relayers[j]->add_filter(filters[i]);
 				}
-				if (out_endpoints[j] && filters[i]->test_endpoint(out_endpoints[j]) && filters[i]->test_interface(out_endpoints[j]->get_interface())) {
+				if (out_endpoints[j] && filters[i]->endpoint.test(out_endpoints[j]) && filters[i]->interface.test(out_endpoints[j]->get_interface())) {
 					out_relayers[j]->add_filter(filters[i]);
 				}
 			}
