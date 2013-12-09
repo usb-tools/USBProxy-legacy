@@ -23,8 +23,9 @@
  *
  * Created on: Nov 12, 2013
  */
+#include <signal.h>
+#include <pthread.h>
 #include "Manager.h"
-#include "pthread.h"
 #include "TRACE.h"
 
 #include "Device.h"
@@ -41,6 +42,7 @@
 #include "Injector.h"
 
 Manager::Manager(DeviceProxy* _deviceProxy,HostProxy* _hostProxy) {
+	haltSignal=0;
 	status=USBM_IDLE;
 	deviceProxy=_deviceProxy;
 	hostProxy=_hostProxy;
@@ -241,6 +243,7 @@ __u8 Manager::get_filter_count(){
 
 
 void Manager::start_control_relaying(){
+	haltSignal=SIGRTMIN;
 	//TODO this should exit immediately if already started, and wait (somehow) is stopping or setting up
 	status=USBM_SETUP;
 
@@ -282,6 +285,7 @@ void Manager::start_control_relaying(){
 	}
 
 	if (out_relayer0) {
+		out_relayer0->set_haltsignal(haltSignal);
 		pthread_create(&out_relayer0Thread,NULL,&Relayer::relay_helper,out_relayer0);
 	}
 
@@ -321,20 +325,16 @@ void Manager::start_data_relaying() {
 			mqd_t mq=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
 			//RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
 			in_readers[i]=new RelayReader(in_endpoints[i],(Proxy*)deviceProxy,mq);
-			fprintf(stderr,"Created in_reader[%d] @%d\n",i,in_readers[i]);
 			//RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
 			in_writers[i]=new RelayWriter(in_endpoints[i],(Proxy*)hostProxy,mq);
-			fprintf(stderr,"Created in_writers[%d] @%d\n",i,in_writers[i]);
 		}
 		if (out_endpoints[i]) {
 			sprintf(mqname,"/USBProxy-%02X-EP",i);
 			mqd_t mq=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
 			//RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
 			out_readers[i]=new RelayReader(out_endpoints[i],(Proxy*)hostProxy,mq);
-			fprintf(stderr,"Created out_reader[%d] @%d\n",i,out_readers[i]);
 			//RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
 			out_writers[i]=new RelayWriter(out_endpoints[i],(Proxy*)deviceProxy,mq);
-			fprintf(stderr,"Created out_writers[%d] @%d\n",i,out_writers[i]);
 		}
 	}
 
@@ -380,6 +380,7 @@ void Manager::start_data_relaying() {
 	if (injectorCount) {
 		injectorThreads=(pthread_t *)calloc(injectorCount,sizeof(pthread_t));
 		for(i=0;i<injectorCount;i++) {
+			injectors[i]->set_haltsignal(haltSignal);
 			pthread_create(&injectorThreads[i],NULL,&Injector::listen_helper,injectors[i]);
 		}
 	}
@@ -391,19 +392,19 @@ void Manager::start_data_relaying() {
 
 	for(i=1;i<16;i++) {
 		if (in_readers[i]) {
-			fprintf(stderr,"Starting in_reader[%d] @%d\n",i,in_readers[i]);
+			in_readers[i]->set_haltsignal(haltSignal);
 			pthread_create(&in_readerThreads[i],NULL,&RelayReader::relay_read_helper,in_readers[i]);
 		}
 		if (in_writers[i]) {
-			fprintf(stderr,"Starting in_writer[%d] @%d\n",i,in_writers[i]);
+			in_writers[i]->set_haltsignal(haltSignal);
 			pthread_create(&in_writerThreads[i],NULL,&RelayWriter::relay_write_helper,in_writers[i]);
 		}
 		if (out_readers[i]) {
-			fprintf(stderr,"Starting out_reader[%d] @%d\n",i,out_readers[i]);
+			out_readers[i]->set_haltsignal(haltSignal);
 			pthread_create(&out_readerThreads[i],NULL,&RelayReader::relay_read_helper,out_readers[i]);
 		}
 		if (out_writers[i]) {
-			fprintf(stderr,"Starting out_writer[%d] @%d\n",i,out_writers[i]);
+			out_writers[i]->set_haltsignal(haltSignal);
 			pthread_create(&out_writerThreads[i],NULL,&RelayWriter::relay_write_helper,out_writers[i]);
 		}
 	}
@@ -416,15 +417,17 @@ void Manager::stop_relaying(){
 
 	int i;
 	//signal all injector threads to stop ASAP
-	for(i=0;i<injectorCount;i++) {injectors[i]->halt=true;}
+	for(i=0;i<injectorCount;i++) {
+		if (injectorThreads && injectorThreads[i]) pthread_kill(injectorThreads[i],haltSignal);
+	}
 
 	//signal all relayer threads to stop ASAP
-	out_relayer0->halt=true;
+	if (out_relayer0Thread) pthread_kill(out_relayer0Thread,haltSignal);
 	for(i=0;i<16;i++) {
-		if (in_readers[i]) {in_readers[i]->halt=true;}
-		if (in_writers[i]) {in_writers[i]->halt=true;}
-		if (out_readers[i]) {out_readers[i]->halt=true;}
-		if (out_writers[i]) {out_writers[i]->halt=true;}
+		if (in_readerThreads[i]) {pthread_kill(in_readerThreads[i],haltSignal);}
+		if (in_writerThreads[i]) {pthread_kill(in_writerThreads[i],haltSignal);}
+		if (out_readerThreads[i]) {pthread_kill(out_readerThreads[i],haltSignal);}
+		if (out_writerThreads[i]) {pthread_kill(out_writerThreads[i],haltSignal);}
 	}
 
 	//wait for all injector threads to stop

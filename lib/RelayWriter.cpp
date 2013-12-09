@@ -27,6 +27,7 @@
 #include <sched.h>
 #include <sys/epoll.h>
 #include "get_tid.h"
+#include "HaltSignal.h"
 
 #include "RelayWriter.h"
 
@@ -35,7 +36,7 @@
 #include "PacketFilter.h"
 
 RelayWriter::RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue) {
-	halt=false;
+	haltSignal=0;
 	inQueues=(mqd_t*)malloc(sizeof(mqd_t));
 	inQueues[0]=_queue;
 	queueCount=1;
@@ -74,7 +75,16 @@ RelayWriter::~RelayWriter() {
 	}
 }
 
+void RelayWriter::set_haltsignal(__u8 _haltSignal) {
+	haltSignal=_haltSignal;
+}
+
 void RelayWriter::relay_write() {
+	bool halt=false;
+	struct pollfd haltpoll;
+	int haltfd;
+	if (haltsignal_setup(haltSignal,&haltpoll,&haltfd)!=0) return;
+
 	__u8 i,j;
 	int efd=epoll_create1(EPOLL_CLOEXEC);
 	struct epoll_event event;
@@ -121,6 +131,7 @@ void RelayWriter::relay_write() {
 			writing=!(proxy->send_wait_complete(endpoint,500));
 		}
 		if (idle) sched_yield();
+		halt=haltsignal_check(haltSignal,&haltpoll,&haltfd);
 	}
 	fprintf(stderr,"Finished writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
 	close(efd);

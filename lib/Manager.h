@@ -58,6 +58,7 @@ private:
 	DeviceProxy* deviceProxy;
 	HostProxy* hostProxy;
 	Device* device;
+	__u8 haltSignal;
 
 	PacketFilter** filters;
 	__u8 filterCount;

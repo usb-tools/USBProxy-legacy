@@ -84,6 +84,8 @@ extern "C" int main(int argc, char **argv)
 {
 	int c;
 	char* end;
+	fprintf(stderr,"SIGRTMIN: %d\n",SIGRTMIN);
+
 	int vendorId=LIBUSB_HOTPLUG_MATCH_ANY, productId=LIBUSB_HOTPLUG_MATCH_ANY;
 	
 	struct sigaction action;
@@ -122,10 +124,10 @@ extern "C" int main(int argc, char **argv)
 	//PacketFilter_ROT13* rotfilter=new PacketFilter_ROT13();
 	Injector_UDP* udpinjector=new Injector_UDP(12345);
 
-	manager->add_filter(logfilter);
+	//manager->add_filter(logfilter);
 	//manager->add_filter(rotfilter);
 	//manager->add_filter(keyfilter);
-	//manager->add_injector(udpinjector);
+	manager->add_injector(udpinjector);
 
 	manager->start_control_relaying();
 

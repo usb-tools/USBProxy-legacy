@@ -45,6 +45,7 @@ class Manager;
 
 class Relayer {
 private:
+	__u8 haltSignal;
 	boost::lockfree::queue<Packet*>* queue;
 	boost::lockfree::queue<SetupPacket*>* queue_ep0;
 	Endpoint* endpoint;
@@ -55,13 +56,12 @@ private:
 	__u8 filterCount;
 
 public:
-	boost::atomic_bool halt;
-
 	Relayer(Endpoint* _endpoint,DeviceProxy* _device,HostProxy* _host,boost::lockfree::queue<Packet*>* _queue);
 	Relayer(Manager* _manager,Endpoint* _endpoint,DeviceProxy* _device,HostProxy* _host,boost::lockfree::queue<SetupPacket*>* _queue);
 	virtual ~Relayer();
 	void relay();
 	void relay_ep0();
+	void set_haltsignal(__u8 _haltSignal);
 	void add_filter(PacketFilter* filter);
 	void set_manager(Manager* _manager) {manager=_manager;}
 

@@ -36,6 +36,7 @@ class Endpoint;
 
 class RelayWriter {
 private:
+	__u8 haltSignal;
 	mqd_t* inQueues;
 	__u8 endpoint;
 	__u8 attributes;
@@ -47,14 +48,14 @@ private:
 	__u8 queueCount;
 
 public:
-	boost::atomic_bool halt;
 	RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
 	virtual ~RelayWriter();
 
-	void relay_write();
 	void add_filter(PacketFilter* filter);
 	void add_queue(mqd_t inQueue);
 
+	void relay_write();
+	void set_haltsignal(__u8 _haltSignal);
 	static void* relay_write_helper(void* context);
 };
 

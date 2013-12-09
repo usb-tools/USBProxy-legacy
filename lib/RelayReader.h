@@ -35,6 +35,7 @@ class Endpoint;
 
 class RelayReader {
 private:
+	__u8 haltSignal;
 	mqd_t outQueue;
 	Proxy* proxy;
 	__u8 endpoint;
@@ -42,11 +43,11 @@ private:
 	__u16 maxPacketSize;
 
 public:
-	boost::atomic_bool halt;
-
 	RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
 	virtual ~RelayReader();
+
 	void relay_read();
+	void set_haltsignal(__u8 _haltSignal);
 	static void* relay_read_helper(void* context);
 };
 

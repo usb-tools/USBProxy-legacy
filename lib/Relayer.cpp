@@ -25,6 +25,7 @@
  */
 #include "TRACE.h"
 #include "get_tid.h"
+#include "HaltSignal.h"
 
 #include "Relayer.h"
 
@@ -47,7 +48,7 @@ Relayer::Relayer(Endpoint* _endpoint,DeviceProxy* _device,HostProxy* _host,boost
 	queue=_queue;
 	filters=NULL;
 	filterCount=0;
-	halt=false;
+	haltSignal=0;
 	manager=NULL;
 }
 
@@ -60,7 +61,7 @@ Relayer::Relayer(Manager* _manager,Endpoint* _endpoint,DeviceProxy* _device,Host
 	queue=NULL;
 	filters=NULL;
 	filterCount=0;
-	halt=false;
+	haltSignal=false;
 	manager=_manager;
 }
 
@@ -69,6 +70,10 @@ Relayer::~Relayer() {
 		free(filters);
 		filters=NULL;
 	}
+}
+
+void Relayer::set_haltsignal(__u8 _haltSignal) {
+	haltSignal=_haltSignal;
 }
 
 void Relayer::add_filter(PacketFilter* filter) {
@@ -82,6 +87,11 @@ void Relayer::add_filter(PacketFilter* filter) {
 }
 
 void Relayer::relay_ep0() {
+	bool halt=false;
+	struct pollfd haltpoll;
+	int haltfd;
+	if (haltsignal_setup(haltSignal,&haltpoll,&haltfd)!=0) return;
+
 	fprintf(stderr,"Starting relaying thread (%ld) for EP00.\n",gettid());
 	__u8 bmAttributes=endpoint->get_descriptor()->bmAttributes;
 	__u16 maxPacketSize=endpoint->get_descriptor()->wMaxPacketSize;
@@ -163,11 +173,17 @@ void Relayer::relay_ep0() {
 			idle=false;
 		}
 		if (idle) sched_yield();
+		halt=haltsignal_check(haltSignal,&haltpoll,&haltfd);
 	}
 	fprintf(stderr,"Finished relaying thread(%ld) for EP00.\n",gettid());
 }
 
 void Relayer::relay() {
+	bool halt=false;
+	struct pollfd haltpoll;
+	int haltfd;
+	if (haltsignal_setup(haltSignal,&haltpoll,&haltfd)!=0) return;
+
 	__u8 epAddress=endpoint->get_descriptor()->bEndpointAddress;
 	if (!epAddress) {relay_ep0();return;}
 	fprintf(stderr,"Starting relaying thread (%ld) for EP%02x.\n",gettid(),epAddress);

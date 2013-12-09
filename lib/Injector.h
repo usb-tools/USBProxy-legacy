@@ -27,7 +27,6 @@
 #define USBPROXY_INJECTOR_H
 
 #include <mqueue.h>
-#include <boost/atomic.hpp>
 
 #include "Manager.h"
 #include "Packet.h"
@@ -39,6 +38,7 @@ class Injector {
 private:
 	mqd_t outQueues[16];
 	mqd_t inQueues[16];
+	__u8 haltSignal;
 
 protected:
 	virtual Packet* get_packets()=0;
@@ -51,11 +51,10 @@ public:
 	struct criteria_configuration configuration;
 	struct criteria_device device;
 
-	boost::atomic_bool halt;
-
 	Injector();
 	virtual ~Injector() {}
 
+	void set_haltsignal(__u8 _haltSignal);
 	void set_queue(__u8 epAddress,mqd_t queue);
 
 	void listen();

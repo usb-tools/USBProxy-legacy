@@ -27,6 +27,7 @@
 #include <sched.h>
 #include <poll.h>
 #include "get_tid.h"
+#include "HaltSignal.h"
 
 #include "RelayReader.h"
 
@@ -36,7 +37,7 @@
 #include "Packet.h"
 
 RelayReader::RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue) {
-	halt=false;
+	haltSignal=0;
 	outQueue=_queue;
 	proxy=_proxy;
 	endpoint=_endpoint->get_descriptor()->bEndpointAddress;
@@ -47,7 +48,16 @@ RelayReader::RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue) {
 RelayReader::~RelayReader() {
 }
 
+void RelayReader::set_haltsignal(__u8 _haltSignal) {
+	haltSignal=_haltSignal;
+}
+
 void RelayReader::relay_read() {
+	bool halt=false;
+	struct pollfd haltpoll;
+	int haltfd;
+	if (haltsignal_setup(haltSignal,&haltpoll,&haltfd)!=0) return;
+
 	struct pollfd poll_out;
 	poll_out.fd=outQueue;
 	poll_out.events=POLLOUT;
@@ -72,6 +82,7 @@ void RelayReader::relay_read() {
 			p=NULL;
 		}
 		if (idle) sched_yield();
+		halt=haltsignal_check(haltSignal,&haltpoll,&haltfd);
 	}
 	fprintf(stderr,"Finished reader thread (%ld) for EP%02x.\n",gettid(),endpoint);
 }

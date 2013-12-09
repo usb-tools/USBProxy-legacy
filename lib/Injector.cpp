@@ -26,13 +26,14 @@
 
 #include <stdio.h>
 #include "get_tid.h"
+#include "HaltSignal.h"
 
 #include "Injector.h"
 
 #define SLEEP_US 1000
 
 Injector::Injector() {
-	halt=false;
+	haltSignal=0;
 }
 
 void Injector::set_queue(__u8 epAddress,mqd_t queue) {
@@ -43,7 +44,15 @@ void Injector::set_queue(__u8 epAddress,mqd_t queue) {
 	}
 }
 
+void Injector::set_haltsignal(__u8 _haltSignal) {
+	haltSignal=_haltSignal;
+}
+
 void Injector::listen() {
+	bool halt=false;
+	struct pollfd haltpoll;
+	int haltfd;
+	if (haltsignal_setup(haltSignal,&haltpoll,&haltfd)!=0) return;
 	fprintf(stderr,"Starting injector thread (%ld) for [%s].\n",gettid(),this->toString());
 	start_injector();
 	while (!halt) {
@@ -55,6 +64,7 @@ void Injector::listen() {
 			//TODO we need to poll so we don't send blocking packets.
 			if (queue) mq_send(queue,(char*)&p,sizeof(Packet*),0);
 		}
+		halt=haltsignal_check(haltSignal,&haltpoll,&haltfd);
 	}
 	stop_injector();
 	fprintf(stderr,"Finished injector thread (%ld) for [%s].\n",gettid(),this->toString());
