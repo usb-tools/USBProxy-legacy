@@ -36,6 +36,8 @@
 #include "HostProxy.h"
 #include "PacketFilter.h"
 #include "Relayer.h"
+#include "RelayReader.h"
+#include "RelayWriter.h"
 #include "Injector.h"
 
 Manager::Manager(DeviceProxy* _deviceProxy,HostProxy* _hostProxy) {
@@ -48,18 +50,24 @@ Manager::Manager(DeviceProxy* _deviceProxy,HostProxy* _hostProxy) {
 	injectors=NULL;
 	injectorCount=0;
 	injectorThreads=NULL;
+
+	out_relayer0=NULL;
+	out_relayer0Thread=0;
 	out_queue_ep0=NULL;
-	//out_queue_ep0=NULL;
+
 	int i;
 	for(i=0;i<16;i++) {
 		in_endpoints[i]=NULL;
-		in_relayers[i]=NULL;
-		in_relayerThreads[i]=0;
-		in_queue[i]=NULL;
+		in_readers[i]=NULL;
+		in_writers[i]=NULL;
+		in_readerThreads[i]=0;
+		in_writerThreads[i]=0;
+
 		out_endpoints[i]=NULL;
-		out_relayers[i]=NULL;
-		out_relayerThreads[i]=0;
-		out_queue[i]=NULL;
+		out_readers[i]=NULL;
+		out_writers[i]=NULL;
+		out_readerThreads[i]=0;
+		out_writerThreads[i]=0;
 	}
 }
 
@@ -72,34 +80,59 @@ Manager::~Manager() {
 		free(filters);
 		filters=NULL;
 	}
+
+	if (out_relayer0Thread) {
+		pthread_cancel(out_relayer0Thread);
+		out_relayer0Thread=0;
+	}
+
+	if (out_relayer0) {
+		delete(out_relayer0);
+		out_relayer0=NULL;
+	}
+	if (out_queue_ep0) {
+		Packet* p;
+		while(out_queue_ep0->pop(p)) {delete(p);/* not needed p=NULL; */}
+		delete(out_queue_ep0);
+		out_queue_ep0=NULL;
+	}
+
 	int i;
 	for (i=0;i<16;i++) {
-		if (in_relayerThreads[i]) {
-			pthread_cancel(in_relayerThreads[i]);
-			in_relayerThreads[i]=0;
+		if (in_readerThreads[i]) {
+			pthread_cancel(in_readerThreads[i]);
+			in_readerThreads[i]=0;
 		}
-		if (out_relayerThreads[i]) {
-			pthread_cancel(out_relayerThreads[i]);
-			out_relayerThreads[i]=0;
+		if (in_readers[i]) {
+			delete(in_readers[i]);
+			in_readers[i]=NULL;
 		}
-		if (in_relayers[i]) {
-			delete(in_relayers[i]);
-			in_relayers[i]=NULL;
+
+		if (in_writerThreads[i]) {
+			pthread_cancel(in_writerThreads[i]);
+			in_writerThreads[i]=0;
 		}
-		if (out_relayers[i]) {
-			delete(out_relayers[i]);
-			out_relayers[i]=NULL;
+		if (in_writers[i]) {
+			delete(in_writers[i]);
+			in_writers[i]=NULL;
 		}
-		Packet* p;
-		if (in_queue[i]) {
-			while(in_queue[i]->pop(p)) {delete(p);/* not needed p=NULL; */}
-			delete(in_queue[i]);
-			in_queue[i]=NULL;
+
+		if (out_readerThreads[i]) {
+			pthread_cancel(out_readerThreads[i]);
+			out_readerThreads[i]=0;
 		}
-		if (out_queue[i]) {
-			while(out_queue[i]->pop(p)) {delete(p);/* not needed p=NULL; */}
-			delete(out_queue[i]);
-			out_queue[i]=NULL;
+		if (out_readers[i]) {
+			delete(out_readers[i]);
+			out_readers[i]=NULL;
+		}
+
+		if (out_writerThreads[i]) {
+			pthread_cancel(out_writerThreads[i]);
+			out_writerThreads[i]=0;
+		}
+		if (out_writers[i]) {
+			delete(out_writers[i]);
+			out_writers[i]=NULL;
 		}
 	}
 	if (injectorThreads) {
@@ -119,16 +152,6 @@ Manager::~Manager() {
 
 }
 
-void Manager::inject_packet(Packet *packet) {
-	if (status!=USBM_RELAYING) {fprintf(stderr,"Can't inject packets unless manager is relaying.\n");}
-	__u8 epAddress=packet->bEndpoint;
-	if (epAddress&0x80) { //device->host
-		in_queue[epAddress&0x0f]->push(packet);
-	} else { //host->device
-		out_queue[epAddress&0x0f]->push(packet);
-	}
-}
-
 void Manager::inject_setup_in(usb_ctrlrequest request,__u8** data,__u16 *transferred, bool filter) {
 	if (status!=USBM_RELAYING) {fprintf(stderr,"Can't inject packets unless manager is relaying.\n");}
 	SetupPacket* p=new SetupPacket(request,NULL,filter);
@@ -141,7 +164,6 @@ void Manager::inject_setup_out(usb_ctrlrequest request,__u8* data,bool filter) {
 	SetupPacket* p=new SetupPacket(request,data,filter);
 	out_queue_ep0->push(p);
 }
-
 
 void Manager::add_injector(Injector* _injector){
 	if (status!=USBM_IDLE) {fprintf(stderr,"Can't add injectors unless manager is idle.\n");}
@@ -241,7 +263,7 @@ void Manager::start_control_relaying(){
 
 	//set up queues,relayers,and filters
 	out_queue_ep0=new boost::lockfree::queue<SetupPacket*>(16);
-	out_relayers[0]=new Relayer(this,out_endpoints[0],deviceProxy,hostProxy,out_queue_ep0);
+	out_relayer0=new Relayer(this,out_endpoints[0],deviceProxy,hostProxy,out_queue_ep0);
 
 
 	//apply filters to relayers
@@ -249,7 +271,7 @@ void Manager::start_control_relaying(){
 	for(i=0;i<filterCount;i++) {
 		if (filters[i]->device.test(device)) {
 			if (out_endpoints[0] && filters[i]->endpoint.test(out_endpoints[0]) ) {
-				out_relayers[0]->add_filter(filters[i]);
+				out_relayer0->add_filter(filters[i]);
 			}
 		}
 	}
@@ -259,15 +281,8 @@ void Manager::start_control_relaying(){
 		return;
 	}
 
-	if (injectorCount) {
-		injectorThreads=(pthread_t *)calloc(injectorCount,sizeof(pthread_t));
-		for(i=0;i<injectorCount;i++) {
-			pthread_create(&injectorThreads[i],NULL,&Injector::listen_helper,injectors[i]);
-		}
-	}
-
-	if (out_relayers[0]) {
-		pthread_create(&out_relayerThreads[0],NULL,&Relayer::relay_helper,out_relayers[0]);
+	if (out_relayer0) {
+		pthread_create(&out_relayer0Thread,NULL,&Relayer::relay_helper,out_relayer0);
 	}
 
 	status=USBM_RELAYING;
@@ -294,40 +309,78 @@ void Manager::start_data_relaying() {
 		}
 	}
 
-	//set up queues,relayers,and filters
 	int i,j;
 	for (i=1;i<16;i++) {
+		char mqname[16];
+		struct mq_attr mqa;
+		mqa.mq_maxmsg=1;
+		mqa.mq_msgsize=4;
+
 		if (in_endpoints[i]) {
-			//Relayer(Endpoint* _endpoint,DeviceProxy* _device,HostProxy* _host,boost::lockfree::queue<SetupPacket*>* _queue);
-			in_queue[i]=new boost::lockfree::queue<Packet*>(16);
-			in_relayers[i]=new Relayer(in_endpoints[i],deviceProxy,hostProxy,in_queue[i]);
-
+			sprintf(mqname,"/USBProxy-%02X-EP",i|0x80);
+			mqd_t mq=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
+			//RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
+			in_readers[i]=new RelayReader(in_endpoints[i],(Proxy*)deviceProxy,mq);
+			fprintf(stderr,"Created in_reader[%d] @%d\n",i,in_readers[i]);
+			//RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
+			in_writers[i]=new RelayWriter(in_endpoints[i],(Proxy*)hostProxy,mq);
+			fprintf(stderr,"Created in_writers[%d] @%d\n",i,in_writers[i]);
 		}
-
 		if (out_endpoints[i]) {
-			//Relayer(Endpoint* _endpoint,DeviceProxy* _device,HostProxy* _host,boost::lockfree::queue<SetupPacket*>* _queue);
-			if (i) {
-				out_queue[i]=new boost::lockfree::queue<Packet*>(16);
-				out_relayers[i]=new Relayer(out_endpoints[i],deviceProxy,hostProxy,out_queue[i]);
-			} else {
-				out_queue_ep0=new boost::lockfree::queue<SetupPacket*>(16);
-				out_relayers[i]=new Relayer(this,out_endpoints[i],deviceProxy,hostProxy,out_queue_ep0);
-			}
+			sprintf(mqname,"/USBProxy-%02X-EP",i);
+			mqd_t mq=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
+			//RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
+			out_readers[i]=new RelayReader(out_endpoints[i],(Proxy*)hostProxy,mq);
+			fprintf(stderr,"Created out_reader[%d] @%d\n",i,out_readers[i]);
+			//RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
+			out_writers[i]=new RelayWriter(out_endpoints[i],(Proxy*)deviceProxy,mq);
+			fprintf(stderr,"Created out_writers[%d] @%d\n",i,out_writers[i]);
 		}
 	}
-
 
 	//apply filters to relayers
 	for(i=0;i<filterCount;i++) {
 		if (filters[i]->device.test(device) && filters[i]->configuration.test(cfg)) {
-			for (j=0;j<16;j++) {
+			for (j=1;j<16;j++) {
 				if (in_endpoints[j] && filters[i]->endpoint.test(in_endpoints[j]) && filters[i]->interface.test(in_endpoints[j]->get_interface())) {
-					in_relayers[j]->add_filter(filters[i]);
+					in_writers[j]->add_filter(filters[i]);
 				}
 				if (out_endpoints[j] && filters[i]->endpoint.test(out_endpoints[j]) && filters[i]->interface.test(out_endpoints[j]->get_interface())) {
-					out_relayers[j]->add_filter(filters[i]);
+					out_writers[j]->add_filter(filters[i]);
 				}
 			}
+		}
+	}
+
+	//apply injectors to relayers
+	for(i=0;i<injectorCount;i++) {
+		if (injectors[i]->device.test(device) && injectors[i]->configuration.test(cfg)) {
+			char mqname[16];
+			struct mq_attr mqa;
+			mqa.mq_maxmsg=1;
+			mqa.mq_msgsize=4;
+			for (j=1;j<16;j++) {
+				if (in_endpoints[j] && injectors[i]->endpoint.test(in_endpoints[j]) && injectors[i]->interface.test(in_endpoints[j]->get_interface())) {
+					sprintf(mqname,"/USBProxy-%02X-%02X",j|0x80,i);
+					mqd_t mq=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
+					injectors[i]->set_queue(j|0x80,mq);
+					in_writers[j]->add_queue(mq);
+				}
+				if (out_endpoints[j] && injectors[i]->endpoint.test(out_endpoints[j]) && injectors[i]->interface.test(out_endpoints[j]->get_interface())) {
+					sprintf(mqname,"/USBProxy-%02X-%02X",j,i);
+					mqd_t mq=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
+					injectors[i]->set_queue(j,mq);
+					out_writers[j]->add_queue(mq);
+				}
+			}
+		}
+	}
+
+	//TODO add new type of injectors for EP0 in start_control_relaying
+	if (injectorCount) {
+		injectorThreads=(pthread_t *)calloc(injectorCount,sizeof(pthread_t));
+		for(i=0;i<injectorCount;i++) {
+			pthread_create(&injectorThreads[i],NULL,&Injector::listen_helper,injectors[i]);
 		}
 	}
 
@@ -336,13 +389,22 @@ void Manager::start_data_relaying() {
 		deviceProxy->claim_interface(ifc_idx);
 	}
 
-	//TODO set back to <16
 	for(i=1;i<16;i++) {
-		if (in_relayers[i]) {
-			pthread_create(&in_relayerThreads[i],NULL,&Relayer::relay_helper,in_relayers[i]);
+		if (in_readers[i]) {
+			fprintf(stderr,"Starting in_reader[%d] @%d\n",i,in_readers[i]);
+			pthread_create(&in_readerThreads[i],NULL,&RelayReader::relay_read_helper,in_readers[i]);
 		}
-		if (out_relayers[i]) {
-			pthread_create(&out_relayerThreads[i],NULL,&Relayer::relay_helper,out_relayers[i]);
+		if (in_writers[i]) {
+			fprintf(stderr,"Starting in_writer[%d] @%d\n",i,in_writers[i]);
+			pthread_create(&in_writerThreads[i],NULL,&RelayWriter::relay_write_helper,in_writers[i]);
+		}
+		if (out_readers[i]) {
+			fprintf(stderr,"Starting out_reader[%d] @%d\n",i,out_readers[i]);
+			pthread_create(&out_readerThreads[i],NULL,&RelayReader::relay_read_helper,out_readers[i]);
+		}
+		if (out_writers[i]) {
+			fprintf(stderr,"Starting out_writer[%d] @%d\n",i,out_writers[i]);
+			pthread_create(&out_writerThreads[i],NULL,&RelayWriter::relay_write_helper,out_writers[i]);
 		}
 	}
 
@@ -357,9 +419,12 @@ void Manager::stop_relaying(){
 	for(i=0;i<injectorCount;i++) {injectors[i]->halt=true;}
 
 	//signal all relayer threads to stop ASAP
+	out_relayer0->halt=true;
 	for(i=0;i<16;i++) {
-		if (in_relayers[i]) {in_relayers[i]->halt=true;}
-		if (out_relayers[i]) {out_relayers[i]->halt=true;}
+		if (in_readers[i]) {in_readers[i]->halt=true;}
+		if (in_writers[i]) {in_writers[i]->halt=true;}
+		if (out_readers[i]) {out_readers[i]->halt=true;}
+		if (out_writers[i]) {out_writers[i]->halt=true;}
 	}
 
 	//wait for all injector threads to stop
@@ -374,38 +439,58 @@ void Manager::stop_relaying(){
 		injectorThreads=NULL;
 	}
 
+	if (out_endpoints[0]) {delete(out_endpoints[0]);out_endpoints[0]=NULL;}
+	if (out_relayer0) {
+		if (out_relayer0Thread) {
+			pthread_join(out_relayer0Thread,NULL);
+			out_relayer0Thread=0;
+		}
+		delete(out_relayer0);
+		out_relayer0=NULL;
+	}
+	if (out_queue_ep0) {
+		Packet* p;
+		while(out_queue_ep0->pop(p)) {delete(p);/* not needed p=NULL; */}
+		delete(out_queue_ep0);
+		out_queue_ep0=NULL;
+	}
+
 	//wait for all relayer threads to stop, then delete relayer objects
 	for(i=0;i<16;i++) {
 		if (in_endpoints[i]) {in_endpoints[i]=NULL;}
-		if (in_relayers[i]) {
-			if (in_relayerThreads[i]) {
-				pthread_join(in_relayerThreads[i],NULL);
-				in_relayerThreads[i]=0;
+		if (in_readers[i]) {
+			if (in_readerThreads[i]) {
+				pthread_join(in_readerThreads[i],NULL);
+				in_readerThreads[i]=0;
 			}
-			delete(in_relayers[i]);
-			in_relayers[i]=NULL;
+			delete(in_readers[i]);
+			in_readers[i]=NULL;
+		}
+		if (in_writers[i]) {
+			if (in_writerThreads[i]) {
+				pthread_join(in_writerThreads[i],NULL);
+				in_writerThreads[i]=0;
+			}
+			delete(in_writers[i]);
+			in_writers[i]=NULL;
 		}
 
-		if (out_endpoints[i]) {
-			//we created EP0 object, all others are under Device control
-			if (!i) {delete(out_endpoints[i]);}
-			out_endpoints[i]=NULL;
-		}
-		if (out_relayers[i]) {
-			if (out_relayerThreads[i]) {
-				pthread_join(out_relayerThreads[i],NULL);
-				out_relayerThreads[i]=0;
+		if (out_endpoints[i]) {out_endpoints[i]=NULL;}
+		if (out_readers[i]) {
+			if (out_readerThreads[i]) {
+				pthread_join(out_readerThreads[i],NULL);
+				out_readerThreads[i]=0;
 			}
-			delete(out_relayers[i]);
-			out_relayers[i]=NULL;
+			delete(out_readers[i]);
+			out_readers[i]=NULL;
 		}
-		if (in_queue[i]) {
-			delete(in_queue[i]);
-			in_queue[i]=NULL;
-		}
-		if (out_queue[i]) {
-			delete(out_queue[i]);
-			out_queue[i]=NULL;
+		if (out_writers[i]) {
+			if (out_writerThreads[i]) {
+				pthread_join(out_writerThreads[i],NULL);
+				out_writerThreads[i]=0;
+			}
+			delete(out_writers[i]);
+			out_writers[i]=NULL;
 		}
 	}
 

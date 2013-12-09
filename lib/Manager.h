@@ -33,6 +33,9 @@
 
 class Injector;
 class Relayer;
+class RelayReader;
+class RelayWriter;
+
 class Device;
 class Endpoint;
 
@@ -65,22 +68,25 @@ private:
 	pthread_t* injectorThreads;
 
 	Endpoint* in_endpoints[16];
-	Relayer* in_relayers[16];
-	pthread_t in_relayerThreads[16];
-	boost::lockfree::queue<Packet*>* in_queue[16];
-	//boost::lockfree::queue<SetupPacket*>* in_queue_ep0;
+	RelayReader* in_readers[16];
+	RelayWriter* in_writers[16];
+	pthread_t in_readerThreads[16];
+	pthread_t in_writerThreads[16];
 
 	Endpoint* out_endpoints[16];
-	Relayer* out_relayers[16];
-	pthread_t out_relayerThreads[16];
-	boost::lockfree::queue<Packet*>* out_queue[16];
+	RelayReader* out_readers[16];
+	RelayWriter* out_writers[16];
+	pthread_t out_readerThreads[16];
+	pthread_t out_writerThreads[16];
+
+	Relayer* out_relayer0;
+	pthread_t out_relayer0Thread;
 	boost::lockfree::queue<SetupPacket*>* out_queue_ep0;
 	void start_data_relaying();
 
 public:
 	Manager(DeviceProxy* _deviceProxy,HostProxy* _hostProxy);
 	virtual ~Manager();
-	void inject_packet(Packet *packet);
 	void inject_setup_in(usb_ctrlrequest request,__u8** data,__u16 *transferred, bool filter);
 	void inject_setup_out(usb_ctrlrequest request,__u8* data,bool filter);
 

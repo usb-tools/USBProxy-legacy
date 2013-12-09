@@ -26,15 +26,19 @@
 #ifndef USBPROXY_INJECTOR_H
 #define USBPROXY_INJECTOR_H
 
+#include <mqueue.h>
 #include <boost/atomic.hpp>
+
 #include "Manager.h"
 #include "Packet.h"
+#include "Criteria.h"
 
 class Manager;
 
 class Injector {
 private:
-	Manager* manager;
+	mqd_t outQueues[16];
+	mqd_t inQueues[16];
 
 protected:
 	virtual Packet* get_packets()=0;
@@ -42,12 +46,18 @@ protected:
 	virtual void stop_injector() {}
 
 public:
+	struct criteria_endpoint endpoint;
+	struct criteria_interface interface;
+	struct criteria_configuration configuration;
+	struct criteria_device device;
+
 	boost::atomic_bool halt;
 
 	Injector();
 	virtual ~Injector() {}
 
-	void set_manager(Manager* _manager) {manager=_manager;}
+	void set_queue(__u8 epAddress,mqd_t queue);
+
 	void listen();
 
 	static void *listen_helper(void* context);

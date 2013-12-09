@@ -33,7 +33,14 @@
 
 Injector::Injector() {
 	halt=false;
-	manager=NULL;
+}
+
+void Injector::set_queue(__u8 epAddress,mqd_t queue) {
+	if (epAddress&0x80) {
+		inQueues[epAddress&0x0f]=queue;
+	} else {
+		outQueues[epAddress&0x0f]=queue;
+	}
 }
 
 void Injector::listen() {
@@ -42,7 +49,12 @@ void Injector::listen() {
 	while (!halt) {
 		//TODO we also need to handle setup packets and getting the response back
 		Packet* p=get_packets();
-		if (p) {manager->inject_packet(p);}
+		if (p) {
+			__u8 epAddress=p->bEndpoint;
+			mqd_t queue =(epAddress&0x80)?inQueues[epAddress&0x0f]:outQueues[epAddress&0x0f];
+			//TODO we need to poll so we don't send blocking packets.
+			if (queue) mq_send(queue,(char*)&p,sizeof(Packet*),0);
+		}
 	}
 	stop_injector();
 	fprintf(stderr,"Finished injector thread (%ld) for [%s].\n",gettid(),this->toString());
