@@ -105,6 +105,7 @@ void RelayWriter::relay_write() {
 				if (i>=numEvents) numEvents=0;
 			}
 			if (p) {
+				j=0;
 				while (j<filterCount && p->filter) {
 					if (filters[j]->test_packet(p)) {filters[j]->filter_packet(p);}
 					j++;
