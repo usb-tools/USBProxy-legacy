@@ -361,7 +361,7 @@ void HostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacket
 	}
 }
 
-bool HostProxy_GadgetFS::send_complete(__u8 endpoint) {
+bool HostProxy_GadgetFS::send_wait_complete(__u8 endpoint,int timeout) {
 	if (!endpoint) return true;
 	if (!(endpoint & 0x80)) {
 		fprintf(stderr,"trying to check send on an out EP%02x\n",endpoint);
@@ -378,7 +378,17 @@ bool HostProxy_GadgetFS::send_complete(__u8 endpoint) {
 	aiocb* aio=p_epin_async[number];
 
 	int rc=aio_error(aio);
-	if (rc==EINPROGRESS) {return false;}
+	if (rc==EINPROGRESS && timeout) {
+		struct timespec ts;
+		ts.tv_sec=0;
+		ts.tv_nsec=1000000*timeout;
+		if (aio_suspend(&aio,1,&ts)) {
+			rc=0;
+		} else {
+			rc=aio_error(aio);
+		}
+	}
+	if (rc==EINPROGRESS) return false;
 	free((void*)(aio->aio_buf));
 	aio->aio_buf=NULL;
 	aio->aio_nbytes=0;
