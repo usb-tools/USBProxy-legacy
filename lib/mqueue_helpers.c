@@ -2,7 +2,7 @@
  * Copyright 2013 Dominic Spill
  * Copyright 2013 Adam Stasiak
  *
- * This file is part of USB-MitM.
+ * This file is part of USBProxy.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@ int mount_mqueue() {
 	struct mntent mnt;
 	char strings[4096];
 	while ((m=getmntent_r(mtab,&mnt,strings,sizeof(strings)))) {
-	    if (strcmp(mnt.mnt_type,"mqueue")==0 && strcmp(mnt.mnt_fsname,"usb-mitm")==0) {
+	    if (strcmp(mnt.mnt_type,"mqueue")==0 && strcmp(mnt.mnt_fsname,"USBProxy")==0) {
 	    	mountCount++;
 	    	if (mountDirs) {
 	    		mountDirs=realloc(mountDirs,sizeof(char*)*mountCount);
@@ -74,7 +74,7 @@ int mount_mqueue() {
 
 	mqueue_path = mkdtemp(mqueue_path);
 	fprintf(stderr, "Made directory %s for mqueue\n", mqueue_path);
-	status = mount("usb-mitm", mqueue_path, "mqueue", 0, "");
+	status = mount("USBProxy", mqueue_path, "mqueue", 0, "");
 	if (status!=0) {fprintf(stderr,"Error mounting mqueue at [%s].\n",mqueue_path);return 1;}
 
 	clean_mqueue();
