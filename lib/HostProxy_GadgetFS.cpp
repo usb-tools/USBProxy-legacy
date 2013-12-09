@@ -334,7 +334,7 @@ void HostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacket
 		if (rc<0) {
 			fprintf(stderr,"Fail on EP00 write %d %s\n",errno,strerror(errno));
 		} else {
-			fprintf(stderr,"Sent %d bytes on EP00\n",rc);
+			//fprintf(stderr,"Sent %d bytes on EP00\n",rc);
 		}
 		return;
 	}
@@ -399,7 +399,7 @@ bool HostProxy_GadgetFS::send_wait_complete(__u8 endpoint,int timeout) {
 	} else {
 		rc=aio_return(aio);
 		if (!rc) return true;
-		fprintf(stderr,"Sent %d bytes on EP%02x\n",rc,endpoint);
+		//fprintf(stderr,"Sent %d bytes on EP%02x\n",rc,endpoint);
 		p_epin_active[number]=false;
 		return true;
 	}
