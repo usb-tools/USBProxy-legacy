@@ -42,6 +42,7 @@
 #include "TRACE.h"
 #include "Manager.h"
 #include "DeviceProxy_LibUSB.h"
+#include "Injector_UDP.h"
 #include "HostProxy_GadgetFS.h"
 #include "PacketFilter_PcapLogger.h"
 
@@ -128,7 +129,8 @@ extern "C" int main(int argc, char **argv)
 	manager=new Manager(device_proxy,host_proxy);
 
 	PacketFilter_streamlog* logfilter=new PacketFilter_streamlog(stderr);
-	//PacketFilter_PcapLogger* pcaplogger=new PacketFilter_PcapLogger("/tmp/usb.pcap");
+	Injector_UDP* udpinjector=new Injector_UDP(12345);
+	PacketFilter_PcapLogger* pcaplogger=new PacketFilter_PcapLogger("/tmp/usb.pcap");
 
 	//manager->add_filter(logfilter);
 	//manager->add_filter(rotfilter);
@@ -147,6 +149,9 @@ extern "C" int main(int argc, char **argv)
 
 	delete(logfilter);
 	logfilter=NULL;
+
+	delete(udpinjector);
+	udpinjector=NULL;
 
 	delete(manager);
 	manager=NULL;

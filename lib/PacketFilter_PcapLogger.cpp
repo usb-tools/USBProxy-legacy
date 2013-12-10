@@ -23,8 +23,12 @@
  *
  * Created on: Dec 5, 2013
  */
-#include "PacketFilter_PcapLogger.h"
+#include <stdlib.h>
+#include <memory.h>
 #include <sys/time.h>
+
+#include "TRACE.h"
+#include "PacketFilter_PcapLogger.h"
 
 /* default snap length (maximum bytes per packet to capture) */
 #define SNAP_LEN 1518

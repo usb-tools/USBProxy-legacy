@@ -26,8 +26,8 @@
 #ifndef USBPROXY_PACKETFILTER_KEYLOGGER_H_
 #define USBPROXY_PACKETFILTER_KEYLOGGER_H_
 
-#include "PacketFilter.h"
 #include <stdio.h>
+#include "PacketFilter.h"
 
 class PacketFilter_KeyLogger : public PacketFilter {
 private:
