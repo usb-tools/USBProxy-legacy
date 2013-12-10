@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <sched.h>
 #include <sys/epoll.h>
+#include <errno.h>
 #include "get_tid.h"
 #include "HaltSignal.h"
 
@@ -88,7 +89,7 @@ void RelayWriter::relay_write() {
 
 	__u8 i,j;
 	int efd=epoll_create1(EPOLL_CLOEXEC);
-	if (efd<0) fprintf(stderr,"Error creating epoll fd.\n");
+	if (efd<0) fprintf(stderr,"Error creating epoll fd %d [%s].\n",errno,strerror(errno));
 	struct epoll_event event;
 	struct epoll_event* events=(epoll_event*)calloc(queueCount,sizeof(epoll_event));
 	for (i=0;i<queueCount;i++) {
