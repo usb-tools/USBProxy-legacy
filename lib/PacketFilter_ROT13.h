@@ -32,14 +32,7 @@ class PacketFilter_ROT13: public PacketFilter {
 public:
 	PacketFilter_ROT13() {}
 	virtual ~PacketFilter_ROT13() {}
-	void filter_packet(Packet* packet) {
-		int i;
-		for (i=2;i<8;i++) {
-			if (packet->data[i]<=0x1d && packet->data[i]>=0x04) {
-				packet->data[i]=0x21-packet->data[i];
-			}
-		}
-	}
+	void filter_packet(Packet* packet);
 	virtual char* toString() {return (char*)"ROT13 Filter";}
 };
 

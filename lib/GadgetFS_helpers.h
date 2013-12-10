@@ -30,8 +30,7 @@
 #define USBPROXY_GADGETFS_HELPERS_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 /* gadgetfs currently has no chunking (or O_DIRECT/zerocopy) support

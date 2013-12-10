@@ -19,22 +19,21 @@
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
  *
- * HaltSignal.h
+ * PacketFilter_ROT13.cpp
  *
- * Created on: Dec 9, 2013
+ * Created on: Dec 10, 2013
  */
-#ifndef HALTSIGNAL_H_
-#define HALTSIGNAL_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "PacketFilter_ROT13.h"
 
-int haltsignal_setup(int haltsignal,struct pollfd* haltpoll,int* haltfd);
-int haltsignal_check(int haltsignal,struct pollfd* haltpoll,int* haltfd);
-
-#ifdef __cplusplus
+void PacketFilter_ROT13::filter_packet(Packet* packet) {
+	int i;
+	for (i=2;i<8;i++) {
+		if (packet->data[i]<=0x1d && packet->data[i]>=0x04) {
+			packet->data[i]=0x21-packet->data[i];
+		}
+	}
 }
-#endif
 
-#endif /* HALTSIGNAL_H_ */
+
+

@@ -24,6 +24,9 @@
  * Created on: Nov 9, 2013
  */
 
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "DefinitionErrors.h"
 #include "HexString.h"
 

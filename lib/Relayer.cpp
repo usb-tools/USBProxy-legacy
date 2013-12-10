@@ -23,6 +23,8 @@
  *
  * Created on: Nov 11, 2013
  */
+
+#include <poll.h>
 #include "TRACE.h"
 #include "get_tid.h"
 #include "HaltSignal.h"

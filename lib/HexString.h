@@ -26,53 +26,7 @@
 #ifndef USBPROXY_HEXSTRING_H
 #define USBPROXY_HEXSTRING_H
 
-#include <linux/types.h>
-#include <stdlib.h>
-#include "TRACE.h"
-#include <string.h>
-
-//TODO also need to deal with print_ascii in USBString
-//TODO look for looped putchar as well
-
-static char* hex_string_wide(void* buf,int length,int width=32) {
-	char* outbuf;
-	if (!buf) {
-		outbuf=(char*)malloc(1);
-		*outbuf=0;
-		return outbuf;
-	}
-	int lines=length/width;
-	if (length%width) lines++;
-	outbuf=(char* )malloc(length*3+lines+1);
-	char* p=outbuf;
-	int i;
-	for(i=0;i<length;i++) {
-			sprintf(p,(i%width)?" %02x":"\n\t%02x",((__u8*)buf)[i]);
-			p+=(i%width)?3:4;
-	}
-	*p=0;
-	return outbuf;
-}
-
-static char* hex_string(void* buf,int length) {
-	char* outbuf;
-	if (!buf) {
-		outbuf=(char*)malloc(1);
-		*outbuf=0;
-		return outbuf;
-	}
-	if (length>32) return hex_string_wide(buf,length);
-	outbuf=(char* )malloc(length*3+1);
-	char* p=outbuf;
-	int i;
-	for(i=0;i<length;i++) {
-			sprintf(p,i?" %02x":"%02x",((__u8*)buf)[i]);
-			p+=i?3:2;
-	}
-	*p=0;
-	return outbuf;
-}
-
-
+char* hex_string_wide(void* buf,int length,int width=32);
+char* hex_string(void* buf,int length);
 
 #endif /* USBPROXY_HEXSTRING_H */

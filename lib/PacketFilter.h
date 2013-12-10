@@ -27,6 +27,8 @@
 #define USBPROXY_PACKETFILTER_H
 
 #include <stdlib.h>
+#include <stdio.h>
+
 #include "Device.h"
 #include "Configuration.h"
 #include "Interface.h"

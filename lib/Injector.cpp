@@ -24,6 +24,7 @@
  * Created on: Nov 12, 2013
  */
 
+#include <poll.h>
 #include <stdio.h>
 #include "get_tid.h"
 #include "HaltSignal.h"

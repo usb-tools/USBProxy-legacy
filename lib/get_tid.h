@@ -26,12 +26,14 @@
 #ifndef USBPROXY_GET_TID_H
 #define USBPROXY_GET_TID_H
 
-#include <unistd.h>
-#include <sys/syscall.h>
-#include <asm/unistd.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-static long int gettid() {
-	return (pid_t)syscall(__NR_gettid);
+long int gettid();
+
+#ifdef __cplusplus
 }
+#endif
 
 #endif /* USBPROXY_GET_TID_H */

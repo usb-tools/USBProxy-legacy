@@ -19,22 +19,16 @@
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
  *
- * HaltSignal.h
+ * get_tid.c
  *
- * Created on: Dec 9, 2013
+ * Created on: Dec 10, 2013
  */
-#ifndef HALTSIGNAL_H_
-#define HALTSIGNAL_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <unistd.h>
+#include <sys/syscall.h>
+#include <asm/unistd.h>
+#include "get_tid.h"
 
-int haltsignal_setup(int haltsignal,struct pollfd* haltpoll,int* haltfd);
-int haltsignal_check(int haltsignal,struct pollfd* haltpoll,int* haltfd);
-
-#ifdef __cplusplus
+long int gettid() {
+	return (pid_t)syscall(__NR_gettid);
 }
-#endif
-
-#endif /* HALTSIGNAL_H_ */
