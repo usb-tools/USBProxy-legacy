@@ -28,14 +28,22 @@
 
 /* $(CROSS_COMPILE)cc -Wall -g -o proxy proxy.c usbstring.c -lpthread */
 
-#include "usb-mitm.h"
+#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <signal.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <sys/poll.h>
+
 #include "TRACE.h"
 #include "Manager.h"
 #include "DeviceProxy_LibUSB.h"
 #include "HostProxy_GadgetFS.h"
-#include "Injector_UDP.h"
-#include "PacketFilter_ROT13.h"
-#include "PacketFilter_KeyLogger.h"
+#include "PacketFilter_PcapLogger.h"
 
 static int debug=0;
 
@@ -120,14 +128,13 @@ extern "C" int main(int argc, char **argv)
 	manager=new Manager(device_proxy,host_proxy);
 
 	PacketFilter_streamlog* logfilter=new PacketFilter_streamlog(stderr);
-	//PacketFilter_KeyLogger* keyfilter=new PacketFilter_KeyLogger(stderr);
-	//PacketFilter_ROT13* rotfilter=new PacketFilter_ROT13();
-	Injector_UDP* udpinjector=new Injector_UDP(12345);
+	//PacketFilter_PcapLogger* pcaplogger=new PacketFilter_PcapLogger("/tmp/usb.pcap");
 
 	//manager->add_filter(logfilter);
 	//manager->add_filter(rotfilter);
 	//manager->add_filter(keyfilter);
 	manager->add_injector(udpinjector);
+	//manager->add_filter(pcaplogger);
 
 	manager->start_control_relaying();
 
@@ -135,8 +142,8 @@ extern "C" int main(int argc, char **argv)
 
 	manager->stop_relaying();
 
-	delete(udpinjector);
-	udpinjector=NULL;
+	delete(pcaplogger);
+	pcaplogger=NULL;
 
 	delete(logfilter);
 	logfilter=NULL;

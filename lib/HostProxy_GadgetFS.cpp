@@ -267,10 +267,10 @@ int HostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *nbyt
 	}
 
 	nevent = ret / sizeof(events[0]);
-	if (debugLevel>1) fprintf(stderr, "libusb-gadget: %d events received\n", nevent);
+	if (debugLevel>1) fprintf(stderr, "gadgetfs: %d events received\n", nevent);
 
 	for (i = 0; i < nevent; i++) {
-		if (debugLevel>0 && events[i].type!=GADGETFS_SETUP) fprintf(stderr,"libusb-gadget: event %d\n", events[i].type);
+		if (debugLevel>0 && events[i].type!=GADGETFS_SETUP) fprintf(stderr,"gadgetfs: event %d\n", events[i].type);
 		switch (events[i].type) {
 		case GADGETFS_SETUP:
 			lastControl=events[i].u.setup;
@@ -295,7 +295,7 @@ int HostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *nbyt
 			if (handle->event_cb) {
 				event.type = USG_EVENT_CONNECT;
 				handle->speed = events[i].u.speed;
-				debug (handle, 2, "libusb-gadget: connected with speed %d\n",
+				debug (handle, 2, "gadgetfs: connected with speed %d\n",
 				handle->speed);
 				handle->event_cb (handle, &event, handle->event_arg);
 			}
