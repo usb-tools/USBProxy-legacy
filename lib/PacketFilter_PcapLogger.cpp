@@ -70,9 +70,6 @@ void PacketFilter_PcapLogger::filter_setup_packet(SetupPacket* packet) {
 		data_len = 0;
 	
 	buf_len = sizeof(pcap_usb_header) + data_len;
-	
-	fprintf(stderr, "Pcap logger: Data length: %d\n", data_len);
-
 	buf = (__u8 *) malloc(buf_len);
 	if(buf == NULL) {
 		fprintf(stderr, "PcapLogger: Unable to allocate packet buffer\n");
@@ -88,7 +85,7 @@ void PacketFilter_PcapLogger::filter_setup_packet(SetupPacket* packet) {
 
 	
 	/* Hardcoding these for now, could retrieve them in future if we're handling
-	 * multiple devic, but for now we're only ever going to have a single device
+	 * multiple devices, but for now we're only ever going to have a single device
 	 */
 	usb_pkthdr->device_address = 1;
 	usb_pkthdr->bus_id = 1;
@@ -126,6 +123,7 @@ void PacketFilter_PcapLogger::filter_setup_packet(SetupPacket* packet) {
 	pthread_mutex_lock(&pcap_writer_mutex);
 	usb_pkthdr->id = ++pkt_count;
 	pcap_dump((unsigned char *)pcap_writer, &ph, buf);
+	pcap_dump_flush(pcap_writer);
 	pthread_mutex_unlock(&pcap_writer_mutex);
 }
 
@@ -142,9 +140,6 @@ void PacketFilter_PcapLogger::filter_packet(Packet* packet) {
 		data_len = 0;
 	
 	buf_len = sizeof(pcap_usb_header) + data_len;
-	
-	fprintf(stderr, "Pcap logger: Data length: %d\n", data_len);
-
 	buf = (__u8 *) malloc(buf_len);
 	if(buf == NULL) {
 		fprintf(stderr, "PcapLogger: Unable to allocate packet buffer\n");
@@ -159,7 +154,7 @@ void PacketFilter_PcapLogger::filter_packet(Packet* packet) {
 	usb_pkthdr = (pcap_usb_header *) buf;
 	
 	/* Hardcoding these for now, could retrieve them in future if we're handling
-	 * multiple devic, but for now we're only ever going to have a single device
+	 * multiple devices, but for now we're only ever going to have a single device
 	 */
 	usb_pkthdr->device_address = 1;
 	usb_pkthdr->bus_id = 1;
@@ -190,5 +185,6 @@ void PacketFilter_PcapLogger::filter_packet(Packet* packet) {
 	pthread_mutex_lock(&pcap_writer_mutex);
 	usb_pkthdr->id = ++pkt_count;
 	pcap_dump((unsigned char *)pcap_writer, &ph, buf);
+	pcap_dump_flush(pcap_writer);
 	pthread_mutex_unlock(&pcap_writer_mutex);
 }
