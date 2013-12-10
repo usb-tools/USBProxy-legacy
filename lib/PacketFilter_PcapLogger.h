@@ -37,6 +37,7 @@ private:
 	pcap_t *pcap_file;
 	pcap_dumper_t *pcap_writer;
 	pthread_mutex_t pcap_writer_mutex;
+	__u64 pkt_count;
 
 public:
 	PacketFilter_PcapLogger(const char* filename);
