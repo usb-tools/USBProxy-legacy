@@ -88,6 +88,7 @@ void RelayWriter::relay_write() {
 
 	__u8 i,j;
 	int efd=epoll_create1(EPOLL_CLOEXEC);
+	if (efd<0) fprintf(stderr,"Error creating epoll fd.\n");
 	struct epoll_event event;
 	struct epoll_event* events=(epoll_event*)calloc(queueCount,sizeof(epoll_event));
 	for (i=0;i<queueCount;i++) {
@@ -98,7 +99,7 @@ void RelayWriter::relay_write() {
 
 	bool idle=true;
 	bool writing=false;
-	Packet *p;
+	Packet *p=NULL;
 	int numEvents=0;
 
 
@@ -135,6 +136,7 @@ void RelayWriter::relay_write() {
 		halt=haltsignal_check(haltSignal,&haltpoll,&haltfd);
 	}
 	fprintf(stderr,"Finished writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
+	free(events);
 	close(efd);
 }
 

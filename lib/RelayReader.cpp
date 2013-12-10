@@ -64,7 +64,7 @@ void RelayReader::relay_read() {
 	bool idle=true;
 	__u8* buf;
 	int length;
-	Packet *p;
+	Packet *p=NULL;
 
 	fprintf(stderr,"Starting reader thread (%ld) for EP%02x.\n",gettid(),endpoint);
 	while (!halt) {
