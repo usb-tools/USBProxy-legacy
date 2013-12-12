@@ -49,7 +49,6 @@ struct SetupPacket {
 	__u8*			data;
 
 	SetupPacket(usb_ctrlrequest _ctrl_req,__u8* _data,bool _filter=true) : ctrl_req(_ctrl_req),source(0),filter_out(_filter),transmit_out(true),filter_in(_filter),transmit_in(true),data(_data) {}
-	SetupPacket(usb_ctrlrequest _ctrl_req,int _source,__u8* _data,bool _filter=true) : ctrl_req(_ctrl_req),source(_source),filter_out(_filter),transmit_out(true),filter_in(_filter),transmit_in(true),data(_data) {}
 	~SetupPacket() {if (data) {free(data);data=NULL;}}
 };
 
