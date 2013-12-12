@@ -103,7 +103,7 @@ void Relayer::relay_ep0() {
 		bool idle=true;
 		__u8* buf=NULL;
 		int length=0;
-		host->control_request(&ctrl_req,&length,&buf);
+		host->control_request(&ctrl_req,&length,&buf,500);
 		if (ctrl_req.bRequest) {
 			p=new SetupPacket(ctrl_req,buf);
 			__u8 i=0;
@@ -114,7 +114,7 @@ void Relayer::relay_ep0() {
 			if (p->transmit_out) {
 				if (ctrl_req.bRequestType&0x80) { //device->host
 					p->data=(__u8*)malloc(ctrl_req.wLength);
-					if (device->control_request(&(p->ctrl_req),&length,p->data)==-1) {
+					if (device->control_request(&(p->ctrl_req),&length,p->data,500)==-1) {
 						host->stall_ep(0);
 					} else {
 						i=0;
@@ -135,7 +135,7 @@ void Relayer::relay_ep0() {
 					}
 				} else { //host->device
 					length=ctrl_req.wLength;
-					if (device->control_request(&(p->ctrl_req),&length,p->data)==-1) {
+					if (device->control_request(&(p->ctrl_req),&length,p->data,500)==-1) {
 						host->stall_ep(0);
 					} else {
 						if (p->ctrl_req.bRequest==9 && p->ctrl_req.bRequestType==0) {manager->setConfig(p->ctrl_req.wValue);}
@@ -156,10 +156,10 @@ void Relayer::relay_ep0() {
 			if (p->transmit_out) {
 				if (ctrl_req.bRequestType&0x80) { //device->host
 					p->data=(__u8*)malloc(ctrl_req.wLength);
-					device->control_request(&(p->ctrl_req),&length,p->data);
+					device->control_request(&(p->ctrl_req),&length,p->data,500);
 				} else { //host->device
 					length=ctrl_req.wLength;
-					device->control_request(&(p->ctrl_req),&length,p->data);
+					device->control_request(&(p->ctrl_req),&length,p->data,500);
 					length=0;
 				}
 			}
