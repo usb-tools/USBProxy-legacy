@@ -31,19 +31,23 @@
 #include <boost/atomic.hpp>
 
 class Proxy;
+class HostProxy;
 class Endpoint;
 
 class RelayReader {
 private:
 	__u8 haltSignal;
 	mqd_t outQueue;
+	mqd_t inQueue;
 	Proxy* proxy;
+	HostProxy* hostProxy;
 	__u8 endpoint;
 	__u8 attributes;
 	__u16 maxPacketSize;
 
 public:
-	RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
+	RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _outQueue);
+	RelayReader(Endpoint* _endpoint,HostProxy* _proxy,mqd_t _outQueue,mqd_t _inQueue);
 	virtual ~RelayReader();
 
 	void relay_read();

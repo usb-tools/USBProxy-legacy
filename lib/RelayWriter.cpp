@@ -115,6 +115,7 @@ void RelayWriter::relay_write_valgrind() {
 
 	fprintf(stderr,"Starting writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
 	while (!halt) {
+		idle=true;
 		if (!writing) {
 			if (!p) {
 				if (!numEvents) {
@@ -182,6 +183,7 @@ void RelayWriter::relay_write() {
 
 	fprintf(stderr,"Starting writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
 	while (!halt) {
+		idle=true;
 		if (!writing) {
 			if (!p) {
 				if (!numEvents) {
