@@ -55,6 +55,10 @@ public:
 	void add_queue(mqd_t inQueue);
 
 	void relay_write();
+	void relay_write_valgrind();
+	void relay_write_setup();
+	void relay_write_setup_valgrind();
+
 	void set_haltsignal(__u8 _haltSignal);
 	static void* relay_write_helper(void* context);
 };
