@@ -22,10 +22,6 @@ inspection, it would only build against a relatively old kernel version.
 
 ToDo
 ----
- * Pretty much everything!
- * Bulk transfers
- * Interrupt transfers
- * Asynchronous I/O
  * Man in the middle function hooks
  * Some sort of library to make all of this easier to use
  * Support alternative chipsets

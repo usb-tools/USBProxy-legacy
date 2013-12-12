@@ -2,6 +2,6 @@
 
 modprobe gadgetfs
 
-mkdir -p /gadget
+#mkdir -p /gadget
 
-mount -t gadgetfs none /gadget
+#mount -t gadgetfs none /gadget
