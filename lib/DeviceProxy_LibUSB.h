@@ -55,9 +55,9 @@ public:
 	bool is_highspeed();
 
 
-	int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr);
+	int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr,int timeout=500);
 	void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length);
-	void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length,int timeout=0);
+	void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length,int timeout=500);
 
 	void setConfig(Configuration* fs_cfg,Configuration* hs_cfg,bool hs) {}
 

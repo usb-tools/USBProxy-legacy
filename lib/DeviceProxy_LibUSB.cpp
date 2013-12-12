@@ -201,13 +201,13 @@ char* DeviceProxy_LibUSB::toString() {
 	return buf;
 }
 
-int DeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr) {
+int DeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr,int timeout) {
 	if (debugLevel>1) {
 		char* hex=hex_string((void*)setup_packet,sizeof(*setup_packet));
 		printf("LibUSB> %s\n",hex);
 		free(hex);
 	}
-	int rc=libusb_control_transfer(dev_handle,setup_packet->bRequestType,setup_packet->bRequest,setup_packet->wValue,setup_packet->wIndex,dataptr,setup_packet->wLength,1000);
+	int rc=libusb_control_transfer(dev_handle,setup_packet->bRequestType,setup_packet->bRequest,setup_packet->wValue,setup_packet->wIndex,dataptr,setup_packet->wLength,timeout);
 	if (rc<0) {
 		if (debugLevel) {fprintf(stderr,"Error %d[%s] sending setup packet.\n",rc,libusb_error_name(rc));}
 		if (rc==-9) return -1;

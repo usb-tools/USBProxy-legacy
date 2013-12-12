@@ -65,10 +65,10 @@ public:
 	bool is_connected();
 
 	//return 0 in usb_ctrlrequest->brequest if there is no request
-	int control_request(usb_ctrlrequest *setup_packet, int *nbytes, __u8** dataptr);
+	int control_request(usb_ctrlrequest *setup_packet, int *nbytes, __u8** dataptr,int timeout=500);
 	void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length);
-	bool send_wait_complete(__u8 endpoint,int timeout);
-	void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length,int timeout=0);
+	bool send_wait_complete(__u8 endpoint,int timeout=500);
+	void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length,int timeout=500);
 	void control_ack();
 	void stall_ep(__u8 endpoint);
 	void setConfig(Configuration* fs_cfg,Configuration* hs_cfg,bool hs);

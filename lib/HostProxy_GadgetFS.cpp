@@ -248,13 +248,13 @@ bool HostProxy_GadgetFS::is_connected() {
 #define NEVENT 5
 
 //return 0 in usb_ctrlrequest->brequest if there is no request
-int HostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *nbytes, __u8** dataptr) {
+int HostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *nbytes, __u8** dataptr,int timeout) {
 	struct usb_gadgetfs_event events[NEVENT];
 	int ret, nevent, i;
 	struct pollfd fds;
 	fds.fd = p_device_file;
 	fds.events = POLLIN;
-	if (!poll(&fds, 1, 100) || !(fds.revents&POLLIN)) {
+	if (!poll(&fds, 1, timeout) || !(fds.revents&POLLIN)) {
 		setup_packet->bRequest=0;
 		return 0;
 	}
