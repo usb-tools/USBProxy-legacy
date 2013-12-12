@@ -39,21 +39,17 @@ struct Packet {
 	~Packet() {if (data) {free(data);data=NULL;}}
 };
 
-#define SETUPPACKET_REQUEST 0
-#define SETUPPACKET_RESPONSE_ACK 1
-#define SETUPPACKET_RESPONSE_DATA 2
-#define SETUPPACKET_RESPONSE_STALL 3
-
 struct SetupPacket {
 	usb_ctrlrequest ctrl_req;
 	int				source;
-	__u8			status;
-	bool			filter;
-	bool			transmit;
+	bool			filter_out;
+	bool 			transmit_out;
+	bool			filter_in;
+	bool			transmit_in;
 	__u8*			data;
 
-	SetupPacket(usb_ctrlrequest _ctrl_req,__u8* _data,bool _filter=true) : ctrl_req(_ctrl_req),source(0),status(0),filter(_filter),transmit(true),data(_data) {}
-	SetupPacket(usb_ctrlrequest _ctrl_req,int _source,__u8* _data,bool _filter=true) : ctrl_req(_ctrl_req),source(_source),status(0),filter(_filter),transmit(true),data(_data) {}
+	SetupPacket(usb_ctrlrequest _ctrl_req,__u8* _data,bool _filter=true) : ctrl_req(_ctrl_req),source(0),filter_out(_filter),transmit_out(true),filter_in(_filter),transmit_in(true),data(_data) {}
+	SetupPacket(usb_ctrlrequest _ctrl_req,int _source,__u8* _data,bool _filter=true) : ctrl_req(_ctrl_req),source(_source),filter_out(_filter),transmit_out(true),filter_in(_filter),transmit_in(true),data(_data) {}
 	~SetupPacket() {if (data) {free(data);data=NULL;}}
 };
 

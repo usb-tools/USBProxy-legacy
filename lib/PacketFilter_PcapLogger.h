@@ -42,7 +42,7 @@ private:
 public:
 	PacketFilter_PcapLogger(const char* filename);
 	~PacketFilter_PcapLogger();
-	void filter_setup_packet(SetupPacket* packet);
+	void filter_setup_packet(SetupPacket* packet,bool direction_out);
 	void filter_packet(Packet* packet);
 	virtual char* toString() {return (char*)"Pcap Logging Filter";}
 };

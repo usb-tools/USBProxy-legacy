@@ -57,7 +57,7 @@ public:
 	virtual ~PacketFilter() {};
 
 	virtual void filter_packet(Packet* packet) {}
-	virtual void filter_setup_packet(SetupPacket* packet) {}
+	virtual void filter_setup_packet(SetupPacket* packet,bool direction_out) {}
 
 	bool test_packet(Packet* packet);
 	bool test_setup_packet(SetupPacket* packet);
@@ -78,7 +78,7 @@ public:
 			free(hex);
 		}
 	}
-	void filter_setup_packet(SetupPacket* packet) {
+	void filter_setup_packet(SetupPacket* packet,bool direction) {
 		if (packet->ctrl_req.wLength && packet->data) {
 			char* hex_setup=hex_string(&(packet->ctrl_req),sizeof(packet->ctrl_req));
 			char* hex_data=hex_string((void*)(packet->data),packet->ctrl_req.wLength);
@@ -98,11 +98,11 @@ public:
 class PacketFilter_Callback : public PacketFilter {
 private:
 	void (*cb)(Packet*);
-	void (*cb_setup)(SetupPacket*);
+	void (*cb_setup)(SetupPacket*,bool);
 public:
 	PacketFilter_Callback(void (*_cb)(Packet*),void (*_cb_setup)(SetupPacket*)) {cb=_cb;cb_setup=_cb_setup;}
 	void filter_packet(Packet* packet) {cb(packet);}
-	void filter_setup_packet(SetupPacket* packet) {cb_setup(packet);}
+	void filter_setup_packet(SetupPacket* packet,bool direction_in) {cb_setup(packet);}
 	virtual char* toString() {return (char*)"Filter";}
 
 };

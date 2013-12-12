@@ -57,7 +57,7 @@ PacketFilter_PcapLogger::~PacketFilter_PcapLogger() {
 	fclose(file);
 }
 
-void PacketFilter_PcapLogger::filter_setup_packet(SetupPacket* packet) {
+void PacketFilter_PcapLogger::filter_setup_packet(SetupPacket* packet,bool direction_out) {
 	struct pcap_pkthdr ph;
 	struct timeval ts;
 	__u8 *buf, *ptr;
