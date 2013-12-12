@@ -42,6 +42,8 @@ private:
 	__u8 packetHeader[8];
 	__u8 packetHeaderMask[8];
 	__u8 packetHeaderMaskLength;
+	bool packetHeaderSetupOut;
+	bool packetHeaderSetupIn;
 
 public:
 	struct criteria_endpoint endpoint;
@@ -53,6 +55,8 @@ public:
 		int i;
 		for (i=0;i<8;i++) {packetHeader[i]=0;packetHeaderMask[i]=0;}
 		packetHeaderMaskLength=0;
+		packetHeaderSetupIn=true;
+		packetHeaderSetupOut=true;
 	}
 	virtual ~PacketFilter() {};
 
@@ -60,7 +64,7 @@ public:
 	virtual void filter_setup_packet(SetupPacket* packet,bool direction_out) {}
 
 	bool test_packet(Packet* packet);
-	bool test_setup_packet(SetupPacket* packet);
+	bool test_setup_packet(SetupPacket* packet,bool direction_out);
 	void set_packet_filter(__u8 header[4],__u8 mask[4]);
 	virtual char* toString() {return (char*)"Filter";}
 };

@@ -47,7 +47,8 @@ bool PacketFilter::test_packet(Packet* packet) {
 	return true;
 }
 
-bool PacketFilter::test_setup_packet(SetupPacket* packet) {
+bool PacketFilter::test_setup_packet(SetupPacket* packet,bool direction_out) {
+	if (!((packetHeaderSetupOut || (!direction_out)) || (packetHeaderSetupIn || direction_out))) return false;
 	__u8* data;
 	data=(__u8*)&(packet->ctrl_req);
 	int i;

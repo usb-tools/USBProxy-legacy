@@ -108,7 +108,7 @@ void Relayer::relay_ep0() {
 			p=new SetupPacket(ctrl_req,buf);
 			__u8 i=0;
 			while (i<filterCount && p->filter_out) {
-				if (filters[i]->test_setup_packet(p)) {filters[i]->filter_setup_packet(p,false);}
+				if (filters[i]->test_setup_packet(p,true)) {filters[i]->filter_setup_packet(p,true);}
 				i++;
 			}
 			if (p->transmit_out) {
@@ -120,7 +120,7 @@ void Relayer::relay_ep0() {
 						i=0;
 						p->ctrl_req.wLength=length;
 						while (i<filterCount && p->filter_in) {
-							if (filters[i]->test_setup_packet(p)) {filters[i]->filter_setup_packet(p,true);}
+							if (filters[i]->test_setup_packet(p,false)) {filters[i]->filter_setup_packet(p,false);}
 							i++;
 						}
 						if (p->transmit_in) {
@@ -150,7 +150,7 @@ void Relayer::relay_ep0() {
 		if (queue_ep0->pop(p)) {
 			__u8 i=0;
 			while (i<filterCount && p->filter_out) {
-				if (filters[i]->test_setup_packet(p)) {filters[i]->filter_setup_packet(p,false);}
+				if (filters[i]->test_setup_packet(p,true)) {filters[i]->filter_setup_packet(p,true);}
 				i++;
 			}
 			if (p->transmit_out) {
