@@ -32,7 +32,6 @@ extern "C" {
 #include "HostProxy.h"
 #include <pthread.h>
 #include <unistd.h>
-#include <boost/atomic.hpp>
 #include "TRACE.h"
 #include "errno.h"
 #include "aio.h"
