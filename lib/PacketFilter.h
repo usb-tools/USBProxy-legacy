@@ -100,9 +100,9 @@ private:
 	void (*cb)(Packet*);
 	void (*cb_setup)(SetupPacket*,bool);
 public:
-	PacketFilter_Callback(void (*_cb)(Packet*),void (*_cb_setup)(SetupPacket*)) {cb=_cb;cb_setup=_cb_setup;}
+	PacketFilter_Callback(void (*_cb)(Packet*),void (*_cb_setup)(SetupPacket*,bool)) {cb=_cb;cb_setup=_cb_setup;}
 	void filter_packet(Packet* packet) {cb(packet);}
-	void filter_setup_packet(SetupPacket* packet,bool direction_in) {cb_setup(packet);}
+	void filter_setup_packet(SetupPacket* packet,bool direction_in) {cb_setup(packet,direction_in);}
 	virtual char* toString() {return (char*)"Filter";}
 
 };

@@ -107,11 +107,11 @@ void Relayer::relay_ep0() {
 		if (ctrl_req.bRequest) {
 			p=new SetupPacket(ctrl_req,buf);
 			__u8 i=0;
-			while (i<filterCount && p->filter) {
-				if (filters[i]->test_setup_packet(p)) {filters[i]->filter_setup_packet(p);}
+			while (i<filterCount && p->filter_out) {
+				if (filters[i]->test_setup_packet(p)) {filters[i]->filter_setup_packet(p,false);}
 				i++;
 			}
-			if (p->transmit) {
+			if (p->transmit_out) {
 				if (ctrl_req.bRequestType&0x80) { //device->host
 					p->data=(__u8*)malloc(ctrl_req.wLength);
 					if (device->control_request(&(p->ctrl_req),&length,p->data)==-1) {
@@ -119,11 +119,11 @@ void Relayer::relay_ep0() {
 					} else {
 						i=0;
 						p->ctrl_req.wLength=length;
-						while (i<filterCount && p->filter) {
-							if (filters[i]->test_setup_packet(p)) {filters[i]->filter_setup_packet(p);}
+						while (i<filterCount && p->filter_in) {
+							if (filters[i]->test_setup_packet(p)) {filters[i]->filter_setup_packet(p,true);}
 							i++;
 						}
-						if (p->transmit) {
+						if (p->transmit_in) {
 							if (length) {
 								host->send_data(0,bmAttributes,maxPacketSize,p->data,length);
 							} else {
@@ -149,11 +149,11 @@ void Relayer::relay_ep0() {
 		}
 		if (queue_ep0->pop(p)) {
 			__u8 i=0;
-			while (i<filterCount && p->filter) {
-				if (filters[i]->test_setup_packet(p)) {filters[i]->filter_setup_packet(p);}
+			while (i<filterCount && p->filter_out) {
+				if (filters[i]->test_setup_packet(p)) {filters[i]->filter_setup_packet(p,false);}
 				i++;
 			}
-			if (p->transmit) {
+			if (p->transmit_out) {
 				if (ctrl_req.bRequestType&0x80) { //device->host
 					p->data=(__u8*)malloc(ctrl_req.wLength);
 					device->control_request(&(p->ctrl_req),&length,p->data);

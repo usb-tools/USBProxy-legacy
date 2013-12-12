@@ -47,6 +47,8 @@ public:
 	virtual ~RelayReader();
 
 	void relay_read();
+	void relay_read_setup();
+
 	void set_haltsignal(__u8 _haltSignal);
 	static void* relay_read_helper(void* context);
 };

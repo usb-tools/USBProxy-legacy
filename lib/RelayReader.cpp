@@ -52,7 +52,15 @@ void RelayReader::set_haltsignal(__u8 _haltSignal) {
 	haltSignal=_haltSignal;
 }
 
+void RelayReader::relay_read_setup() {
+	//FINISH
+}
+
 void RelayReader::relay_read() {
+	if (!endpoint) {
+		relay_read_setup();
+		return;
+	}
 	bool halt=false;
 	struct pollfd haltpoll;
 	int haltfd;
