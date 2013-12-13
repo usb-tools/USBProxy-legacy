@@ -28,31 +28,37 @@
 
 #include <linux/types.h>
 #include <mqueue.h>
-#include <boost/atomic.hpp>
 
 class PacketFilter;
 class Proxy;
+class DeviceProxy;
 class Endpoint;
+class Manager;
 
 class RelayWriter {
 private:
 	__u8 haltSignal;
-	mqd_t* inQueues;
+	mqd_t* recvQueues;
+	mqd_t* sendQueues;
 	__u8 endpoint;
 	__u8 attributes;
 	__u16 maxPacketSize;
 
 	Proxy* proxy;
+	DeviceProxy* deviceProxy;
 	PacketFilter** filters;
+	Manager* manager;
 	__u8 filterCount;
 	__u8 queueCount;
 
 public:
-	RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
+	RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _recvQueue);
+	RelayWriter(Endpoint* _endpoint,DeviceProxy* _deviceProxy,Manager* _manager,mqd_t _recvQueue,mqd_t _sendQueue);
 	virtual ~RelayWriter();
 
 	void add_filter(PacketFilter* filter);
 	void add_queue(mqd_t inQueue);
+	void add_setup_queue(mqd_t recvQueue,mqd_t sendQueue);
 
 	void relay_write();
 	void relay_write_valgrind();

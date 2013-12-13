@@ -37,10 +37,10 @@
 #include "HostProxy.h"
 #include "Packet.h"
 
-RelayReader::RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _outQueue) {
+RelayReader::RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _sendQueue) {
 	haltSignal=0;
-	outQueue=_outQueue;
-	inQueue=0;
+	sendQueue=_sendQueue;
+	recvQueue=0;
 	proxy=_proxy;
 	hostProxy=NULL;
 	endpoint=_endpoint->get_descriptor()->bEndpointAddress;
@@ -48,10 +48,10 @@ RelayReader::RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _outQueue) {
 	maxPacketSize=_endpoint->get_descriptor()->wMaxPacketSize;
 }
 
-RelayReader::RelayReader(Endpoint* _endpoint,HostProxy* _hostProxy,mqd_t _outQueue,mqd_t _inQueue) {
+RelayReader::RelayReader(Endpoint* _endpoint,HostProxy* _hostProxy,mqd_t _sendQueue,mqd_t _recvQueue) {
 	haltSignal=0;
-	outQueue=_outQueue;
-	inQueue=_inQueue;
+	sendQueue=_sendQueue;
+	recvQueue=_recvQueue;
 	proxy=NULL;
 	hostProxy=_hostProxy;
 	endpoint=_endpoint->get_descriptor()->bEndpointAddress;
@@ -68,19 +68,19 @@ void RelayReader::set_haltsignal(__u8 _haltSignal) {
 
 void RelayReader::relay_read_setup() {
 	if (!hostProxy) {fprintf(stderr,"HostProxy not initialized for EP00 reader.\n");return;}
-	if (!inQueue) {fprintf(stderr,"inQueue not initialized for EP00 reader.\n");return;}
+	if (!recvQueue) {fprintf(stderr,"inQueue not initialized for EP00 reader.\n");return;}
 	bool halt=false;
 	struct pollfd haltpoll;
 	int haltfd;
 	if (haltsignal_setup(haltSignal,&haltpoll,&haltfd)!=0) return;
 
-	struct pollfd poll_out;
-	poll_out.fd=outQueue;
-	poll_out.events=POLLOUT;
+	struct pollfd poll_send;
+	poll_send.fd=sendQueue;
+	poll_send.events=POLLOUT;
 
-	struct pollfd poll_in;
-	poll_out.fd=inQueue;
-	poll_out.events=POLLIN;
+	struct pollfd poll_recv;
+	poll_recv.fd=recvQueue;
+	poll_recv.events=POLLIN;
 
 	bool idle=true;
 	__u8* buf;
@@ -97,7 +97,7 @@ void RelayReader::relay_read_setup() {
 	bool direction_out=true;
 	usb_ctrlrequest ctrl_req;
 
-	fprintf(stderr,"Starting reader thread (%ld) for EP%02x.\n",gettid(),endpoint);
+	fprintf(stderr,"Starting setup reader thread (%ld) for EP%02x.\n",gettid(),endpoint);
 	while (!halt) {
 		idle=true;
 		if (direction_out) {
@@ -106,23 +106,27 @@ void RelayReader::relay_read_setup() {
 				length=0;
 
 				hostProxy->control_request(&ctrl_req,&length,&buf,500);
-				if (length) {
+				if (ctrl_req.bRequest) {
+					fprintf(stderr,"new setup\n");
 					p=new SetupPacket(ctrl_req,buf);
 				}
 			}
-			if (p && poll(&poll_out, 1, 500) && (poll_out.revents&POLLOUT)) {
-				mq_send(outQueue,(char*)&p,sizeof(SetupPacket*),0);
+			if (p && poll(&poll_send, 1, 500) && (poll_send.revents&POLLOUT)) {
+				mq_send(sendQueue,(char*)&p,sizeof(SetupPacket*),0);
+				fprintf(stderr,"reader sent setup packet to queue %d\n",sendQueue);
 				direction_out=false;
-				poll_out.revents=0;
+				poll_send.revents=0;
 				p=NULL;
 				idle=false;
 			}
 		} else {
-			if (p) {
-				if (poll(&poll_in,1,500) && (poll_in.revents&POLLIN)) {
-					mq_receive(inQueue,(char*)&p,sizeof(SetupPacket*),0);
-					poll_in.revents=0;
-					if (p->transmit_out) {
+			if (!p) {
+				fprintf(stderr,"reader polling mq %d\n",poll_recv.fd);
+				if (poll(&poll_recv,1,500) && (poll_recv.revents&POLLIN)) {
+					mq_receive(recvQueue,(char*)&p,sizeof(SetupPacket*),0);
+					fprintf(stderr,"reader received setup packet to queue %d\n",recvQueue);
+					poll_recv.revents=0;
+					if (p->transmit_in) {
 						if (p->ctrl_req.wLength) {
 							hostProxy->send_data(endpoint,attributes,maxPacketSize,p->data,p->ctrl_req.wLength);
 						} else {
@@ -131,12 +135,13 @@ void RelayReader::relay_read_setup() {
 					} else {
 						hostProxy->stall_ep(endpoint);
 					}
-					p=NULL;
 				}
 			}
-			if (!p) {
+			if (p) {
 				if (hostProxy->send_wait_complete(endpoint,500)) {
 					direction_out=true;
+					delete(p);
+					p=NULL;
 					idle=false;
 				}
 			}
@@ -144,7 +149,7 @@ void RelayReader::relay_read_setup() {
 		if (idle) sched_yield();
 		halt=haltsignal_check(haltSignal,&haltpoll,&haltfd);
 	}
-	fprintf(stderr,"Finished reader thread (%ld) for EP%02x.\n",gettid(),endpoint);
+	fprintf(stderr,"Finished setup reader thread (%ld) for EP%02x.\n",gettid(),endpoint);
 }
 
 void RelayReader::relay_read() {
@@ -158,7 +163,7 @@ void RelayReader::relay_read() {
 	if (haltsignal_setup(haltSignal,&haltpoll,&haltfd)!=0) return;
 
 	struct pollfd poll_out;
-	poll_out.fd=outQueue;
+	poll_out.fd=sendQueue;
 	poll_out.events=POLLOUT;
 	bool idle=true;
 	__u8* buf;
@@ -178,7 +183,7 @@ void RelayReader::relay_read() {
 			}
 		}
 		if (p && poll(&poll_out, 1, 500) && (poll_out.revents&POLLOUT)) {
-			mq_send(outQueue,(char*)&p,sizeof(Packet*),0);
+			mq_send(sendQueue,(char*)&p,sizeof(Packet*),0);
 			poll_out.revents=0;
 			p=NULL;
 		}

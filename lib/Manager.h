@@ -28,11 +28,8 @@
 
 #include <linux/usb/ch9.h>
 #include <pthread.h>
-#include <boost/atomic.hpp>
-#include <boost/lockfree/queue.hpp>
 
 class Injector;
-class Relayer;
 class RelayReader;
 class RelayWriter;
 
@@ -80,16 +77,11 @@ private:
 	pthread_t out_readerThreads[16];
 	pthread_t out_writerThreads[16];
 
-	Relayer* out_relayer0;
-	pthread_t out_relayer0Thread;
-	boost::lockfree::queue<SetupPacket*>* out_queue_ep0;
 	void start_data_relaying();
 
 public:
 	Manager(DeviceProxy* _deviceProxy,HostProxy* _hostProxy);
 	virtual ~Manager();
-	void inject_setup_in(usb_ctrlrequest request,__u8** data,__u16 *transferred, bool filter);
-	void inject_setup_out(usb_ctrlrequest request,__u8* data,bool filter);
 
 	void add_injector(Injector* _injector);
 	void remove_injector(__u8 index,bool freeMemory=true);

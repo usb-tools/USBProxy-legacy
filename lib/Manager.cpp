@@ -36,7 +36,6 @@
 #include "DeviceProxy.h"
 #include "HostProxy.h"
 #include "PacketFilter.h"
-#include "Relayer.h"
 #include "RelayReader.h"
 #include "RelayWriter.h"
 #include "Injector.h"
@@ -52,10 +51,6 @@ Manager::Manager(DeviceProxy* _deviceProxy,HostProxy* _hostProxy) {
 	injectors=NULL;
 	injectorCount=0;
 	injectorThreads=NULL;
-
-	out_relayer0=NULL;
-	out_relayer0Thread=0;
-	out_queue_ep0=NULL;
 
 	int i;
 	for(i=0;i<16;i++) {
@@ -81,22 +76,6 @@ Manager::~Manager() {
 	if (filters) {
 		free(filters);
 		filters=NULL;
-	}
-
-	if (out_relayer0Thread) {
-		pthread_cancel(out_relayer0Thread);
-		out_relayer0Thread=0;
-	}
-
-	if (out_relayer0) {
-		delete(out_relayer0);
-		out_relayer0=NULL;
-	}
-	if (out_queue_ep0) {
-		Packet* p;
-		while(out_queue_ep0->pop(p)) {delete(p);/* not needed p=NULL; */}
-		delete(out_queue_ep0);
-		out_queue_ep0=NULL;
 	}
 
 	int i;
@@ -152,19 +131,6 @@ Manager::~Manager() {
 		injectors=NULL;
 	}
 
-}
-
-void Manager::inject_setup_in(usb_ctrlrequest request,__u8** data,__u16 *transferred, bool filter) {
-	if (status!=USBM_RELAYING) {fprintf(stderr,"Can't inject packets unless manager is relaying.\n");}
-	SetupPacket* p=new SetupPacket(request,NULL,filter);
-	out_queue_ep0->push(p);
-	//TODO handle returned data...somehow..can use 2nd queue for replies, but would need to poll it or something
-}
-
-void Manager::inject_setup_out(usb_ctrlrequest request,__u8* data,bool filter) {
-	if (status!=USBM_RELAYING) {fprintf(stderr,"Can't inject packets unless manager is relaying.\n");}
-	SetupPacket* p=new SetupPacket(request,data,filter);
-	out_queue_ep0->push(p);
 }
 
 void Manager::add_injector(Injector* _injector){
@@ -264,17 +230,27 @@ void Manager::start_control_relaying(){
 	desc_ep0.bInterval=0;
 	out_endpoints[0]=new Endpoint((Interface*)NULL,&desc_ep0);
 
-	//set up queues,relayers,and filters
-	out_queue_ep0=new boost::lockfree::queue<SetupPacket*>(16);
-	out_relayer0=new Relayer(this,out_endpoints[0],deviceProxy,hostProxy,out_queue_ep0);
+	char mqname[16];
+	struct mq_attr mqa;
+	mqa.mq_maxmsg=1;
+	mqa.mq_msgsize=4;
 
+	sprintf(mqname,"/USBProxy-%02X-EP",0);
+	mqd_t mq_readersend=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
+
+	sprintf(mqname,"/USBProxy-%02X-EP",0x80);
+	mqd_t mq_writersend=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
+	//RelayReader(Endpoint* _endpoint,HostProxy* _proxy,mqd_t _outQueue,mqd_t _inQueue);
+	out_readers[0]=new RelayReader(out_endpoints[0],hostProxy,mq_readersend,mq_writersend);
+	//RelayWriter(Endpoint* _endpoint,DeviceProxy* _deviceProxy,Manager* _manager,mqd_t _inQueue,mqd_t _outQueue);
+	out_writers[0]=new RelayWriter(out_endpoints[0],deviceProxy,this,mq_readersend,mq_writersend);
 
 	//apply filters to relayers
 	int i;
 	for(i=0;i<filterCount;i++) {
 		if (filters[i]->device.test(device)) {
 			if (out_endpoints[0] && filters[i]->endpoint.test(out_endpoints[0]) ) {
-				out_relayer0->add_filter(filters[i]);
+				out_writers[0]->add_filter(filters[i]);
 			}
 		}
 	}
@@ -284,11 +260,14 @@ void Manager::start_control_relaying(){
 		return;
 	}
 
-	if (out_relayer0) {
-		out_relayer0->set_haltsignal(haltSignal);
-		pthread_create(&out_relayer0Thread,NULL,&Relayer::relay_helper,out_relayer0);
+	if (out_readers[0]) {
+		out_readers[0]->set_haltsignal(haltSignal);
+		pthread_create(&out_readerThreads[0],NULL,&RelayReader::relay_read_helper,out_readers[0]);
 	}
-
+	if (out_writers[0]) {
+		out_writers[0]->set_haltsignal(haltSignal);
+		pthread_create(&out_writerThreads[i],NULL,&RelayWriter::relay_write_helper,out_writers[0]);
+	}
 	status=USBM_RELAYING;
 }
 
@@ -422,7 +401,6 @@ void Manager::stop_relaying(){
 	}
 
 	//signal all relayer threads to stop ASAP
-	if (out_relayer0Thread) pthread_kill(out_relayer0Thread,haltSignal);
 	for(i=0;i<16;i++) {
 		if (in_readerThreads[i]) {pthread_kill(in_readerThreads[i],haltSignal);}
 		if (in_writerThreads[i]) {pthread_kill(in_writerThreads[i],haltSignal);}
@@ -442,21 +420,6 @@ void Manager::stop_relaying(){
 		injectorThreads=NULL;
 	}
 
-	if (out_endpoints[0]) {delete(out_endpoints[0]);out_endpoints[0]=NULL;}
-	if (out_relayer0) {
-		if (out_relayer0Thread) {
-			pthread_join(out_relayer0Thread,NULL);
-			out_relayer0Thread=0;
-		}
-		delete(out_relayer0);
-		out_relayer0=NULL;
-	}
-	if (out_queue_ep0) {
-		Packet* p;
-		while(out_queue_ep0->pop(p)) {delete(p);/* not needed p=NULL; */}
-		delete(out_queue_ep0);
-		out_queue_ep0=NULL;
-	}
 
 	//wait for all relayer threads to stop, then delete relayer objects
 	for(i=0;i<16;i++) {
@@ -497,10 +460,7 @@ void Manager::stop_relaying(){
 		}
 	}
 
-	if (out_queue_ep0) {
-		delete(out_queue_ep0);
-		out_queue_ep0=NULL;
-	}
+	if (out_endpoints[0]) {delete(out_endpoints[0]);out_endpoints[0]=NULL;}
 
 	//Release interfaces
 	int ifc_idx;
