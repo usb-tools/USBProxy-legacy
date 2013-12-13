@@ -107,13 +107,11 @@ void RelayReader::relay_read_setup() {
 
 				hostProxy->control_request(&ctrl_req,&length,&buf,500);
 				if (ctrl_req.bRequest) {
-					fprintf(stderr,"new setup\n");
 					p=new SetupPacket(ctrl_req,buf);
 				}
 			}
 			if (p && poll(&poll_send, 1, 500) && (poll_send.revents&POLLOUT)) {
 				mq_send(sendQueue,(char*)&p,sizeof(SetupPacket*),0);
-				fprintf(stderr,"reader sent setup packet to queue %d\n",sendQueue);
 				direction_out=false;
 				poll_send.revents=0;
 				p=NULL;
@@ -121,10 +119,8 @@ void RelayReader::relay_read_setup() {
 			}
 		} else {
 			if (!p) {
-				fprintf(stderr,"reader polling mq %d\n",poll_recv.fd);
 				if (poll(&poll_recv,1,500) && (poll_recv.revents&POLLIN)) {
 					mq_receive(recvQueue,(char*)&p,sizeof(SetupPacket*),0);
-					fprintf(stderr,"reader received setup packet to queue %d\n",recvQueue);
 					poll_recv.revents=0;
 					if (p->transmit_in) {
 						if (p->ctrl_req.wLength) {
