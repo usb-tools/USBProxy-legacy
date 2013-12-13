@@ -26,6 +26,7 @@
 #ifndef USBPROXY_PACKET_H
 #define USBPROXY_PACKET_H
 
+#include <stdlib.h>
 #include <linux/usb/ch9.h>
 
 struct Packet {

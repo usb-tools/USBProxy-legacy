@@ -23,6 +23,7 @@
  *
  * Created on: Nov 22, 2013
  */
+#include <unistd.h>
 #include <stdio.h>
 #include <memory.h>
 #include <poll.h>

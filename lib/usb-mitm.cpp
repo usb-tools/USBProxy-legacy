@@ -33,6 +33,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
+#include <memory.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
