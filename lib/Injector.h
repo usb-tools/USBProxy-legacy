@@ -41,9 +41,12 @@ private:
 	__u8 haltSignal;
 
 protected:
-	virtual Packet* get_packets()=0;
+	virtual void get_packets(Packet** packet,SetupPacket** setup,int timeout=500)=0;
 	virtual void start_injector() {}
 	virtual void stop_injector() {}
+	virtual void setup_ack() {}
+	virtual void setup_stall() {}
+	virtual void setup_data(__u8* buf, int length) {}
 
 public:
 	struct criteria_endpoint endpoint;

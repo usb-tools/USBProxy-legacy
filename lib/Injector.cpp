@@ -50,25 +50,67 @@ void Injector::set_haltsignal(__u8 _haltSignal) {
 }
 
 void Injector::listen() {
+	bool idle;
 	bool halt=false;
+	bool setup_wait=false;
 	struct pollfd haltpoll;
 	int haltfd;
 	if (haltsignal_setup(haltSignal,&haltpoll,&haltfd)!=0) return;
 	fprintf(stderr,"Starting injector thread (%ld) for [%s].\n",gettid(),this->toString());
 	start_injector();
+	struct Packet* packet;
+	struct SetupPacket* setup;
+	struct pollfd poll_setup;
+	poll_setup.fd=inQueues[0];
+	poll_setup.events=POLLIN;
+	fprintf(stderr,"Injector polling %d\n",inQueues[0]);
 	while (!halt) {
-		//TODO we also need to handle setup packets and getting the response back
-		Packet* p=get_packets();
-		if (p) {
-			__u8 epAddress=p->bEndpoint;
+		idle=true;
+		if (!setup && !packet) get_packets(&packet,&setup,500);
+		if (setup) {
+			if (setup_wait) {
+				if (poll(&poll_setup,1,500) & poll_setup.revents&POLLIN) {
+					fprintf(stderr,"Injector recv setup on %d\n",poll_setup.fd);
+					mq_receive(poll_setup.fd,(char*)&setup,sizeof(SetupPacket*),NULL);
+					poll_setup.revents=0;
+					if (setup->transmit_in) {
+						if (setup->ctrl_req.wLength) {
+							setup_data(setup->data,setup->ctrl_req.wLength);
+						} else {
+							setup_ack();
+						}
+					} else {
+						setup_stall();
+					}
+					idle=false;
+				}
+			} else {
+				mqd_t queue=outQueues[0];
+				fprintf(stderr,"Injector send setup on %d\n",queue);
+				if (queue) mq_send(queue,(char*)&setup,sizeof(SetupPacket*),0);
+				setup_wait=true;
+				idle=false;
+			}
+		} else if (packet) {
+			__u8 epAddress=packet->bEndpoint;
 			mqd_t queue =(epAddress&0x80)?inQueues[epAddress&0x0f]:outQueues[epAddress&0x0f];
 			//TODO we need to poll so we don't send blocking packets.
-			if (queue) mq_send(queue,(char*)&p,sizeof(Packet*),0);
+			if (queue) mq_send(queue,(char*)&packet,sizeof(Packet*),0);
+			idle=false;
 		}
 		halt=haltsignal_check(haltSignal,&haltpoll,&haltfd);
+		if (idle) sched_yield();
 	}
 	stop_injector();
 	fprintf(stderr,"Finished injector thread (%ld) for [%s].\n",gettid(),this->toString());
+
+	/*
+Injector (this will need to use a common event loop)
+
+    while this flag is set it will need to poll the ep0 mq as well as it's normal data source, if we want to optimize this at some point we could potentially have it poll them both simultaneously, but i'm comfortable having it poll them both (at the cost of increased latency or CPU usage) or simply stop reading in new packets until it gets a setup response. i'm leaning heavily to "no new packets" because otherwise if we read in another packet for ep0 we need to buffer that up somehow. I figure you shouldn't have setup traffic going on and expect other traffic to be injected as quickly as normal. your thoughts?
+    when it gets a response, it "does something" with it, i think we could just add in an ack/stall/data received calls to the base class and people can then implement if they need it, and the event loop will call the appropriate function
+    it the clears the flag and goes back to business as usual.
+	 */
 }
 
 void* Injector::listen_helper(void* context) {

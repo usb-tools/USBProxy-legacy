@@ -42,7 +42,8 @@ private:
 protected:
 	void start_injector();
 	void stop_injector();
-	Packet* get_packets();
+
+	void get_packets(Packet** packet,SetupPacket** setup,int timeout=500);
 
 public:
 	Injector_UDP(__u16 _port);

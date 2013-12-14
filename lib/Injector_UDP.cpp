@@ -32,6 +32,7 @@
 
 #include "Injector_UDP.h"
 #include "Packet.h"
+#include "HexString.h"
 
 Injector_UDP::Injector_UDP(__u16 _port) {
 	port=_port;
@@ -70,23 +71,44 @@ void Injector_UDP::stop_injector() {
 	if (sck) {close(sck);sck=0;}
 	if (buf) {free(buf);buf=NULL;}
 }
+void Injector_UDP::get_packets(Packet** packet,SetupPacket** setup,int timeout) {
+	int count;
+	*packet=NULL;
+	*setup=NULL;
 
-Packet* Injector_UDP::get_packets() {
-	if (!poll(&spoll, 1, 100) || !(spoll.revents&POLLIN)) {
-		return NULL;
+	if (!poll(&spoll, 1, timeout) || !(spoll.revents&POLLIN)) {
+		return;
 	}
 
 	ssize_t len=recv(sck,buf,UDP_BUFFER_SIZE,0);
 	if (len>0) {
-		__u16 usblen=buf[2]<<8 | buf[3];
-		__u8* usbbuf=(__u8*)malloc(usblen);
-		memcpy(usbbuf,buf+4,usblen);
-		struct Packet* p=new Packet(buf[0],usbbuf,usblen,buf[1]&0x01?false:true);
-		p->transmit=buf[1]&0x02?false:true;
-		return p;
+		if (buf[0]) {
+			__u16 usblen=buf[2]<<8 | buf[3];
+			__u8* usbbuf=(__u8*)malloc(usblen);
+			memcpy(usbbuf,buf+4,usblen);
+			*packet=new Packet(buf[0],usbbuf,usblen,buf[1]&0x01?false:true);
+			(*packet)->transmit=buf[1]&0x02?false:true;
+			return;
+		} else {
+			struct usb_ctrlrequest ctrl_req;
+			memcpy(&ctrl_req,buf+3,8);
+			if (ctrl_req.bRequestType&0x80) {
+				*setup=new SetupPacket(ctrl_req,NULL,true);
+			} else {
+				__u8* usbbuf=(__u8*)malloc(ctrl_req.wLength);
+				memcpy(usbbuf,buf+11,ctrl_req.wLength);
+				*setup=new SetupPacket(ctrl_req,usbbuf,true);
+			}
+			(*setup)->filter_out=buf[1]&0x01;
+			(*setup)->transmit_out=buf[1]&0x02;
+			(*setup)->filter_in=buf[1]&0x04;
+			(*setup)->transmit_in=buf[1]&0x08;
+			return;
+		}
 	}
 	if (len<0) {
 		fprintf(stderr,"Socket read error [%s].\n",strerror(errno));
 	}
-	return NULL;
+	return;
 }
+

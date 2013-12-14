@@ -255,6 +255,33 @@ void Manager::start_control_relaying(){
 		}
 	}
 
+	//apply injectors to relayers
+	for(i=0;i<injectorCount;i++) {
+		if (injectors[i]->device.test(device)) {
+			char mqname[16];
+			struct mq_attr mqa;
+			mqa.mq_maxmsg=1;
+			mqa.mq_msgsize=4;
+			if (out_endpoints[0] && injectors[i]->endpoint.test(out_endpoints[0])) {
+				sprintf(mqname,"/USBProxy-%02X-%02X",0,i);
+				mqd_t mq_out=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
+				sprintf(mqname,"/USBProxy-%02X-%02X",0x80,i);
+				mqd_t mq_in=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
+				injectors[i]->set_queue(0x80,mq_in);
+				injectors[i]->set_queue(0,mq_out);
+				out_writers[0]->add_setup_queue(mq_out,mq_in);
+			}
+		}
+	}
+
+	if (injectorCount) {
+		injectorThreads=(pthread_t *)calloc(injectorCount,sizeof(pthread_t));
+		for(i=0;i<injectorCount;i++) {
+			injectors[i]->set_haltsignal(haltSignal);
+			pthread_create(&injectorThreads[i],NULL,&Injector::listen_helper,injectors[i]);
+		}
+	}
+
 	if (hostProxy->connect(device)!=0) {
 		stop_relaying();
 		return;
@@ -352,15 +379,6 @@ void Manager::start_data_relaying() {
 					out_writers[j]->add_queue(mq);
 				}
 			}
-		}
-	}
-
-	//TODO add new type of injectors for EP0 in start_control_relaying
-	if (injectorCount) {
-		injectorThreads=(pthread_t *)calloc(injectorCount,sizeof(pthread_t));
-		for(i=0;i<injectorCount;i++) {
-			injectors[i]->set_haltsignal(haltSignal);
-			pthread_create(&injectorThreads[i],NULL,&Injector::listen_helper,injectors[i]);
 		}
 	}
 
