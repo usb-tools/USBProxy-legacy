@@ -247,23 +247,30 @@ void RelayWriter::relay_write_setup() {
 
 	fprintf(stderr,"Starting setup writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
 	while (!halt) {
+		fprintf(stderr,"SW loop\n");
 		idle=true;
 		if (!writing) {
+			fprintf(stderr,"SW reading\n");
 			if (!p) {
+				fprintf(stderr,"SW no packet\n");
 				if (!numEvents) {
 					i=0;
 					p=NULL;
 					numEvents=epoll_wait(efd,events,queueCount,500);
+					fprintf(stderr,"Got %d epoll events\n",numEvents);
 				}
 				if (i<numEvents && (events[i].events&EPOLLIN)) {
+					fprintf(stderr,"Handling epoll event #%d\n",i);
 					int recvQueue=event.data.u64>>32;
 					int sendQueue=event.data.u64&(__u64)0xffffffff;
 					mq_receive(recvQueue,(char*)&p,4,NULL);
 					p->source=sendQueue;
+					i++;
 				}
 				if (i>=numEvents) numEvents=0;
 			}
 			if (p) {
+				fprintf(stderr,"SW packet\n");
 				j=0;
 				while (j<filterCount && p->filter_out) {
 					if (filters[j]->test_setup_packet(p,true)) {filters[j]->filter_setup_packet(p,true);}
@@ -294,6 +301,7 @@ void RelayWriter::relay_write_setup() {
 				p=NULL;
 			}
 		} else {
+			fprintf(stderr,"SW writing\n");
 			if (poll(&poll_send,1,500) && poll_send.revents==POLLOUT) {
 				writing=false;
 				poll_send.revents=0;
