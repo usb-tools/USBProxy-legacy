@@ -77,8 +77,6 @@ int mount_mqueue() {
 	status = mount("USBProxy", mqueue_path, "mqueue", 0, "");
 	if (status!=0) {fprintf(stderr,"Error mounting mqueue at [%s].\n",mqueue_path);return 1;}
 
-	clean_mqueue();
-
 	return 0;
 }
 
@@ -97,7 +95,7 @@ int unmount_mqueue() {
 }
 
 int clean_mqueue() {
-	int rc=mount_mqueue;
+	int rc=mount_mqueue();
 	if (rc) return rc;
 	DIR *dir;
 	struct dirent *entry;
