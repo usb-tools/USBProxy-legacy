@@ -49,9 +49,9 @@ int mount_mqueue() {
 	    if (strcmp(mnt.mnt_type,"mqueue")==0 && strcmp(mnt.mnt_fsname,"USBProxy")==0) {
 	    	mountCount++;
 	    	if (mountDirs) {
-	    		mountDirs=realloc(mountDirs,sizeof(char*)*mountCount);
+	    		mountDirs=(char**)realloc(mountDirs,sizeof(char*)*mountCount);
 	    	} else {
-	    		mountDirs=malloc(sizeof(char*));
+	    		mountDirs=(char**)malloc(sizeof(char*));
 	    	}
 	    	mountDirs[mountCount-1]=strdup(mnt.mnt_dir);
 	    }
@@ -107,7 +107,7 @@ int clean_mqueue() {
 	dir = opendir(mqueue_path);
 	if (!dir) return 1;
 
-	entry = malloc(offsetof(struct dirent, d_name) + pathconf("/tmp", _PC_NAME_MAX) + 1);
+	entry = (struct dirent*)malloc(offsetof(struct dirent, d_name) + pathconf("/tmp", _PC_NAME_MAX) + 1);
 
 	fprintf(stderr,"cleaning up %s\n",mqueue_path);
 
@@ -119,13 +119,13 @@ int clean_mqueue() {
 	while(1) {
 		if (readdir_r(dir, entry, &result) < 0) break;
 		if (!result) {break;}
-		//format is USBProxy-[0-9A-F]{2}-(EP|([0-9A-F]{2}))
-		if (strlen(entry->d_name)==14 && strncmp(entry->d_name,"USBProxy-",9)==0) {
+		//format is USBProxy(PID)-[0-9A-F]{2}-(EP|([0-9A-F]{2}))
+		if (strlen(entry->d_name)>=17 && strncmp(entry->d_name,"USBProxy(",9)==0) {
 	    	rmCount++;
 	    	if (rmQueues) {
-	    		rmQueues=realloc(rmQueues,sizeof(char*)*rmCount);
+	    		rmQueues=(char**)realloc(rmQueues,sizeof(char*)*rmCount);
 	    	} else {
-	    		rmQueues=malloc(sizeof(char*));
+	    		rmQueues=(char**)malloc(sizeof(char*));
 	    	}
 	    	rmQueues[rmCount-1]=strdup(entry->d_name);
 		}

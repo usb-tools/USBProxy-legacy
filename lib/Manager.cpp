@@ -23,10 +23,12 @@
  *
  * Created on: Nov 12, 2013
  */
+#include <unistd.h>
 #include <signal.h>
 #include <pthread.h>
 #include "Manager.h"
 #include "TRACE.h"
+#include "mqueue_helpers.h"
 
 #include "Device.h"
 #include "DeviceQualifier.h"
@@ -209,6 +211,8 @@ __u8 Manager::get_filter_count(){
 
 
 void Manager::start_control_relaying(){
+	clean_mqueue();
+
 	haltSignal=SIGRTMIN;
 	//TODO this should exit immediately if already started, and wait (somehow) is stopping or setting up
 	status=USBM_SETUP;
@@ -235,10 +239,10 @@ void Manager::start_control_relaying(){
 	mqa.mq_maxmsg=1;
 	mqa.mq_msgsize=4;
 
-	sprintf(mqname,"/USBProxy-%02X-EP",0);
+	sprintf(mqname,"/USBProxy(%d)-%02X-EP",getpid(),0);
 	mqd_t mq_readersend=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
 
-	sprintf(mqname,"/USBProxy-%02X-EP",0x80);
+	sprintf(mqname,"/USBProxy(%d)-%02X-EP",getpid(),0x80);
 	mqd_t mq_writersend=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
 	//RelayReader(Endpoint* _endpoint,HostProxy* _proxy,mqd_t _outQueue,mqd_t _inQueue);
 	out_readers[0]=new RelayReader(out_endpoints[0],hostProxy,mq_readersend,mq_writersend);
@@ -263,9 +267,9 @@ void Manager::start_control_relaying(){
 			mqa.mq_maxmsg=1;
 			mqa.mq_msgsize=4;
 			if (out_endpoints[0] && injectors[i]->endpoint.test(out_endpoints[0])) {
-				sprintf(mqname,"/USBProxy-%02X-%02X",0,i);
+				sprintf(mqname,"/USBProxy(%d)-%02X-%02X",getpid(),0,i);
 				mqd_t mq_out=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
-				sprintf(mqname,"/USBProxy-%02X-%02X",0x80,i);
+				sprintf(mqname,"/USBProxy(%d)-%02X-%02X",getpid(),0x80,i);
 				mqd_t mq_in=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
 				injectors[i]->set_queue(0x80,mq_in);
 				injectors[i]->set_queue(0,mq_out);
@@ -327,7 +331,7 @@ void Manager::start_data_relaying() {
 		mqa.mq_msgsize=4;
 
 		if (in_endpoints[i]) {
-			sprintf(mqname,"/USBProxy-%02X-EP",i|0x80);
+			sprintf(mqname,"/USBProxy(%d)-%02X-EP",getpid(),i|0x80);
 			mqd_t mq=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
 			//RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
 			in_readers[i]=new RelayReader(in_endpoints[i],(Proxy*)deviceProxy,mq);
@@ -335,7 +339,7 @@ void Manager::start_data_relaying() {
 			in_writers[i]=new RelayWriter(in_endpoints[i],(Proxy*)hostProxy,mq);
 		}
 		if (out_endpoints[i]) {
-			sprintf(mqname,"/USBProxy-%02X-EP",i);
+			sprintf(mqname,"/USBProxy(%d)-%02X-EP",getpid(),i);
 			mqd_t mq=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
 			//RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
 			out_readers[i]=new RelayReader(out_endpoints[i],(Proxy*)hostProxy,mq);
@@ -367,13 +371,13 @@ void Manager::start_data_relaying() {
 			mqa.mq_msgsize=4;
 			for (j=1;j<16;j++) {
 				if (in_endpoints[j] && injectors[i]->endpoint.test(in_endpoints[j]) && injectors[i]->interface.test(in_endpoints[j]->get_interface())) {
-					sprintf(mqname,"/USBProxy-%02X-%02X",j|0x80,i);
+					sprintf(mqname,"/USBProxy(%d)-%02X-%02X",getpid(),j|0x80,i);
 					mqd_t mq=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
 					injectors[i]->set_queue(j|0x80,mq);
 					in_writers[j]->add_queue(mq);
 				}
 				if (out_endpoints[j] && injectors[i]->endpoint.test(out_endpoints[j]) && injectors[i]->interface.test(out_endpoints[j]->get_interface())) {
-					sprintf(mqname,"/USBProxy-%02X-%02X",j,i);
+					sprintf(mqname,"/USBProxy(%d)-%02X-%02X",getpid(),j,i);
 					mqd_t mq=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
 					injectors[i]->set_queue(j,mq);
 					out_writers[j]->add_queue(mq);
@@ -501,6 +505,8 @@ void Manager::stop_relaying(){
 		delete(device);
 		device=NULL;
 	}
+
+	clean_mqueue();
 
 	status=USBM_IDLE;
 }

@@ -31,7 +31,7 @@ extern "C"
 {
 #endif
 
-int clean_mqueue();
+extern int clean_mqueue();
 
 #ifdef __cplusplus
 } // __cplusplus defined.
