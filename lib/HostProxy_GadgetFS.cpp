@@ -512,9 +512,9 @@ void HostProxy_GadgetFS::setConfig(Configuration* fs_cfg,Configuration* hs_cfg,b
 				aio->aio_fildes=fd;
 				aio->aio_offset=0;
 				if (hs) {
-					if (hs_ep->bmAttributes&0x02) {aio->aio_nbytes=(hs_ep->bmAttributes&0x02)?hs_ep->wMaxPacketSize:hs_ep->wMaxPacketSize;}
+					aio->aio_nbytes=(hs_ep->bmAttributes&0x02)?hs_ep->wMaxPacketSize:hs_ep->wMaxPacketSize;
 				} else {
-					if (fs_ep->bmAttributes&0x02) {aio->aio_nbytes=(fs_ep->bmAttributes&0x02)?fs_ep->wMaxPacketSize:fs_ep->wMaxPacketSize;}
+					aio->aio_nbytes=(fs_ep->bmAttributes&0x02)?fs_ep->wMaxPacketSize:fs_ep->wMaxPacketSize;
 				}
 				aio->aio_buf=malloc(aio->aio_nbytes);
 				aio->aio_sigevent.sigev_notify=SIGEV_NONE;
