@@ -192,8 +192,8 @@ __u8 Interface::get_endpoint_count() {
 	return descriptor.bNumEndpoints;
 }
 
-void Interface::print(__u8 tabs,bool active) {
-	unsigned int i;
+void Interface::print(__u8 tabs, bool active) {
+	__u8 i;
 	for(i=0;i<tabs;i++) {putchar('\t');}
 	if (active) {putchar('*');}
 	char* hex=hex_string(&descriptor,sizeof(descriptor));
@@ -211,7 +211,7 @@ void Interface::print(__u8 tabs,bool active) {
 	if (hid_descriptor) {hid_descriptor->print(tabs+1);}
 	int j=0;
 	for (j=0;j<generic_descriptor_count;j++) {
-		for(i=0;i<(tabs+1);i++) {putchar('\t');}
+		for(i=0;i<=tabs;i++) {putchar('\t');}
 		char* hex=hex_string((void*)generic_descriptors[j],generic_descriptors[j]->bLength);
 		printf("Other(%02x): %s\n",generic_descriptors[j]->bDescriptorType,hex);
 		free(hex);
