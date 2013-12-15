@@ -72,7 +72,6 @@ void Injector_UDP::stop_injector() {
 	if (buf) {free(buf);buf=NULL;}
 }
 void Injector_UDP::get_packets(Packet** packet,SetupPacket** setup,int timeout) {
-	int count;
 	*packet=NULL;
 	*setup=NULL;
 

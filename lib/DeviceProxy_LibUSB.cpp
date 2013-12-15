@@ -84,7 +84,7 @@ int DeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) {
 
 	ssize_t cnt=libusb_get_device_list(context,&list);
 	if (cnt<0) {
-		if (debugLevel) {fprintf(stderr,"Error %d retrieving device list.\n",cnt);}
+		if (debugLevel) {fprintf(stderr,"Error %d retrieving device list.\n", (int)cnt);}
 		return cnt;
 	}
 

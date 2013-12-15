@@ -162,7 +162,7 @@ Interface* Configuration::get_interface(__u8 number) {
 }
 
 __u8 Configuration::get_interface_alernate_count(__u8 number) {
-	if (!interfaceGroups[number]) {return NULL;}
+	if (!interfaceGroups[number]) {return 0;}
 	return interfaceGroups[number]->get_alternate_count();
 }
 

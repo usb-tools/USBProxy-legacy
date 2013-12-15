@@ -26,6 +26,7 @@
 
 #include <stddef.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <poll.h>
 #include <signal.h>
 #include <sys/signalfd.h>
