@@ -30,6 +30,10 @@ else
         CXX = /usr/bin/g++
 endif
 
+ifeq ($(ENABLE_VALGRIND), )
+	OPTIONS += -DNVALGRIND
+endif
+
 # CPPFLAGS = compiler options for C and C++
 CPPFLAGS = -Wall -g -fdata-sections -ffunction-sections -MMD -MP $(OPTIONS) -I/usr/src -I/usr/include -I/usr/local/include
 #temporarily removed below as it was interfering with debugging
@@ -37,7 +41,7 @@ CPPFLAGS = -Wall -g -fdata-sections -ffunction-sections -MMD -MP $(OPTIONS) -I/u
 
 
 # compiler options for C++ only
-CXXFLAGS = -std=gnu++0x -pedantic -felide-constructors -fno-exceptions -fno-rtti
+CXXFLAGS = -std=gnu++98 -pedantic -felide-constructors -fno-exceptions -fno-rtti
 
 # compiler options for C only
 CFLAGS =
