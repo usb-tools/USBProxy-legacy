@@ -87,13 +87,6 @@ void RelayReader::relay_read_setup() {
 	int length;
 	SetupPacket *p=NULL;
 
-	//FINISH
-	/*
-	    write a packet to outQueue
-	    wait to read from inQueue
-	    send it back to the host, either data, ack, or stall, depending on the data in the packet.
-	*/
-
 	bool direction_out=true;
 	usb_ctrlrequest ctrl_req;
 

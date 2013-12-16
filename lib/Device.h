@@ -30,7 +30,6 @@
 //CLEANUP bound checking (or resize arrays) on add_*/get_*
 //CLEANUP handle control_request errors
 //CLEANUP null terminated arrays, vs ones where the count is stored vs ones where count is stored in descriptor, should some of these be changed to different types
-//TODO Move proxy based init out of constructor
 
 class Configuration;
 class DeviceQualifier;

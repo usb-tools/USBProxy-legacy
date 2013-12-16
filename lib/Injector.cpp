@@ -60,9 +60,12 @@ void Injector::listen() {
 	start_injector();
 	struct Packet* packet;
 	struct SetupPacket* setup;
-	struct pollfd poll_setup;
+	struct pollfd poll_setup,poll_send;
 	poll_setup.fd=inQueues[0];
 	poll_setup.events=POLLIN;
+
+	poll_send.events=POLLOUT;
+
 	fprintf(stderr,"Injector polling %d\n",inQueues[0]);
 	while (!halt) {
 		idle=true;
@@ -86,10 +89,19 @@ void Injector::listen() {
 				}
 			} else {
 				mqd_t queue=outQueues[0];
-				fprintf(stderr,"Injector send setup on %d\n",queue);
-				if (queue) mq_send(queue,(char*)&setup,sizeof(SetupPacket*),0);
-				setup_wait=true;
-				idle=false;
+				if (queue) {
+					fprintf(stderr,"Injector send setup on %d\n",queue);
+					poll_send.fd=queue;
+					if (poll(&poll_send,1,500) && (poll_send.revents&POLLOUT)) {
+						poll_send.revents=0;
+						mq_send(queue,(char*)&setup,sizeof(SetupPacket*),0);
+						setup_wait=true;
+						idle=false;
+					}
+				} else {
+					setup_wait=true;
+					idle=false;
+				}
 			}
 		} else if (packet) {
 			__u8 epAddress=packet->bEndpoint;
