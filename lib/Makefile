@@ -20,16 +20,18 @@
 
 TARGET=usb-mitm
 
-PLATFORM ?= $(shell uname -m)
-ifneq ($(PLATFORM), armv7l)
-        CROSS_COMPILE ?= /opt/gcc-linaro-arm-linux-gnueabihf/bin/arm-linux-gnueabihf-
-        CC = $(CROSS_COMPILE)gcc
-        CXX = $(CROSS_COMPILE)g++
+# To cross compile for the BBB, install gcc linaro arm toolchain
+# Then set CROSS_COMPILE=1
+ifneq ($(CROSS_COMPILE), )
+	PREFIX ?= /opt/gcc-linaro-arm-linux-gnueabihf/bin/arm-linux-gnueabihf-
 else
-        CC = /usr/bin/gcc
-        CXX = /usr/bin/g++
+	PREFIX ?= /usr/bin/
 endif
 
+CC = $(PREFIX)gcc
+CXX = $(PREFIX)g++
+
+# Set ENABLE_VALGRIND to include valgrind.h
 ifeq ($(ENABLE_VALGRIND), )
 	OPTIONS += -DNVALGRIND
 endif
