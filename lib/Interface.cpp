@@ -194,26 +194,22 @@ __u8 Interface::get_endpoint_count() {
 
 void Interface::print(__u8 tabs, bool active) {
 	__u8 i;
-	for(i=0;i<tabs;i++) {putchar('\t');}
-	if (active) {putchar('*');}
 	char* hex=hex_string(&descriptor,sizeof(descriptor));
-	printf("Alt(%d): %s\n",descriptor.bAlternateSetting,hex);
+	printf("%.*s%cAlt(%d): %s\n",tabs,TABPADDING,active?'*':' ',descriptor.bAlternateSetting,hex);
 	free(hex);
 	if (descriptor.iInterface) {
 		USBString* s=get_interface_string();
 		if (s) {
-			for(i=0;i<tabs;i++) {putchar('\t');}
-			printf("  Name: ");
-			s->print_ascii(stdout);
-			putchar('\n');
+			char* ascii=s->get_ascii();
+			printf("%.*s   Name: %s\n",tabs,TABPADDING,ascii);
+			free(ascii);
 		}
 	}
 	if (hid_descriptor) {hid_descriptor->print(tabs+1);}
 	int j=0;
 	for (j=0;j<generic_descriptor_count;j++) {
-		for(i=0;i<=tabs;i++) {putchar('\t');}
 		char* hex=hex_string((void*)generic_descriptors[j],generic_descriptors[j]->bLength);
-		printf("Other(%02x): %s\n",generic_descriptors[j]->bDescriptorType,hex);
+		printf("%.*sOther(%02x): %s\n",tabs,TABPADDING,generic_descriptors[j]->bDescriptorType,hex);
 		free(hex);
 	}
 	for(i=0;i<descriptor.bNumEndpoints;i++) {

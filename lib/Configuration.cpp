@@ -169,18 +169,15 @@ __u8 Configuration::get_interface_alernate_count(__u8 number) {
 
 void Configuration::print(__u8 tabs,bool active) {
 	unsigned int i;
-	for(i=0;i<tabs;i++) {putchar('\t');}
-	if (active) {putchar('*');}
 	char* hex=hex_string(&descriptor,sizeof(descriptor));
-	printf("Config(%d): %s\n",descriptor.bConfigurationValue,hex);
+	printf("%.*s%cConfig(%d): %s\n",tabs,TABPADDING,active?'*':' ',descriptor.bConfigurationValue,hex);
 	free(hex);
 	if (descriptor.iConfiguration) {
 		USBString* s=get_config_string();
 		if (s) {
-			for(i=0;i<tabs;i++) {putchar('\t');}
-			printf("  Name: ");
-			s->print_ascii(stdout);
-			putchar('\n');
+			char* ascii=s->get_ascii();
+			printf("%.*s   Name: %s\n",tabs,TABPADDING,ascii);
+			free(ascii);
 		}
 	}
 	for(i=0;i<descriptor.bNumInterfaces;i++) {

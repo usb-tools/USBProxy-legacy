@@ -122,9 +122,8 @@ Configuration* DeviceQualifier::get_configuration(__u8 index) {
 
 void DeviceQualifier::print(__u8 tabs) {
 	int i;
-	for(i=0;i<tabs;i++) {putchar('\t');}
 	char* hex=hex_string(&descriptor,sizeof(descriptor));
-	printf("HS Qualifier: %s\n",hex);
+	printf("%.*sHS Qualifier: %s\n",tabs,TABPADDING,hex);
 	free(hex);
 	for(i=0;i<descriptor.bNumConfigurations;i++) {
 		if (configurations[i]) {configurations[i]->print(tabs+1,(configurations[i]==device->get_active_configuration())?true:false);}

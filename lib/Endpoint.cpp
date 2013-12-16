@@ -71,9 +71,8 @@ void Endpoint::get_full_descriptor(__u8** p) {
 
 void Endpoint::print(__u8 tabs) {
 	unsigned int i;
-	for(i=0;i<tabs;i++) {putchar('\t');}
 	char* hex=hex_string(&descriptor,descriptor.bLength);
-	printf("EP(%02x): %s\n",descriptor.bEndpointAddress,hex);
+	printf("%.*sEP(%02x): %s\n",tabs,TABPADDING,descriptor.bEndpointAddress,hex);
 	free(hex);
 }
 

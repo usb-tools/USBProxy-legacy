@@ -96,13 +96,15 @@ USBString::~USBString() {
 	}
 }
 
-void USBString::get_ascii(char* buf,int buflen) {
+char * USBString::get_ascii() {
+	__u8 strlen=get_char_count();
+	char* buf=(char*)malloc(strlen+1);
+	int buflen=strlen+1;
+
 	int len=(descriptor->bLength)>>1;
 	int i_uni;
 	int i_asc;
-	if (!buflen) {return;}
 	for (i_uni=0,i_asc=0;i_uni<len;i_uni++) {
-		if (i_asc==(buflen-1)) {buf[i_asc]=0;return;}
 		if (descriptor->wData[i_uni]&0xff00) {
 			buf[i_asc++]='?';
 		} else {
@@ -110,6 +112,7 @@ void USBString::get_ascii(char* buf,int buflen) {
 		}
 	}
 	buf[i_asc]=0;
+	return buf;
 }
 
 const usb_string_descriptor* USBString::get_descriptor() {return descriptor;}
@@ -119,15 +122,6 @@ __u16 USBString::get_languageId() {return languageId;}
 __u8  USBString::get_index() {return index;}
 
 __u8  USBString::get_char_count() {return ((descriptor->bLength)>>1)-1;}
-
-void USBString::print_ascii(FILE *stream) {
-	__u8 strlen=get_char_count();
-	char* buf=(char*)malloc(strlen+1);
-	get_ascii(buf,strlen+1);
-	fprintf(stream,"%s",buf);
-	free(buf);
-	/* not needed buf=NULL; */
-}
 
 void USBString::append_char(__u16 u) {
 	if (index!=0 || languageId!=0) {fprintf(stderr,"append_char() may only be called on the zero USBString.\n");return;}

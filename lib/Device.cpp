@@ -221,38 +221,33 @@ Configuration* Device::get_configuration(__u8 index) {
 
 void Device::print(__u8 tabs) {
 	int i;
-	for(i=0;i<tabs;i++) {putchar('\t');}
-
 	char* hex=hex_string(&descriptor,sizeof(descriptor));
-	printf("Device: %s\n",hex);
+	printf("%.*sDevice: %s\n",tabs,TABPADDING,hex);
 	free(hex);
 
 	USBString* s;
 	if (descriptor.iManufacturer) {
 		s=get_manufacturer_string();
 		if (s) {
-			for(i=0;i<tabs;i++) {putchar('\t');}
-			printf("  Manufacturer: ");
-			s->print_ascii(stdout);
-			putchar('\n');
+			char* ascii=s->get_ascii();
+			printf("%.*s  Manufacturer: %s\n",tabs,TABPADDING,ascii);
+			free(ascii);
 		}
 	}
 	if (descriptor.iProduct) {
 		s=get_product_string();
 		if (s) {
-			for(i=0;i<tabs;i++) {putchar('\t');}
-			printf("  Product:      ");
-			s->print_ascii(stdout);
-			putchar('\n');
+			char* ascii=s->get_ascii();
+			printf("%.*s  Product:      %s\n",tabs,TABPADDING,ascii);
+			free(ascii);
 		}
 	}
 	if (descriptor.iSerialNumber) {
 		s=get_serial_string();
 		if (s) {
-			for(i=0;i<tabs;i++) {putchar('\t');}
-			printf("  Serial:       ");
-			s->print_ascii(stdout);
-			putchar('\n');
+			char* ascii=s->get_ascii();
+			printf("%.*s  Serial:       %s\n",tabs,TABPADDING,ascii);
+			free(ascii);
 		}
 	}
 	for(i=0;i<descriptor.bNumConfigurations;i++) {

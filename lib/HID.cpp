@@ -73,8 +73,7 @@ void HID::get_full_descriptor(__u8** p) {
 
 void HID::print(__u8 tabs) {
 	unsigned int i;
-	for(i=0;i<tabs;i++) {putchar('\t');}
 	char* hex=hex_string((void*)descriptor,descriptor->bLength);
-	printf("HID: %s\n",hex);
+	printf("%.*sHID: %s\n",tabs,TABPADDING,hex);
 	free(hex);
 }

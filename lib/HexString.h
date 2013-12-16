@@ -26,6 +26,7 @@
 #ifndef USBPROXY_HEXSTRING_H
 #define USBPROXY_HEXSTRING_H
 
+#define TABPADDING "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
 char* hex_string_wide(void* buf,int length,int width=32);
 char* hex_string(void* buf,int length);
 

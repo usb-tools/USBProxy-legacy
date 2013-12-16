@@ -48,8 +48,7 @@ public:
 	const usb_string_descriptor* get_descriptor();
 	__u16 get_languageId();
 	__u8  get_index();
-	void get_ascii(char* buf,int buflen);
-	void print_ascii(FILE *stream);
+	char* get_ascii();
 	__u8 get_char_count();
 	void append_char(__u16 u);
 };

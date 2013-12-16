@@ -28,11 +28,13 @@
 #include <stdlib.h>
 #include <memory.h>
 #include "TRACE.h"
+#include "HexString.h"
 
 #include "InterfaceGroup.h"
 
 #include "Device.h"
 #include "Interface.h"
+
 
 InterfaceGroup::InterfaceGroup(__u8 _number) {
 	number=_number;
@@ -90,9 +92,7 @@ Interface* InterfaceGroup::get_interface(__u8 alternate) {
 
 void InterfaceGroup::print(__u8 tabs) {
 	int i;
-	for(i=0;i<tabs;i++) {putchar('\t');}
-	printf("Interface(%d):",number);
-	putchar('\n');
+	printf("%.*sInterface(%d):\n",tabs,TABPADDING,number);
 	for(i=0;i<alternateCount;i++) {
 		interfaces[i]->print(tabs+1,i==activeAlternateIndex?true:false);
 	}
