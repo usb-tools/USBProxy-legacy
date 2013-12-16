@@ -30,7 +30,6 @@
 #include <string.h>
 #include <sys/epoll.h>
 #include <errno.h>
-#include "valgrind.h"
 #include "get_tid.h"
 #include "HaltSignal.h"
 
@@ -41,6 +40,10 @@
 #include "DeviceProxy.h"
 #include "PacketFilter.h"
 #include "Manager.h"
+
+#ifndef NVALGRIND
+#include "valgrind.h"
+#endif //NVALGRIND
 
 RelayWriter::RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _recvQueue) {
 	haltSignal=0;
@@ -125,6 +128,8 @@ RelayWriter::~RelayWriter() {
 void RelayWriter::set_haltsignal(__u8 _haltSignal) {
 	haltSignal=_haltSignal;
 }
+
+#ifndef NVALGRIND
 
 void RelayWriter::relay_write_setup_valgrind() {
 	if (!deviceProxy) {fprintf(stderr,"DeviceProxy not initialized for EP00 writer.\n");return;}
@@ -215,6 +220,71 @@ void RelayWriter::relay_write_setup_valgrind() {
 	free(pollfds);
 }
 
+void RelayWriter::relay_write_valgrind() {
+	if (!endpoint) {
+		relay_write_setup_valgrind();
+		return;
+	}
+	bool halt=false;
+	struct pollfd haltpoll;
+	int haltfd;
+	if (haltsignal_setup(haltSignal,&haltpoll,&haltfd)!=0) return;
+
+	__u8 i,j;
+
+	struct pollfd* pollfds=(pollfd*)calloc(queueCount,sizeof(pollfd));
+	for (i=0;i<queueCount;i++) {
+		pollfds[i].fd=recvQueues[i];
+		pollfds[i].events=POLLIN;
+	}
+
+	bool idle=true;
+	bool writing=false;
+	Packet *p=NULL;
+	int numEvents=0;
+
+	fprintf(stderr,"Starting writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
+	while (!halt) {
+		idle=true;
+		if (!writing) {
+			if (!p) {
+				if (!numEvents) {
+					i=0;
+					p=NULL;
+					numEvents=poll(pollfds,queueCount,500);
+					idle=!numEvents;
+				}
+				while(i<numEvents && (!(pollfds[i].revents&POLLIN))) {i++;}
+				if (i<numEvents) {
+					mq_receive(pollfds[i].fd,(char*)&p,4,NULL);
+					pollfds[i].revents=0;
+				}
+				if (i>=numEvents) numEvents=0;
+			}
+			if (p) {
+				j=0;
+				while (j<filterCount && p->filter) {
+					if (filters[j]->test_packet(p)) {filters[j]->filter_packet(p);}
+					j++;
+				}
+				if (p->transmit) {
+					proxy->send_data(endpoint,attributes,maxPacketSize,p->data,p->wLength);
+					writing=true;
+				}
+				delete(p);
+				p=NULL;
+			}
+		} else {
+			writing=!(proxy->send_wait_complete(endpoint,500));
+		}
+		if (idle) sched_yield();
+		halt=haltsignal_check(haltSignal,&haltpoll,&haltfd);
+	}
+	fprintf(stderr,"Finished writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
+	free(pollfds);
+}
+
+#endif //NVALGRIND
 void RelayWriter::relay_write_setup() {
 	if (!deviceProxy) {fprintf(stderr,"DeviceProxy not initialized for EP00 writer.\n");return;}
 	if (!sendQueues) {fprintf(stderr,"outQueues not initialized for EP00 writer.\n");return;}
@@ -316,70 +386,6 @@ void RelayWriter::relay_write_setup() {
 	close(efd);
 }
 
-void RelayWriter::relay_write_valgrind() {
-	if (!endpoint) {
-		relay_write_setup_valgrind();
-		return;
-	}
-	bool halt=false;
-	struct pollfd haltpoll;
-	int haltfd;
-	if (haltsignal_setup(haltSignal,&haltpoll,&haltfd)!=0) return;
-
-	__u8 i,j;
-
-	struct pollfd* pollfds=(pollfd*)calloc(queueCount,sizeof(pollfd));
-	for (i=0;i<queueCount;i++) {
-		pollfds[i].fd=recvQueues[i];
-		pollfds[i].events=POLLIN;
-	}
-
-	bool idle=true;
-	bool writing=false;
-	Packet *p=NULL;
-	int numEvents=0;
-
-	fprintf(stderr,"Starting writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
-	while (!halt) {
-		idle=true;
-		if (!writing) {
-			if (!p) {
-				if (!numEvents) {
-					i=0;
-					p=NULL;
-					numEvents=poll(pollfds,queueCount,500);
-					idle=!numEvents;
-				}
-				while(i<numEvents && (!(pollfds[i].revents&POLLIN))) {i++;}
-				if (i<numEvents) {
-					mq_receive(pollfds[i].fd,(char*)&p,4,NULL);
-					pollfds[i].revents=0;
-				}
-				if (i>=numEvents) numEvents=0;
-			}
-			if (p) {
-				j=0;
-				while (j<filterCount && p->filter) {
-					if (filters[j]->test_packet(p)) {filters[j]->filter_packet(p);}
-					j++;
-				}
-				if (p->transmit) {
-					proxy->send_data(endpoint,attributes,maxPacketSize,p->data,p->wLength);
-					writing=true;
-				}
-				delete(p);
-				p=NULL;
-			}
-		} else {
-			writing=!(proxy->send_wait_complete(endpoint,500));
-		}
-		if (idle) sched_yield();
-		halt=haltsignal_check(haltSignal,&haltpoll,&haltfd);
-	}
-	fprintf(stderr,"Finished writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
-	free(pollfds);
-}
-
 void RelayWriter::relay_write() {
 	if (!endpoint) {
 		relay_write_setup();
@@ -470,11 +476,15 @@ void RelayWriter::add_setup_queue(mqd_t recvQueue,mqd_t sendQueue) {
 }
 
 void* RelayWriter::relay_write_helper(void* context) {
+#ifndef NVALGRIND
 	if (RUNNING_ON_VALGRIND) {
 		((RelayWriter*)context)->relay_write_valgrind();
 	} else {
 		((RelayWriter*)context)->relay_write();
 	}
+#else //NVALGRIND _IS_ defined
+	((RelayWriter*)context)->relay_write();
+#endif //NVALGRIND
 	return 0;
 }
 
