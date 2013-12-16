@@ -61,9 +61,12 @@ public:
 	void add_setup_queue(mqd_t recvQueue,mqd_t sendQueue);
 
 	void relay_write();
-	void relay_write_valgrind();
 	void relay_write_setup();
+
+#ifndef NVALGRIND
+	void relay_write_valgrind();
 	void relay_write_setup_valgrind();
+#endif //NVALGRIND
 
 	void set_haltsignal(__u8 _haltSignal);
 	static void* relay_write_helper(void* context);
