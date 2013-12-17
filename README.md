@@ -10,8 +10,7 @@ doesn't even compile.
 What?
 -----
 A man in the middle device for USB connections using the BeagleBone Black
-hardware.  So far it only supports passing through control transfers - I'm still
-working on bulk and interrupt transfers.
+hardware.
 
 Why?
 ----
@@ -29,11 +28,7 @@ ToDo
 License
 -------
 All files should have a license displayed at the start of the file.  Any code
-that I have written is released under the GPL v2 license.
-
-Some of the supporting code was licensed under the LGPL v2.1, notably USB
-string support (currently not working/required).  That code remains under the
-same license, as shown in the files.
+that we have written is released under the GPL v3 license.
 
 FAQ
 ---
