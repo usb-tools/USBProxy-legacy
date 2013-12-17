@@ -3,9 +3,9 @@ USB Man-in-the-Middle
 
 Status
 ------
-This project is in the very early stages (pre-alpha), it should be assumesd that
-it is currently non-functional. In fact, there are many occasions on which it
-doesn't compile.
+This project is in the very early stages (alpha), it should be assumesd that it
+is currently non-functional. In fact, there are many occasions on which it
+doesn't even compile.
 
 What?
 -----
@@ -24,7 +24,7 @@ ToDo
 ----
  * Man in the middle function hooks
  * Some sort of library to make all of this easier to use
- * Support alternative chipsets
+ * Support alternative chipsets - gadgetfs should take care of this
 
 License
 -------
@@ -40,7 +40,7 @@ FAQ
 Q. I need support!
 
 A. Me too buddy, me too.  Let's hug it out.  Your best chance of getting
-support is to contact me on IRC (#usb-mitm on freenode.net), raise an issue on
+support is to contact me on IRC (#USBProxy on freenode.net), raise an issue on
 GitHub or email me directly.
 
 Q. How is this different to using usbmon on the host?
@@ -48,13 +48,6 @@ Q. How is this different to using usbmon on the host?
 A. It isn't.  Although there are situations where you may not be able to access
 the code running on the host system; for example, when reverse engineering USB
 devices for use with closed platforms.
-
-Q. Will this damamge my BeagleBone Black or host system?
-
-A. Maybe, it crashes my host quite often, although I don't think there is any
-damage.  Try to disconnect the USB cable before killing the usb-mitm process.  I
-take no responsibility for any damage to your equipment - if in doubt, don't run
-the code.
 
 Q. Isn't the Beagle already a USB monitor?
 
