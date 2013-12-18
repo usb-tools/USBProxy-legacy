@@ -43,6 +43,7 @@
 #include "TRACE.h"
 #include "Manager.h"
 #include "DeviceProxy_LibUSB.h"
+#include "DeviceProxy_Loopback.h"
 #include "Injector_UDP.h"
 #include "HostProxy_GadgetFS.h"
 #include "PacketFilter_PcapLogger.h"
@@ -67,23 +68,19 @@ void handle_signal(int signum)
 	struct sigaction action;
 	switch (signum) {
 		case SIGTERM:
-			printf("Received SIGTERM, stopping relaying...\n");
+		case SIGINT:
+			if(signum == SIGTERM)
+				fprintf(stderr, "Received SIGTERM, stopping relaying...\n");
+			else
+				fprintf(stderr, "Received SIGINT, stopping relaying...\n");
 			if (manager) {manager->stop_relaying();}
-			printf("Exiting\n");
+			fprintf(stderr, "Exiting\n");
 			memset(&action, 0, sizeof(struct sigaction));
 			action.sa_handler = SIG_DFL;
 			sigaction(SIGTERM, &action, NULL);
 			break;
-		case SIGINT:
-			printf("Received SIGINT, stopping relaying...\n");
-			if (manager) {manager->stop_relaying();}
-			printf("Exiting\n");
-			memset(&action, 0, sizeof(struct sigaction));
-			action.sa_handler = SIG_DFL;
-			sigaction(SIGINT, &action, NULL);
-			break;
 		case SIGHUP:
-			printf("Received SIGHUP, restarting relaying...\n");
+			fprintf(stderr, "Received SIGHUP, restarting relaying...\n");
 			if (manager) {manager->stop_relaying();}
 			if (manager) {manager->start_control_relaying();}
 			break;
@@ -125,7 +122,8 @@ extern "C" int main(int argc, char **argv)
 
 	DeviceProxy_LibUSB::debugLevel=1;
 
-	DeviceProxy* device_proxy=(DeviceProxy *)new DeviceProxy_LibUSB(vendorId,productId);
+	//DeviceProxy* device_proxy=(DeviceProxy *)new DeviceProxy_LibUSB(vendorId,productId);
+	DeviceProxy* device_proxy=(DeviceProxy *)new DeviceProxy_Loopback(vendorId,productId);
 	HostProxy* host_proxy=(HostProxy* )new HostProxy_GadgetFS(1);
 	manager=new Manager(device_proxy,host_proxy);
 
