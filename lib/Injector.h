@@ -26,6 +26,7 @@
 #ifndef USBPROXY_INJECTOR_H
 #define USBPROXY_INJECTOR_H
 
+#include <poll.h>
 #include <mqueue.h>
 
 #include "Manager.h"
@@ -36,8 +37,8 @@ class Manager;
 
 class Injector {
 private:
-	mqd_t outQueues[16];
-	mqd_t inQueues[16];
+	mqd_t outQueues[16],inQueues[16];
+	int outPollIndex[16],inPollIndex[16];
 	__u8 haltSignal;
 
 protected:
@@ -47,6 +48,9 @@ protected:
 	virtual void setup_ack() {}
 	virtual void setup_stall() {}
 	virtual void setup_data(__u8* buf, int length) {}
+	virtual int* get_pollable_fds() {return NULL;}
+	virtual void full_pipe(Packet* p) {}
+	virtual void full_pipe(SetupPacket* p) {}
 
 public:
 	struct criteria_endpoint endpoint;
