@@ -25,7 +25,7 @@
 #include "DeviceProxy_Loopback.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+#include <memory.h>
 #include "Packet.h"
 #include "HexString.h"
 #include "TRACE.h"
