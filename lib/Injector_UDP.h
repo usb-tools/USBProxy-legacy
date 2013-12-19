@@ -42,6 +42,8 @@ private:
 protected:
 	void start_injector();
 	void stop_injector();
+	int* get_pollable_fds();
+	void full_pipe(Packet* p);
 
 	void get_packets(Packet** packet,SetupPacket** setup,int timeout=500);
 

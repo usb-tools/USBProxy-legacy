@@ -67,6 +67,12 @@ void Injector_UDP::start_injector() {
 	buf=(__u8*)malloc(UDP_BUFFER_SIZE);
 }
 
+int* Injector_UDP::get_pollable_fds() {
+	int* tmp=(int*)calloc(2,sizeof(int));
+	tmp[0]=sck;
+	return tmp;
+}
+
 void Injector_UDP::stop_injector() {
 	if (sck) {close(sck);sck=0;}
 	if (buf) {free(buf);buf=NULL;}
@@ -98,10 +104,10 @@ void Injector_UDP::get_packets(Packet** packet,SetupPacket** setup,int timeout) 
 				memcpy(usbbuf,buf+11,ctrl_req.wLength);
 				*setup=new SetupPacket(ctrl_req,usbbuf,true);
 			}
-			(*setup)->filter_out=buf[1]&0x01;
-			(*setup)->transmit_out=buf[1]&0x02;
-			(*setup)->filter_in=buf[1]&0x04;
-			(*setup)->transmit_in=buf[1]&0x08;
+			(*setup)->filter_out=~(buf[1]&0x01);
+			(*setup)->transmit_out=~(buf[1]&0x02);
+			(*setup)->filter_in=~(buf[1]&0x04);
+			(*setup)->transmit_in=~(buf[1]&0x08);
 			return;
 		}
 	}
@@ -110,4 +116,6 @@ void Injector_UDP::get_packets(Packet** packet,SetupPacket** setup,int timeout) 
 	}
 	return;
 }
+
+void Injector_UDP::full_pipe(Packet* p) {fprintf(stderr,"Packet returned due to full pipe & buffer\n");}
 

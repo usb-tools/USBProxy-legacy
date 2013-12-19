@@ -78,9 +78,8 @@ char* hex_string_wide(void* buf,int length,int width) {
 	}
 	int lines=length/width;
 
-	result = (char *)malloc(length * 3 + lines+1);
+	result = (char *)malloc(length * 3 + lines+2);
 	__u8* inbuf=(__u8*)buf;
-	memset(result,'.',length*3+lines);
 	result[length * 3+lines+1] = 0;
 	result[0]='\n';
 	result[1]='\t';
@@ -113,13 +112,14 @@ char* hex_string(void* buf,int length) {
 	  return result;
   }
   if (length>32) return hex_string_wide(buf,length);
-  result = (char *)malloc(length * 3 + 1);
+  result = (char *)malloc(length * 3);
   __u8* inbuf=(__u8*)buf;
-  result[length * 3] = 0;
+  result[length * 3-1] = 0;
   __u16* p=(__u16*)result;
 
   *p=hexAscii[inbuf[0]];
   int i;
+
   for (i = 1; i < length; i++) {
 	  result[i * 3 - 1] = ' ';
 	  p=(__u16*)(result+i*3);

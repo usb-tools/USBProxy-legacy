@@ -42,6 +42,7 @@
 #include "Manager.h"
 
 #ifndef NVALGRIND
+#define USEVALGRIND
 #include "valgrind.h"
 #endif //NVALGRIND
 
@@ -129,7 +130,7 @@ void RelayWriter::set_haltsignal(__u8 _haltSignal) {
 	haltSignal=_haltSignal;
 }
 
-#ifndef NVALGRIND
+#ifdef USEVALGRIND
 
 void RelayWriter::relay_write_setup_valgrind() {
 	if (!deviceProxy) {fprintf(stderr,"DeviceProxy not initialized for EP00 writer.\n");return;}
@@ -284,7 +285,7 @@ void RelayWriter::relay_write_valgrind() {
 	free(pollfds);
 }
 
-#endif //NVALGRIND
+#endif //USEVALGRIND
 void RelayWriter::relay_write_setup() {
 	if (!deviceProxy) {fprintf(stderr,"DeviceProxy not initialized for EP00 writer.\n");return;}
 	if (!sendQueues) {fprintf(stderr,"outQueues not initialized for EP00 writer.\n");return;}
@@ -299,10 +300,10 @@ void RelayWriter::relay_write_setup() {
 
 	__u8 i,j;
 	int efd=epoll_create1(EPOLL_CLOEXEC);
-	if (efd<0) fprintf(stderr,"Error creating epoll fd %d [%s].\n",errno,strerror(errno));
-	struct epoll_event event;
 	struct epoll_event* events=(epoll_event*)calloc(queueCount,sizeof(epoll_event));
+	if (efd<0) fprintf(stderr,"Error creating epoll fd %d [%s].\n",errno,strerror(errno));
 	for (i=0;i<queueCount;i++) {
+		struct epoll_event event;
 		event.data.u64=((__u64)recvQueues[i])<<32 | sendQueues[i];
 		event.events=EPOLLIN;
 		epoll_ctl(efd,EPOLL_CTL_ADD,recvQueues[i],&event);
@@ -317,22 +318,17 @@ void RelayWriter::relay_write_setup() {
 
 	fprintf(stderr,"Starting setup writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
 	while (!halt) {
-		fprintf(stderr,"SW loop\n");
 		idle=true;
 		if (!writing) {
-			fprintf(stderr,"SW reading\n");
 			if (!p) {
-				fprintf(stderr,"SW no packet\n");
 				if (!numEvents) {
 					i=0;
 					p=NULL;
 					numEvents=epoll_wait(efd,events,queueCount,500);
-					fprintf(stderr,"Got %d epoll events\n",numEvents);
 				}
 				if (i<numEvents && (events[i].events&EPOLLIN)) {
-					fprintf(stderr,"Handling epoll event #%d\n",i);
-					int recvQueue=event.data.u64>>32;
-					int sendQueue=event.data.u64&(__u64)0xffffffff;
+					int recvQueue=events[i].data.u64>>32;
+					int sendQueue=events[i].data.u64&(__u64)0xffffffff;
 					mq_receive(recvQueue,(char*)&p,4,NULL);
 					p->source=sendQueue;
 					i++;
@@ -340,7 +336,6 @@ void RelayWriter::relay_write_setup() {
 				if (i>=numEvents) numEvents=0;
 			}
 			if (p) {
-				fprintf(stderr,"SW packet\n");
 				j=0;
 				while (j<filterCount && p->filter_out) {
 					if (filters[j]->test_setup_packet(p,true)) {filters[j]->filter_setup_packet(p,true);}
@@ -371,7 +366,6 @@ void RelayWriter::relay_write_setup() {
 				p=NULL;
 			}
 		} else {
-			fprintf(stderr,"SW writing\n");
 			if (poll(&poll_send,1,500) && poll_send.revents==POLLOUT) {
 				writing=false;
 				poll_send.revents=0;
@@ -399,9 +393,9 @@ void RelayWriter::relay_write() {
 	__u8 i,j;
 	int efd=epoll_create1(EPOLL_CLOEXEC);
 	if (efd<0) fprintf(stderr,"Error creating epoll fd %d [%s].\n",errno,strerror(errno));
-	struct epoll_event event;
 	struct epoll_event* events=(epoll_event*)calloc(queueCount,sizeof(epoll_event));
 	for (i=0;i<queueCount;i++) {
+		struct epoll_event event;
 		event.data.fd=recvQueues[i];
 		event.events=EPOLLIN;
 		epoll_ctl(efd,EPOLL_CTL_ADD,recvQueues[i],&event);
@@ -476,7 +470,7 @@ void RelayWriter::add_setup_queue(mqd_t recvQueue,mqd_t sendQueue) {
 }
 
 void* RelayWriter::relay_write_helper(void* context) {
-#ifndef NVALGRIND
+#ifdef USEVALGRIND
 	if (RUNNING_ON_VALGRIND) {
 		((RelayWriter*)context)->relay_write_valgrind();
 	} else {

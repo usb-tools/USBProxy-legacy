@@ -101,7 +101,7 @@ char * USBString::get_ascii() {
 	char* buf=(char*)malloc(strlen+1);
 	int buflen=strlen+1;
 
-	int len=(descriptor->bLength)>>1;
+	int len=((descriptor->bLength)>>1)-1;
 	int i_uni;
 	int i_asc;
 	for (i_uni=0,i_asc=0;i_uni<len;i_uni++) {
