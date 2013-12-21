@@ -52,6 +52,7 @@ private:
 	struct usb_device_descriptor loopback_device_descriptor;
 	struct usb_config_descriptor loopback_config_descriptor;
 	struct usb_interface_descriptor loopback_interface_descriptor;
+	struct usb_endpoint_descriptor loopback_eps[2];
 	struct usb_string ;
 
 public:

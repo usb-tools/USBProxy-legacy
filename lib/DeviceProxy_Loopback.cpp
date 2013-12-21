@@ -35,7 +35,7 @@
 
 #define BUF_LEN 100
 
-int DeviceProxy_Loopback::debugLevel = 0;
+int DeviceProxy_Loopback::debugLevel = 1;
 
 #define STRING_MANUFACTURER             25
 #define STRING_PRODUCT                  45
@@ -57,7 +57,7 @@ DeviceProxy_Loopback::DeviceProxy_Loopback(int vendorId,int productId) {
 	loopback_strings.language = 0x0409;  /* en-us */
 	loopback_strings.strings = strings;
 	
-	loopback_device_descriptor.bLength = sizeof(loopback_device_descriptor);
+	loopback_device_descriptor.bLength = USB_DT_DEVICE_SIZE;
 	loopback_device_descriptor.bDescriptorType = USB_DT_DEVICE;
 	loopback_device_descriptor.bcdUSB = cpu_to_le16(0x0100);
 	loopback_device_descriptor.bDeviceClass = USB_CLASS_VENDOR_SPEC;
@@ -68,7 +68,7 @@ DeviceProxy_Loopback::DeviceProxy_Loopback(int vendorId,int productId) {
 	loopback_device_descriptor.idVendor = cpu_to_le16(vendorId & 0xffff);
 	loopback_device_descriptor.idProduct = cpu_to_le16(productId & 0xffff);
 	
-	loopback_config_descriptor.bLength = sizeof(loopback_config_descriptor);
+	loopback_config_descriptor.bLength = USB_DT_CONFIG_SIZE;
 	loopback_config_descriptor.bDescriptorType = USB_DT_CONFIG;
 	loopback_config_descriptor.bNumInterfaces = 1;
 	loopback_config_descriptor.bConfigurationValue = 2;
@@ -76,12 +76,28 @@ DeviceProxy_Loopback::DeviceProxy_Loopback(int vendorId,int productId) {
 	loopback_config_descriptor.bmAttributes = USB_CONFIG_ATT_ONE | USB_CONFIG_ATT_SELFPOWER;
 	loopback_config_descriptor.bMaxPower = 1;		/* self-powered */
 	
-	loopback_interface_descriptor.bLength = sizeof(loopback_interface_descriptor);
+	loopback_interface_descriptor.bLength = USB_DT_INTERFACE_SIZE;
 	loopback_interface_descriptor.bDescriptorType = USB_DT_INTERFACE;
 	loopback_interface_descriptor.bNumEndpoints = 2;
 	loopback_interface_descriptor.bInterfaceClass = USB_CLASS_VENDOR_SPEC;
 	loopback_interface_descriptor.iInterface = STRING_LOOPBACK;
 
+	struct usb_endpoint_descriptor *ep;
+	ep = &loopback_eps[0];
+	ep->bLength = USB_DT_ENDPOINT_SIZE;
+	ep->bDescriptorType = USB_DT_CS_ENDPOINT;
+	ep->bEndpointAddress = USB_ENDPOINT_DIR_MASK | 3;
+	ep->bmAttributes = USB_ENDPOINT_XFER_INT;
+	ep->wMaxPacketSize = 64;
+	ep->bInterval = 10;
+	
+	ep = &loopback_eps[1];
+	ep->bLength = USB_DT_ENDPOINT_SIZE;
+	ep->bDescriptorType = USB_DT_CS_ENDPOINT;
+	ep->bEndpointAddress = 5;
+	ep->bmAttributes = USB_ENDPOINT_XFER_INT;
+	ep->wMaxPacketSize = 64;
+	ep->bInterval = 10;
 }
 
 DeviceProxy_Loopback::~DeviceProxy_Loopback() {
@@ -119,29 +135,49 @@ bool DeviceProxy_Loopback::is_highspeed() {
 }
 
 //return -1 to stall
-int DeviceProxy_Loopback::control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr, int timeout) {
+int DeviceProxy_Loopback::control_request(const usb_ctrlrequest* setup_packet, int* nbytes, __u8* dataptr, int timeout) {
 	if (debugLevel>1) {
 		char* hex=hex_string((void*)setup_packet,sizeof(*setup_packet));
 		fprintf(stderr, "Loopback> %s\n",hex);
 		free(hex);
 	}
-	fprintf(stderr, "Loopback> %02x\n", setup_packet->bRequest);
-	switch (setup_packet->bRequest) {
-		case USB_REQ_GET_DESCRIPTOR:
-			dataptr = (__u8 *) malloc(loopback_device_descriptor.bLength);
-			memcpy(dataptr, &loopback_device_descriptor, loopback_device_descriptor.bLength);
-			*nbytes = loopback_device_descriptor.bLength;
-			break;
-		case USB_REQ_GET_CONFIGURATION:
-			dataptr = (__u8 *) malloc(loopback_config_descriptor.bLength);
-			memcpy(dataptr, &loopback_config_descriptor, loopback_config_descriptor.bLength);
-			*nbytes = loopback_config_descriptor.bLength;
-			break;
-		case USB_REQ_GET_INTERFACE:
-			dataptr = (__u8 *) malloc(loopback_interface_descriptor.bLength);
-			memcpy(dataptr, &loopback_interface_descriptor, loopback_interface_descriptor.bLength);
-			*nbytes = loopback_interface_descriptor.bLength;
-			break;
+	if(setup_packet->bRequestType && USB_DIR_IN && setup_packet->bRequest == USB_REQ_GET_DESCRIPTOR) {
+		switch (setup_packet->wValue) {
+			case USB_DT_DEVICE:
+				//dataptr = (__u8 *) malloc(loopback_device_descriptor.bLength);
+				memcpy(dataptr, &loopback_device_descriptor, loopback_device_descriptor.bLength);
+				*nbytes = loopback_device_descriptor.bLength;
+				break;
+			case USB_DT_CONFIG:
+				//dataptr = (__u8 *) malloc(loopback_config_descriptor.bLength);
+				memcpy(dataptr, &loopback_config_descriptor, loopback_config_descriptor.bLength);
+				*nbytes = loopback_config_descriptor.bLength;
+				break;
+			case USB_DT_STRING:
+				break;
+			case USB_DT_INTERFACE:
+				//dataptr = (__u8 *) malloc(loopback_interface_descriptor.bLength);
+				memcpy(dataptr, &loopback_interface_descriptor, loopback_interface_descriptor.bLength);
+				*nbytes = loopback_interface_descriptor.bLength;
+				break;
+			case USB_DT_ENDPOINT:
+				//dataptr = (__u8 *) malloc();
+				memcpy(dataptr, &loopback_eps[setup_packet->wIndex], loopback_eps[setup_packet->wIndex].bLength);
+				*nbytes = loopback_eps[setup_packet->wIndex].bLength;
+				break;
+			case USB_DT_OTHER_SPEED_CONFIG:
+				//dataptr = (__u8 *) malloc(loopback_config_descriptor.bLength);
+				memcpy(dataptr, &loopback_config_descriptor, loopback_config_descriptor.bLength);
+				struct usb_config_descriptor* desc = (struct usb_config_descriptor *) dataptr;
+				desc->bDescriptorType = USB_DT_OTHER_SPEED_CONFIG;
+				*nbytes = loopback_config_descriptor.bLength;
+				break;
+		}
+	}
+	if (debugLevel>1) {
+		char* hex=hex_string((void*)dataptr, *nbytes);
+		fprintf(stderr, "Loopback> %s\n",hex);
+		free(hex);
 	}
 	return 0;
 }
