@@ -69,7 +69,7 @@ static const __u16 hexAscii[256]={
 		0x6630, 0x6631, 0x6632, 0x6633, 0x6634, 0x6635, 0x6636, 0x6637, 0x6638, 0x6639, 0x6661, 0x6662, 0x6663, 0x6664, 0x6665, 0x6666};
 #endif
 
-char* hex_string_wide(void* buf,int length,int width) {
+char* hex_string_wide(const void* buf,int length,int width) {
 	char* result;
 	if (!length) {
 	  result = (char *)malloc(1);
@@ -104,14 +104,14 @@ char* hex_string_wide(void* buf,int length,int width) {
   return result;
 }
 
-char* hex_string(void* buf,int length) {
+char* hex_string(const void* buf,int length) {
   char* result;
   if (!length) {
 	  result = (char *)malloc(1);
 	  *result=0;
 	  return result;
   }
-  if (length>32) return hex_string_wide(buf,length);
+  if (length>32) return hex_string_wide(buf,length,32);
   result = (char *)malloc(length * 3);
   __u8* inbuf=(__u8*)buf;
   result[length * 3-1] = 0;
