@@ -40,15 +40,15 @@
 #include "DeviceProxy.h"
 #include "USBString.h"
 
-Configuration::Configuration(Device* _device,DeviceProxy* proxy, int idx,bool highSpeed)
+Configuration::Configuration(Device* _device,DeviceProxy* proxy, int idx,bool otherSpeed)
 {
 	device=_device;
 	__u8* buf=(__u8 *)malloc(8);
 	usb_ctrlrequest setup_packet;
 	setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
 	setup_packet.bRequest=USB_REQ_GET_DESCRIPTOR;
-	setup_packet.wValue=(highSpeed?USB_DT_OTHER_SPEED_CONFIG:USB_DT_CONFIG)<<8;
-	setup_packet.wIndex=idx;
+	setup_packet.wValue=((otherSpeed?USB_DT_OTHER_SPEED_CONFIG:USB_DT_CONFIG)<<8)|idx;
+	setup_packet.wIndex=0;
 	setup_packet.wLength=8;
 	int len=0;
 	proxy->control_request(&setup_packet,&len,buf);

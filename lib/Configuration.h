@@ -45,7 +45,7 @@ class Configuration {
 		Device* device;
 
 	public:
-		Configuration(Device* _device,DeviceProxy* proxy, int index,bool highSpeed=false);
+		Configuration(Device* _device,DeviceProxy* proxy, int index,bool otherSpeed=false);
 		Configuration(Device* _device,const usb_config_descriptor* _descriptor);
 		Configuration(Device* _device,__u16 wTotalLength,__u8 bNumInterfaces,__u8 bConfigurationValue,__u8 iConfiguration,__u8 bmAttributes,__u8 bMaxPower,bool highSpeed=false);
 		~Configuration();
