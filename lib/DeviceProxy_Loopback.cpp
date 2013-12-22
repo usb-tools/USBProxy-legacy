@@ -77,16 +77,16 @@ DeviceProxy_Loopback::DeviceProxy_Loopback(int vendorId,int productId) {
 	struct usb_endpoint_descriptor *ep;
 	ep = &loopback_eps[0];
 	ep->bLength = USB_DT_ENDPOINT_SIZE;
-	ep->bDescriptorType = USB_DT_CS_ENDPOINT;
-	ep->bEndpointAddress = USB_ENDPOINT_DIR_MASK | 3;
+	ep->bDescriptorType = USB_DT_ENDPOINT;
+	ep->bEndpointAddress = USB_ENDPOINT_DIR_MASK | 1;
 	ep->bmAttributes = USB_ENDPOINT_XFER_INT;
 	ep->wMaxPacketSize = 64;
 	ep->bInterval = 10;
 	
 	ep = &loopback_eps[1];
 	ep->bLength = USB_DT_ENDPOINT_SIZE;
-	ep->bDescriptorType = USB_DT_CS_ENDPOINT;
-	ep->bEndpointAddress = 5;
+	ep->bDescriptorType = USB_DT_ENDPOINT;
+	ep->bEndpointAddress = 1;
 	ep->bmAttributes = USB_ENDPOINT_XFER_INT;
 	ep->wMaxPacketSize = 64;
 	ep->bInterval = 10;
