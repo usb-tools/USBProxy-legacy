@@ -31,16 +31,8 @@ class Configuration;
 struct pkt {
 	int length;
 	__u8 *data;
-};
 
-struct usb_string {
-  __u8 id;
-  const char *s;
-};
-
-struct usb_strings {
-  __u16 language;	/* 0x0409 for en-us */
-  struct usb_string *strings;
+	pkt(): length(0),data(NULL) {}
 };
 
 class DeviceProxy_Loopback : public DeviceProxy {

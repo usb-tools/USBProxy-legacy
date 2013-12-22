@@ -95,20 +95,38 @@ DeviceProxy_Loopback::DeviceProxy_Loopback(int vendorId,int productId) {
 
 	__u16 string0[2]={0x0409,0x0000};
 	loopback_strings=(USBString**)calloc(5,sizeof(USBString*));
+
 	loopback_strings[0]=new USBString(string0,0,0);
+
 	loopback_strings[STRING_MANUFACTURER]=new USBString("Manufacturer",STRING_MANUFACTURER,0x409);
 	loopback_strings[STRING_PRODUCT]=new USBString("Product",STRING_PRODUCT,0x409);
 	loopback_strings[STRING_SERIAL]=new USBString("Serial",STRING_SERIAL,0x409);
 	loopback_strings[STRING_LOOPBACK]=new USBString("Loopback",STRING_LOOPBACK,0x409);
 	loopback_stringMaxIndex=STRING_LOOPBACK;
+
+	buffer=NULL;
+	full=false;
+	head=tail=0;
 }
 
 DeviceProxy_Loopback::~DeviceProxy_Loopback() {
 	disconnect();
+
+	int i;
+	if (loopback_strings) {
+	for (i=0;i<loopback_stringMaxIndex;i++) {
+		if (loopback_strings[i]) {
+			delete(loopback_strings[i]);
+			loopback_strings[i]=NULL;
+		}
+	}
+	free(loopback_strings);
+	loopback_strings=NULL;
+	}
 }
 
 int DeviceProxy_Loopback::connect() {
-	buffer = (struct pkt *) malloc(BUF_LEN * sizeof(struct pkt));
+	buffer = (struct pkt *) calloc(BUF_LEN,sizeof(struct pkt));
 	head = tail = 0;
 	full = false;
 	p_is_connected = true;
@@ -117,6 +135,13 @@ int DeviceProxy_Loopback::connect() {
 
 void DeviceProxy_Loopback::disconnect() {
 	if(buffer) {
+		int i;
+		for(i=0;i<BUF_LEN;i++) {
+			if (buffer[i].data) {
+				free(buffer[i].data);
+				buffer[i].data=NULL;
+			}
+		}
 		free(buffer);
 		buffer = NULL;
 	}
@@ -141,7 +166,7 @@ bool DeviceProxy_Loopback::is_highspeed() {
 int DeviceProxy_Loopback::control_request(const usb_ctrlrequest* setup_packet, int* nbytes, __u8* dataptr, int timeout) {
 	if (debugLevel>1) {
 		char* hex=hex_string((void*)setup_packet,sizeof(*setup_packet));
-		fprintf(stderr, "Loopback> %s\n",hex);
+		fprintf(stderr, "Loopback< %s\n",hex);
 		free(hex);
 	}
 	if(setup_packet->bRequestType && USB_DIR_IN && setup_packet->bRequest == USB_REQ_GET_DESCRIPTOR) {
@@ -178,7 +203,7 @@ int DeviceProxy_Loopback::control_request(const usb_ctrlrequest* setup_packet, i
 				if (idx>loopback_stringMaxIndex) return -1;
 				string_desc=loopback_strings[idx]->get_descriptor();
 				*nbytes=string_desc->bLength>setup_packet->wLength?setup_packet->wLength:string_desc->bLength;
-				memcpy(dataptr,buf,*nbytes);
+				memcpy(dataptr,string_desc,*nbytes);
 				break;
 			case USB_DT_DEVICE_QUALIFIER:
 				return -1;
@@ -200,10 +225,12 @@ void DeviceProxy_Loopback::send_data(__u8 endpoint,__u8 attributes, __u16 maxPac
 	if(head==tail && full)
 		return; // Buffer is full, silently drop data
 
-	struct pkt *next = buffer + tail;
-	next->length = length;
-	next->data = (__u8 *) malloc(length);
-	memcpy(next->data, dataptr, length);
+	struct pkt next = buffer[tail];
+	next.length = length;
+	next.data = (__u8 *) malloc(length);
+	memcpy(next.data, dataptr, length);
+	free(buffer[tail].data);
+	buffer[tail].data=NULL;
 	tail = (tail + 1) % BUF_LEN;
 	full = (head==tail);
 }
@@ -213,9 +240,9 @@ void DeviceProxy_Loopback::receive_data(__u8 endpoint,__u8 attributes, __u16 max
 		// No packet data (could wait for timeout to see if data arrives)
 		*length = 0;
 	} else {
-		struct pkt *next = buffer + head;
-		*dataptr = next->data;
-		*length = next->length;
+		struct pkt next = buffer[head];
+		*dataptr = next.data;
+		*length = next.length;
 		head = (head + 1) % BUF_LEN;
 		full = !(head==tail);
 	}
