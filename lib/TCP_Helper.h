@@ -35,13 +35,15 @@ private:
 	bool p_server;
 	bool p_is_connected;
 	__u16 port;
-	int listen_fd;
+	int sockfd;
 	__u8* buf;
 	struct pollfd spoll;
+	char* p_address;
 
 public:
 	static int debugLevel;
 	TCP_Helper(bool server);
+	TCP_Helper(bool server, char* address);
 	virtual ~TCP_Helper();
 
 	bool connect();

@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <memory.h>
+#include <arpa/inet.h>
 
 #define BASE_PORT 10400
 #define TCP_BUFFER_SIZE 1456
@@ -38,6 +39,13 @@ int TCP_Helper::debugLevel=0;
 
 TCP_Helper::TCP_Helper(bool server) {
 	p_server = server;
+	p_address = NULL;
+	p_is_connected = false;
+}
+
+TCP_Helper::TCP_Helper(bool server, char* address) {
+	p_server = server;
+	p_address = address;
 	p_is_connected = false;
 }
 
@@ -46,6 +54,9 @@ TCP_Helper::~TCP_Helper() {
 }
 
 bool TCP_Helper::connect() {
+	//sized to handle ETHERNET less IP(20 byte)/TCP(max 24 byte) headers
+	buf = (__u8*)malloc(TCP_BUFFER_SIZE);
+	
 	if(p_server)
 		p_is_connected = server_connect();
 	else
@@ -55,37 +66,52 @@ bool TCP_Helper::connect() {
 }
 
 bool TCP_Helper::client_connect() {
+	int sockfd = 0;
+	struct sockaddr_in serv_addr;
+	
+	memset(buf, '0', TCP_BUFFER_SIZE);
+	if((sockfd = socket(AF_INET, SOCK_STREAM, 0))< 0)
+	{
+		printf("\n Error : Could not create socket \n");
+		return 1;
+	}
+	
+	serv_addr.sin_family = AF_INET;
+	serv_addr.sin_port = htons(5000);
+	serv_addr.sin_addr.s_addr = inet_addr(p_address);
+	
+	if(::connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr))<0)
+	{
+		fprintf(stderr, "Error : Connect Failed \n");
+		return 1;
+	}
 	return false;
 }
 
 bool TCP_Helper::server_connect() {
   
-	struct sockaddr_in serv_addr;
+	struct sockaddr_in serv_addr = {};
 
-	//sized to handle ETHERNET less IP(20 byte)/TCP(max 24 byte) headers
-	buf = (__u8*)malloc(TCP_BUFFER_SIZE);
-
-	listen_fd = socket(AF_INET, SOCK_STREAM, 0);
-	printf("socket retrieve success\n");
+	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	fprintf(stderr, "socket retrieve success\n");
 	
-	memset(&serv_addr, '0', sizeof(serv_addr));
 	memset(buf, '0', sizeof(TCP_BUFFER_SIZE));
 
 	serv_addr.sin_family = AF_INET;    
 	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY); 
 	serv_addr.sin_port = htons(BASE_PORT);    
 	
-	bind(listen_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+	bind(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
 	
-	if(listen(listen_fd, 10) == -1){
-		printf("Failed to listen\n");
+	if(listen(sockfd, 10) == -1){
+		fprintf(stderr, "Failed to listen\n");
 		return false;
 	}
 	return true;
 }
 
 void TCP_Helper::disconnect() {
-	if (listen_fd) {close(listen_fd);listen_fd=0;}
+	if (sockfd) {close(sockfd);sockfd=0;}
 	if (buf) {free(buf);buf=NULL;}
 }
 
