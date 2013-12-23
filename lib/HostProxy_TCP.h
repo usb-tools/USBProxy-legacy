@@ -27,10 +27,12 @@
 #define USBPROXY_HOSTPROXY_TCP_H
 
 #include "HostProxy.h"
+#include "TCP_Helper.h"
 
 class HostProxy_TCP: public HostProxy {
 private:
 	bool p_is_connected;
+	TCP_Helper* network;
 
 public:
 	static int debugLevel;

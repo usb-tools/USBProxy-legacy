@@ -27,23 +27,29 @@
 #ifndef USBPROXY_TCP_HELPER_H
 #define USBPROXY_TCP_HELPER_H
 
+#include <linux/types.h>
+#include <poll.h>
 
 class TCP_Helper {
 private:
 	bool p_server;
 	bool p_is_connected;
+	__u16 port;
+	int sck;
+	__u8* buf;
+	struct pollfd spoll;
 
 public:
 	static int debugLevel;
-	HostProxy_TCP(bool server);
-	virtual ~HostProxy_TCP();
+	TCP_Helper(bool server);
+	virtual ~TCP_Helper();
 
-	int connect();
+	bool connect();
 	void disconnect();
 	void reset();
 	bool is_connected();
 
-	int open_endpoint(__u8 epndpoint);
+	int open_endpoint(__u8 endpoint);
 	char* toString() {return (char *) "TCP network helper";}
 };
 

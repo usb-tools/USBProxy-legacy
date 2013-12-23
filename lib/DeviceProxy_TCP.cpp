@@ -25,14 +25,12 @@
 #include "DeviceProxy_TCP.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include "HexString.h"
-#include "Socket_helpers.h"
 
 int DeviceProxy_TCP::debugLevel = 0;
 
 DeviceProxy_TCP::DeviceProxy_TCP(bool server) {
-	p_server = server;
+	network = new TCP_Helper(server);
 	p_is_connected = false;
 }
 
@@ -42,31 +40,11 @@ DeviceProxy_TCP::~DeviceProxy_TCP() {
 
 /* Open a socket for EP0 - we don't know how many EPs we need yet */
 int DeviceProxy_TCP::connect() {
-	port = BASE_PORT;
-	fprintf(stderr,"Opening base port %d.\n", port);
-	sck=socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC, IPPROTO_TCP);
-	spoll.fd=sck;
-	if (sck<0) {
-		fprintf(stderr,"Error creating socket.\n");
-		sck=0;
-	}
-	struct sockaddr_in addr = {};
-	addr.sin_family=AF_INET;
-	addr.sin_addr.s_addr=htonl(INADDR_ANY);
-	addr.sin_port=htons(port);
-	if (bind(sck,(struct sockaddr*)&addr,sizeof(addr))<0) {
-		fprintf(stderr,"Error binding to port %d.\n",port);
-		sck=0;
-	}
-	//sized to handle ETHERNET less IP(20 byte)/TCP(max 24 byte) headers
-	buf=(__u8*)malloc(TCP_BUFFER_SIZE);
-	p_is_connected = true;
+	p_is_connected = network->connect();
 	return 0;
 }
 
 void DeviceProxy_TCP::disconnect() {
-	if (sck) {close(sck);sck=0;}
-	if (buf) {free(buf);buf=NULL;}
 	p_is_connected = false;
 }
 

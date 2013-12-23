@@ -28,17 +28,13 @@
 #define USBPROXY_DEVICEPROXY_TCP_H
 
 #include "DeviceProxy.h"
-#include <poll.h>
+#include "TCP_Helper.h"
 
 /* This is the server, it listens for connection from the other side */
 class DeviceProxy_TCP:public DeviceProxy {
 private:
 	bool p_is_connected;
-	bool p_server;
-	__u16 port;
-	int sck;
-	__u8* buf;
-	struct pollfd spoll;
+	TCP_Helper* network;
 
 public:
 	static int debugLevel;
