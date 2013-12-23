@@ -186,9 +186,8 @@ Device::~Device() {
 			if (strings[i]) {
 				int j=0;
 				while (strings[i][j]) {
-					if (strings[i][j]) {
-						delete(strings[i][j]);
-						strings[i][j]=NULL;}
+					delete(strings[i][j]);
+					strings[i][j]=NULL;
 					j++;
 				}
 				free(strings[i]);

@@ -129,15 +129,15 @@ extern "C" int main(int argc, char **argv)
 	manager=new Manager(device_proxy,host_proxy);
 
 	PacketFilter_streamlog* logfilter=new PacketFilter_streamlog(stderr);
-	Injector_UDP* udpinjector=new Injector_UDP(12345);
+	//Injector_UDP* udpinjector=new Injector_UDP(12345);
 
-	PacketFilter_PcapLogger* pcaplogger=new PacketFilter_PcapLogger("/tmp/usb.pcap");
+	//PacketFilter_PcapLogger* pcaplogger=new PacketFilter_PcapLogger("/tmp/usb.pcap");
 
-	//manager->add_filter(logfilter);
+	manager->add_filter(logfilter);
 	//manager->add_filter(rotfilter);
 	//manager->add_filter(keyfilter);
-	manager->add_injector(udpinjector);
-	manager->add_filter(pcaplogger);
+	//manager->add_injector(udpinjector);
+	//manager->add_filter(pcaplogger);
 
 	manager->start_control_relaying();
 
@@ -145,14 +145,14 @@ extern "C" int main(int argc, char **argv)
 
 	manager->stop_relaying();
 
-	delete(pcaplogger);
-	pcaplogger=NULL;
+	//delete(pcaplogger);
+	//pcaplogger=NULL;
 
 	delete(logfilter);
 	logfilter=NULL;
 
-	delete(udpinjector);
-	udpinjector=NULL;
+	//delete(udpinjector);
+	//udpinjector=NULL;
 
 	delete(manager);
 	manager=NULL;
