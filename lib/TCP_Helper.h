@@ -35,7 +35,7 @@ private:
 	bool p_server;
 	bool p_is_connected;
 	__u16 port;
-	int sck;
+	int listen_fd;
 	__u8* buf;
 	struct pollfd spoll;
 
@@ -45,6 +45,8 @@ public:
 	virtual ~TCP_Helper();
 
 	bool connect();
+	bool client_connect();
+	bool server_connect();
 	void disconnect();
 	void reset();
 	bool is_connected();

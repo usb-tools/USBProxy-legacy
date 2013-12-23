@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <memory.h>
 
 #define BASE_PORT 10400
 #define TCP_BUFFER_SIZE 1456
@@ -41,35 +42,51 @@ TCP_Helper::TCP_Helper(bool server) {
 }
 
 TCP_Helper::~TCP_Helper() {
-	if (sck) {close(sck);sck=0;}
-	if (buf) {free(buf);buf=NULL;}
+	disconnect();
 }
 
 bool TCP_Helper::connect() {
-	port = BASE_PORT;
-	fprintf(stderr,"Opening base port %d.\n", port);
-	sck=socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC, IPPROTO_TCP);
-	spoll.fd=sck;
-	if (sck<0) {
-		fprintf(stderr,"Error creating socket.\n");
-		sck=0;
-	}
-	struct sockaddr_in addr = {};
-	addr.sin_family=AF_INET;
-	addr.sin_addr.s_addr=htonl(INADDR_ANY);
-	addr.sin_port=htons(port);
-	if (bind(sck,(struct sockaddr*)&addr,sizeof(addr))<0) {
-		fprintf(stderr,"Error binding to port %d.\n",port);
-		sck=0;
-	}
-	//sized to handle ETHERNET less IP(20 byte)/TCP(max 24 byte) headers
-	buf=(__u8*)malloc(TCP_BUFFER_SIZE);
-	p_is_connected = true;
+	if(p_server)
+		p_is_connected = server_connect();
+	else
+		p_is_connected = client_connect();
+
 	return p_is_connected;
 }
 
-void TCP_Helper::disconnect() {
+bool TCP_Helper::client_connect() {
+	return false;
+}
+
+bool TCP_Helper::server_connect() {
+  
+	struct sockaddr_in serv_addr;
+
+	//sized to handle ETHERNET less IP(20 byte)/TCP(max 24 byte) headers
+	buf = (__u8*)malloc(TCP_BUFFER_SIZE);
+
+	listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+	printf("socket retrieve success\n");
 	
+	memset(&serv_addr, '0', sizeof(serv_addr));
+	memset(buf, '0', sizeof(TCP_BUFFER_SIZE));
+
+	serv_addr.sin_family = AF_INET;    
+	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY); 
+	serv_addr.sin_port = htons(BASE_PORT);    
+	
+	bind(listen_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+	
+	if(listen(listen_fd, 10) == -1){
+		printf("Failed to listen\n");
+		return false;
+	}
+	return true;
+}
+
+void TCP_Helper::disconnect() {
+	if (listen_fd) {close(listen_fd);listen_fd=0;}
+	if (buf) {free(buf);buf=NULL;}
 }
 
 void TCP_Helper::reset() {
