@@ -37,6 +37,8 @@ private:
 	__u16 port;
 	int sockfd;
 	__u8* buf;
+	__u8* ep_buf[32];
+	int ep_sockets[32];
 	struct pollfd spoll;
 	char* p_address;
 
@@ -47,13 +49,13 @@ public:
 	virtual ~TCP_Helper();
 
 	bool connect();
-	bool client_connect();
-	bool server_connect();
+	int client_connect(int port);
+	int server_connect(int port);
 	void disconnect();
+	int open_endpoint(__u8 ep);
 	void reset();
 	bool is_connected();
 
-	int open_endpoint(__u8 endpoint);
 	char* toString() {return (char *) "TCP network helper";}
 };
 

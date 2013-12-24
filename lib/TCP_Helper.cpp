@@ -58,54 +58,60 @@ bool TCP_Helper::connect() {
 	buf = (__u8*)malloc(TCP_BUFFER_SIZE);
 	
 	if(p_server)
-		p_is_connected = server_connect();
+		sockfd = server_connect(0);
 	else
-		p_is_connected = client_connect();
+		sockfd = client_connect(0);
+	
+	if(sockfd < 0) {
+		free(buf);
+		p_is_connected = false;
+	} else
+		p_is_connected = true;
 
 	return p_is_connected;
 }
 
-bool TCP_Helper::client_connect() {
-	int sockfd = 0;
+int TCP_Helper::client_connect(int port) {
+	int sck;
 	struct sockaddr_in serv_addr;
 	
 	memset(buf, '0', TCP_BUFFER_SIZE);
-	if((sockfd = socket(AF_INET, SOCK_STREAM, 0))< 0)
+	if((sck = socket(AF_INET, SOCK_STREAM, 0))< 0)
 	{
 		printf("\n Error : Could not create socket \n");
-		return 1;
+		return -1;
 	}
 	
 	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_port = htons(5000);
+	serv_addr.sin_port = htons(BASE_PORT + port);
 	serv_addr.sin_addr.s_addr = inet_addr(p_address);
 	
-	if(::connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr))<0)
+	if(::connect(sck, (struct sockaddr *)&serv_addr, sizeof(serv_addr))<0)
 	{
 		fprintf(stderr, "Error : Connect Failed \n");
-		return 1;
+		return -1;
 	}
-	return false;
+	return sck;
 }
 
-bool TCP_Helper::server_connect() {
-  
+int TCP_Helper::server_connect(int port) {
+	int sck;
 	struct sockaddr_in serv_addr = {};
 
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	sck = socket(AF_INET, SOCK_STREAM, 0);
 	fprintf(stderr, "socket retrieve success\n");
 	
 	memset(buf, '0', sizeof(TCP_BUFFER_SIZE));
 
 	serv_addr.sin_family = AF_INET;    
 	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY); 
-	serv_addr.sin_port = htons(BASE_PORT);    
+	serv_addr.sin_port = htons(BASE_PORT + port);    
 	
-	bind(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+	bind(sck, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
 	
-	if(listen(sockfd, 10) == -1){
+	if(listen(sck, 10) == -1){
 		fprintf(stderr, "Failed to listen\n");
-		return false;
+		return -1;
 	}
 	return true;
 }
@@ -113,6 +119,21 @@ bool TCP_Helper::server_connect() {
 void TCP_Helper::disconnect() {
 	if (sockfd) {close(sockfd);sockfd=0;}
 	if (buf) {free(buf);buf=NULL;}
+}
+
+int TCP_Helper::open_endpoint(__u8 ep) {
+	ep_sockets[ep] = -1;
+	//sized to handle ETHERNET less IP(20 byte)/TCP(max 24 byte) headers
+	ep_buf[ep] = (__u8*) malloc(TCP_BUFFER_SIZE);
+	
+	if(p_server)
+		ep_sockets[ep] = server_connect(ep);
+	else
+		ep_sockets[ep] = client_connect(ep);
+	
+	if (ep_sockets[ep] < 0)
+		free(ep_buf[ep]);
+	return ep_sockets[ep];
 }
 
 void TCP_Helper::reset() {
