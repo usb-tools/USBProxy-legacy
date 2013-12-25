@@ -31,7 +31,8 @@ class DeviceProxy : public Proxy {
 public:
 	virtual ~DeviceProxy() {}
 
-	virtual int connect()=0;
+	//return ETIMEDOUT if it times out
+	virtual int connect(int timeout=250)=0;
 	virtual void disconnect()=0;
 	virtual void reset()=0;
 	virtual bool is_connected()=0;

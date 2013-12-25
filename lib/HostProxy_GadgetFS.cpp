@@ -143,7 +143,7 @@ int HostProxy_GadgetFS::generate_descriptor(Device* device) {
 }
 
 
-int HostProxy_GadgetFS::connect(Device* device) {
+int HostProxy_GadgetFS::connect(Device* device,int timeout) {
 	int status;
 
 	if (p_is_connected) {fprintf(stderr,"GadgetFS already connected.\n"); return 0;}

@@ -39,7 +39,7 @@ DeviceProxy_TCP::~DeviceProxy_TCP() {
 }
 
 /* Open a socket for EP0 - we don't know how many EPs we need yet */
-int DeviceProxy_TCP::connect() {
+int DeviceProxy_TCP::connect(int timeout) {
 	p_is_connected = network->connect();
 	return 0;
 }

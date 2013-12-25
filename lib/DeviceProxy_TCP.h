@@ -41,7 +41,7 @@ public:
 	DeviceProxy_TCP(bool server);
 	~DeviceProxy_TCP();
 
-	int connect();
+	int connect(int timeout=250);
 	void disconnect();
 	void reset();
 	bool is_connected();

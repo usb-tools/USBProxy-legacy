@@ -26,6 +26,8 @@
 #include <unistd.h>
 #include <signal.h>
 #include <pthread.h>
+#include <errno.h>
+
 #include "Manager.h"
 #include "TRACE.h"
 #include "mqueue_helpers.h"
@@ -218,11 +220,15 @@ void Manager::start_control_relaying(){
 	status=USBM_SETUP;
 
 	//connect device proxy
-	if (deviceProxy->connect()!=0) {fprintf(stderr,"Unable to connect to device proxy.\n");status=USBM_IDLE;return;}
+	int rc=deviceProxy->connect();
+	while (rc==ETIMEDOUT && status==USBM_SETUP) {rc=deviceProxy->connect();}
+	if (rc!=0) {fprintf(stderr,"Unable to connect to device proxy.\n");status=USBM_IDLE;return;}
 
 	//populate device model
 	device=new Device(deviceProxy);
 	device->print(0);
+
+	if (status!=USBM_SETUP) {stop_relaying();return;}
 
 	//create EP0 endpoint object
 	usb_endpoint_descriptor desc_ep0;
@@ -234,24 +240,26 @@ void Manager::start_control_relaying(){
 	desc_ep0.bInterval=0;
 	out_endpoints[0]=new Endpoint((Interface*)NULL,&desc_ep0);
 
+	if (status!=USBM_SETUP) {stop_relaying();return;}
+	//setup EP0 message queues
 	char mqname[16];
 	struct mq_attr mqa;
 	mqa.mq_maxmsg=1;
 	mqa.mq_msgsize=4;
-
 	sprintf(mqname,"/USBProxy(%d)-%02X-EP",getpid(),0);
 	mqd_t mq_readersend=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
-
 	sprintf(mqname,"/USBProxy(%d)-%02X-EP",getpid(),0x80);
 	mqd_t mq_writersend=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
-	//RelayReader(Endpoint* _endpoint,HostProxy* _proxy,mqd_t _outQueue,mqd_t _inQueue);
+
+	if (status!=USBM_SETUP) {stop_relaying();return;}
+	//setup EP0 Reader & Writer
 	out_readers[0]=new RelayReader(out_endpoints[0],hostProxy,mq_readersend,mq_writersend);
-	//RelayWriter(Endpoint* _endpoint,DeviceProxy* _deviceProxy,Manager* _manager,mqd_t _inQueue,mqd_t _outQueue);
 	out_writers[0]=new RelayWriter(out_endpoints[0],deviceProxy,this,mq_readersend,mq_writersend);
 
 	//apply filters to relayers
 	int i;
 	for(i=0;i<filterCount;i++) {
+		if (status!=USBM_SETUP) {stop_relaying();return;}
 		if (filters[i]->device.test(device)) {
 			if (out_endpoints[0] && filters[i]->endpoint.test(out_endpoints[0]) ) {
 				out_writers[0]->add_filter(filters[i]);
@@ -261,6 +269,7 @@ void Manager::start_control_relaying(){
 
 	//apply injectors to relayers
 	for(i=0;i<injectorCount;i++) {
+		if (status!=USBM_SETUP) {stop_relaying();return;}
 		if (injectors[i]->device.test(device)) {
 			char mqname[16];
 			struct mq_attr mqa;
@@ -278,27 +287,30 @@ void Manager::start_control_relaying(){
 		}
 	}
 
+	//create injector threads
 	if (injectorCount) {
 		injectorThreads=(pthread_t *)calloc(injectorCount,sizeof(pthread_t));
 		for(i=0;i<injectorCount;i++) {
+			if (status!=USBM_SETUP) {stop_relaying();return;}
 			injectors[i]->set_haltsignal(haltSignal);
 			pthread_create(&injectorThreads[i],NULL,&Injector::listen_helper,injectors[i]);
 		}
 	}
 
-	if (hostProxy->connect(device)!=0) {
-		stop_relaying();
-		return;
-	}
+	rc=hostProxy->connect(device);
+	while (rc==ETIMEDOUT && status==USBM_SETUP) {rc=hostProxy->connect(device);}
+	if (rc!=0) {status=USBM_SETUP_ABORT;stop_relaying();return;}
 
 	if (out_readers[0]) {
 		out_readers[0]->set_haltsignal(haltSignal);
 		pthread_create(&out_readerThreads[0],NULL,&RelayReader::relay_read_helper,out_readers[0]);
 	}
+	if (status!=USBM_SETUP) {status=USBM_SETUP_ABORT;stop_relaying();return;}
 	if (out_writers[0]) {
 		out_writers[0]->set_haltsignal(haltSignal);
 		pthread_create(&out_writerThreads[i],NULL,&RelayWriter::relay_write_helper,out_writers[0]);
 	}
+	if (status!=USBM_SETUP) {stop_relaying();return;}
 	status=USBM_RELAYING;
 }
 
@@ -413,7 +425,8 @@ void Manager::start_data_relaying() {
 }
 
 void Manager::stop_relaying(){
-	if (status!=USBM_RELAYING && status!=USBM_SETUP) return;
+	if (status==USBM_SETUP) {status=USBM_SETUP_ABORT;return;}
+	if (status!=USBM_RELAYING && status!=USBM_SETUP_ABORT) return;
 	status=USBM_STOPPING;
 
 	int i;

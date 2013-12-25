@@ -59,7 +59,7 @@ public:
 	HostProxy_GadgetFS(int _debugLevel=0);
 	virtual ~HostProxy_GadgetFS();
 
-	int connect(Device* device);
+	int connect(Device* device,int timeout=250);
 	void disconnect();
 	void reset();
 	bool is_connected();

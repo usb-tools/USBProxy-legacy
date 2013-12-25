@@ -52,7 +52,7 @@ public:
 	DeviceProxy_Loopback(int vendorId, int productId);
 	~DeviceProxy_Loopback();
 
-	int connect();
+	int connect(int timeout=250);
 	void disconnect();
 	void reset();
 	bool is_connected();

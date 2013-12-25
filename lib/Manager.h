@@ -46,7 +46,8 @@ enum Manager_status {
 	USBM_IDLE=0,
 	USBM_SETUP=1,
 	USBM_RELAYING=2,
-	USBM_STOPPING=3
+	USBM_STOPPING=3,
+	USBM_SETUP_ABORT=4
 };
 
 class Manager {

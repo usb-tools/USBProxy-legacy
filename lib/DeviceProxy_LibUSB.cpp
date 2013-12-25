@@ -46,7 +46,7 @@ DeviceProxy_LibUSB::~DeviceProxy_LibUSB() {
 	 if (privateContext && context) {libusb_exit(context);}
 }
 
-int DeviceProxy_LibUSB::connect() {
+int DeviceProxy_LibUSB::connect(int timeout) {
 	return connect(desired_vid,desired_pid,desired_hubs);
 }
 

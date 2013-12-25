@@ -34,7 +34,8 @@ class HostProxy: public Proxy {
 public:
 	virtual ~HostProxy() {}
 
-	virtual int connect(Device* device)=0;
+	//return ETIMEDOUT if it times out
+	virtual int connect(Device* device,int timeout=250)=0;
 	virtual void disconnect()=0;
 	virtual void reset()=0;
 	virtual bool is_connected()=0;

@@ -134,7 +134,7 @@ DeviceProxy_Loopback::~DeviceProxy_Loopback() {
 	}
 }
 
-int DeviceProxy_Loopback::connect() {
+int DeviceProxy_Loopback::connect(int timeout) {
 	buffer = (struct pkt *) calloc(BUF_LEN,sizeof(struct pkt));
 	head = tail = 0;
 	full = false;
