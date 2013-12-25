@@ -36,10 +36,10 @@ private:
 
 public:
 	static int debugLevel;
-	HostProxy_TCP(bool server);
+	HostProxy_TCP(const char* address=NULL);
 	virtual ~HostProxy_TCP();
 
-	int connect(Device *device);
+	int connect(Device *device,int timeout=250);
 	void disconnect();
 	void reset();
 	bool is_connected();

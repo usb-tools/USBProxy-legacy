@@ -28,8 +28,8 @@
 
 int HostProxy_TCP::debugLevel = 0;
 
-HostProxy_TCP::HostProxy_TCP(bool server) {
-	network = new TCP_Helper(server);
+HostProxy_TCP::HostProxy_TCP(const char* address) {
+	network = new TCP_Helper(address);
 	p_is_connected = false;
 	
 }
@@ -37,9 +37,10 @@ HostProxy_TCP::HostProxy_TCP(bool server) {
 HostProxy_TCP::~HostProxy_TCP() {
 }
 
-int HostProxy_TCP::connect(Device* device) {
-	p_is_connected = network->connect();
-	return 0;
+int HostProxy_TCP::connect(Device* device,int timeout) {
+	int rc=network->connect(timeout);
+	p_is_connected=rc==0;
+	return rc;
 }
 
 void HostProxy_TCP::disconnect() {

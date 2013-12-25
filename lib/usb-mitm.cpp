@@ -91,6 +91,7 @@ extern "C" int main(int argc, char **argv)
 {
 	int c;
 	char* end;
+	bool client=false,server=false;
 	fprintf(stderr,"SIGRTMIN: %d\n",SIGRTMIN);
 
 	int vendorId=LIBUSB_HOTPLUG_MATCH_ANY, productId=LIBUSB_HOTPLUG_MATCH_ANY;
@@ -102,7 +103,7 @@ extern "C" int main(int argc, char **argv)
 	sigaction(SIGHUP, &action, NULL);
 	sigaction(SIGINT, &action, NULL);
 	
-	while ((c = getopt (argc, argv, "p:v:dh")) != EOF) {
+	while ((c = getopt (argc, argv, "p:v:dhsc")) != EOF) {
 		switch (c) {
 		case 'p':
 			productId = strtol(optarg, &end, 16);
@@ -113,6 +114,12 @@ extern "C" int main(int argc, char **argv)
 		case 'd':		/* verbose */
 			debug++;
 			break;
+		case 'c':
+			client=true;
+			break;
+		case 's':
+			server=true;
+			break;
 		case 'h':
 		default:
 			usage(argv[0]);
@@ -122,10 +129,21 @@ extern "C" int main(int argc, char **argv)
 
 	DeviceProxy_LibUSB::debugLevel=1;
 	DeviceProxy_Loopback::debugLevel=2;
+	//DeviceProxy* device_proxy=(DeviceProxy *)new DeviceProxy_Loopback(vendorId,productId);
+	DeviceProxy* device_proxy;
+	HostProxy* host_proxy;
 
-	//DeviceProxy* device_proxy=(DeviceProxy *)new DeviceProxy_LibUSB(vendorId,productId);
-	DeviceProxy* device_proxy=(DeviceProxy *)new DeviceProxy_Loopback(vendorId,productId);
-	HostProxy* host_proxy=(HostProxy* )new HostProxy_GadgetFS(1);
+
+	if (client) {
+		device_proxy=(DeviceProxy *)new DeviceProxy_LibUSB(vendorId,productId);
+		host_proxy=(HostProxy* )new HostProxy_TCP("10.100.8.52");
+	} else if(server) {
+		device_proxy=(DeviceProxy *)new DeviceProxy_TCP();
+		host_proxy=(HostProxy* )new HostProxy_GadgetFS(1);
+	} else {
+		device_proxy=(DeviceProxy *)new DeviceProxy_LibUSB(vendorId,productId);
+		host_proxy=(HostProxy* )new HostProxy_GadgetFS(1);
+	}
 	manager=new Manager(device_proxy,host_proxy);
 
 	PacketFilter_streamlog* logfilter=new PacketFilter_streamlog(stderr);

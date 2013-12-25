@@ -34,25 +34,24 @@ class TCP_Helper {
 private:
 	bool p_server;
 	bool p_is_connected;
-	__u16 port;
-	int sockfd;
-	__u8* buf;
 	__u8* ep_buf[32];
-	int ep_sockets[32];
+	bool ep_connect[32];
+	int ep_socket[32];
+	int ep_listener[32];
 	struct pollfd spoll;
 	char* p_address;
 
 public:
 	static int debugLevel;
-	TCP_Helper(bool server);
-	TCP_Helper(bool server, char* address);
+	TCP_Helper(const char* address=NULL);
 	virtual ~TCP_Helper();
 
-	bool connect();
-	int client_connect(int port);
-	int server_connect(int port);
+	int connect(int timeout);
+	int client_connect(int port,int timeout);
+	int server_connect(int port,int timeout);
+	void server_listen(int port);
 	void disconnect();
-	int open_endpoint(__u8 ep);
+	int open_endpoints(__u8* eps,__u8 num_eps,int timeout);
 	void reset();
 	bool is_connected();
 

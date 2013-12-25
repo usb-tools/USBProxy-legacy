@@ -29,8 +29,8 @@
 
 int DeviceProxy_TCP::debugLevel = 0;
 
-DeviceProxy_TCP::DeviceProxy_TCP(bool server) {
-	network = new TCP_Helper(server);
+DeviceProxy_TCP::DeviceProxy_TCP(const char* address) {
+	network = new TCP_Helper(address);
 	p_is_connected = false;
 }
 
@@ -40,8 +40,9 @@ DeviceProxy_TCP::~DeviceProxy_TCP() {
 
 /* Open a socket for EP0 - we don't know how many EPs we need yet */
 int DeviceProxy_TCP::connect(int timeout) {
-	p_is_connected = network->connect();
-	return 0;
+	int rc=network->connect(timeout);
+	p_is_connected=rc==0;
+	return rc;
 }
 
 void DeviceProxy_TCP::disconnect() {

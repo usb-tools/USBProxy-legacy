@@ -31,77 +31,104 @@
 #include <unistd.h>
 #include <memory.h>
 #include <arpa/inet.h>
+#include <errno.h>
+#include <poll.h>
+#include <sys/socket.h>
+#include <fcntl.h>
 
 #define BASE_PORT 10400
 #define TCP_BUFFER_SIZE 1456
 
 int TCP_Helper::debugLevel=0;
 
-TCP_Helper::TCP_Helper(bool server) {
-	p_server = server;
-	p_address = NULL;
-	p_is_connected = false;
-}
-
-TCP_Helper::TCP_Helper(bool server, char* address) {
-	p_server = server;
+TCP_Helper::TCP_Helper(const char* address) {
+	p_server = address==NULL;
 	p_address = address;
 	p_is_connected = false;
+	int i;
+	for (i=0;i<32;i++) {
+		ep_listener[i]=0;
+		ep_socket[i]=0;
+		ep_buf[i]=NULL;
+	}
 }
 
 TCP_Helper::~TCP_Helper() {
 	disconnect();
 }
 
-bool TCP_Helper::connect() {
+int TCP_Helper::connect(int timeout) {
 	//sized to handle ETHERNET less IP(20 byte)/TCP(max 24 byte) headers
-	buf = (__u8*)malloc(TCP_BUFFER_SIZE);
 	
-	if(p_server)
-		sockfd = server_connect(0);
-	else
-		sockfd = client_connect(0);
-	
-	if(sockfd < 0) {
-		free(buf);
-		p_is_connected = false;
+	int rc;
+	if(p_server) {
+		server_listen(0);
+		rc=server_connect(0,timeout);
 	} else
-		p_is_connected = true;
-
-	return p_is_connected;
+		rc=client_connect(0,timeout);
+	
+	p_is_connected=rc==0;
+	if (p_is_connected) ep_buf[0] = (__u8*)malloc(TCP_BUFFER_SIZE);
+	return rc;
 }
 
-int TCP_Helper::client_connect(int port) {
+int TCP_Helper::client_connect(int port,int timeout) {
 	int sck;
-	struct sockaddr_in serv_addr;
+	if (ep_connect[port] && ep_socket[port]) return 0;
+	if (!ep_socket[port]) { //create socket
+		struct sockaddr_in serv_addr;
+
+		memset(ep_buf[port], 0, TCP_BUFFER_SIZE);
+		if((sck = socket(AF_INET, SOCK_STREAM|SOCK_NONBLOCK|SOCK_CLOEXEC, 0))< 0)
+		{
+			printf("\n Error : Could not create socket \n");
+			return -1;
+		}
+
+		serv_addr.sin_family = AF_INET;
+		serv_addr.sin_port = htons(BASE_PORT + port);
+		serv_addr.sin_addr.s_addr = inet_addr(p_address);
+
+		int rc=::connect(sck, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
 	
-	memset(buf, '0', TCP_BUFFER_SIZE);
-	if((sck = socket(AF_INET, SOCK_STREAM, 0))< 0)
-	{
-		printf("\n Error : Could not create socket \n");
-		return -1;
+		if (rc==0) { //immediate connect
+			ep_socket[port]=sck;
+			ep_connect[port]=true;
+			return 0;
+		}
+		if(rc<0 && errno==EINPROGRESS) { //async connect
+			ep_socket[port]=sck;
+			ep_connect[port]=false;
+		}
+		if (rc<0 && errno!=EINPROGRESS) {
+			fprintf(stderr, "Error : Connect Failed \n");
+			return -1;
+		}
 	}
-	
-	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_port = htons(BASE_PORT + port);
-	serv_addr.sin_addr.s_addr = inet_addr(p_address);
-	
-	if(::connect(sck, (struct sockaddr *)&serv_addr, sizeof(serv_addr))<0)
-	{
-		fprintf(stderr, "Error : Connect Failed \n");
-		return -1;
+	if (ep_socket[port]) { //wait for an ascyn connect to complete
+		struct pollfd poll_connect;
+		poll_connect.fd=sck;
+		poll_connect.events=POLLOUT;
+		if (poll(&poll_connect,1,timeout) && (poll_connect.revents&POLLOUT)) {
+			ep_connect[port]=true;
+			return 0;
+		} else {
+			return ETIMEDOUT;
+		}
 	}
-	return sck;
+	return -1; //should never really be reached
 }
 
-int TCP_Helper::server_connect(int port) {
+void TCP_Helper::server_listen(int port) {
 	int sck;
+	if (ep_listener[port]) return;
+
 	struct sockaddr_in serv_addr = {};
 
-	sck = socket(AF_INET, SOCK_STREAM, 0);
+	sck = socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC, 0);
 	fprintf(stderr, "socket retrieve success\n");
 	
-	memset(buf, '0', sizeof(TCP_BUFFER_SIZE));
+	memset(ep_buf[port], '0', sizeof(TCP_BUFFER_SIZE));
 
 	serv_addr.sin_family = AF_INET;    
 	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY); 
@@ -111,29 +138,119 @@ int TCP_Helper::server_connect(int port) {
 	
 	if(listen(sck, 10) == -1){
 		fprintf(stderr, "Failed to listen\n");
-		return -1;
+		return;
 	}
-	return true;
+	ep_connect[port]=false;
+	ep_listener[port]=sck;
+}
+
+int TCP_Helper::server_connect(int port,int timeout) {
+	struct pollfd poll_accept;
+	poll_accept.fd=ep_listener[port];
+	poll_accept.events=POLLIN;
+	if (poll(&poll_accept,1,timeout) && poll_accept.revents==POLLIN) {
+		struct sockaddr client_addr;
+		unsigned int len=sizeof(client_addr);
+		int rc=accept(ep_listener[port],&client_addr,&len);
+		if (rc<0) {
+			fprintf(stderr,"Accept failed.\n");
+			return -1;
+		} else {
+			fcntl(rc,F_SETFD,FD_CLOEXEC);
+			ep_socket[port]=rc;
+			ep_connect[port]=true;
+		}
+	} else {
+		return ETIMEDOUT;
+	}
+	return -1;
 }
 
 void TCP_Helper::disconnect() {
-	if (sockfd) {close(sockfd);sockfd=0;}
-	if (buf) {free(buf);buf=NULL;}
+	int i;
+	for(i=0;i<32;i++) {
+		if (ep_listener[i]) {close(ep_listener[i]);ep_listener[i]=0;}
+		if (ep_socket[i]) {close(ep_socket[i]);ep_socket[i]=0;}
+		if (ep_buf[i]) {free(ep_buf[i]);ep_buf[i]=NULL;}
+	}
 }
 
-int TCP_Helper::open_endpoint(__u8 ep) {
-	ep_sockets[ep] = -1;
+int TCP_Helper::open_endpoints(__u8* eps,__u8 num_eps,int timeout) {
+/*
+ * if server, it will start listening on all EPs
+ * if client, it will start connection on all EPs
+ * then it will poll all unconnected endpoints simultaneously until timeout
+ * any that are connected(client) is will update ep_connected
+ * any that are ready to accept it will accept and update ep_connected
+ * if timedout with no activity it will return ETIMEDOUT
+ * otherwise it will return the number of sockets left to connect
+ */
+
+	//FIXME we should move the server test out of the loop, no point in testing p_server so many times. maybe just have two private open_endpoint functions one for server one for client
+	int i;
+	struct pollfd* poll_connections=NULL;
+	int poll_count=0;
+	int poll_idx=0;
+
+	for (i=0;i<num_eps;i++) {
+		int idx=(eps[i]&0x80)?(eps[i]&0x1f)|0x20:eps[i];
+		if (!ep_connect[idx]) {
+			if (p_server && !ep_listener[i]) {server_listen(idx);}
+			if (!p_server && !ep_socket[i]) {client_connect(idx,0);}
+			if (!ep_connect[idx]) poll_count++;
+		}
+	}
+	poll_connections=(struct pollfd*)calloc(poll_count,sizeof(struct pollfd));
+	for (i=0;i<num_eps;i++) {
+		int idx=(eps[i]&0x80)?(eps[i]&0x1f)|0x20:eps[i];
+		if (!ep_connect[idx]) {
+			if (p_server) {
+				poll_connections[poll_idx].fd=ep_listener[i];
+				poll_connections[poll_idx].events=POLLIN;
+			} else {
+				poll_connections[poll_idx].fd=ep_socket[i];
+				poll_connections[poll_idx].events=POLLOUT;
+			}
+			poll_idx++;
+		}
+	}
+
+	int ep_count=poll_count;
+	if (poll(poll_connections,poll_count,timeout)) {
+		for (poll_idx=0;i<poll_count;poll_idx++) {
+			if (p_server) {
+				if (poll_connections[poll_idx]==POLLIN) {
+					//FINISH server_connect but we need to map poll_idx back to port
+					//ep_count-- if succesful
+				}
+			} else {
+				if (poll_connections[poll_idx]==POLLIN) {
+					//FINISH client_connect but we need to map poll_idx back to port
+					//ep_count-- if succesful
+				}
+			}
+		}
+		return ep_count;
+	} else {
+		return ETIMEDOUT;
+	}
+
+	/*
+ 	if (ep&0x80) ep=(ep&0x1f)|0x20;
+	ep_socket[ep] = -1;
 	//sized to handle ETHERNET less IP(20 byte)/TCP(max 24 byte) headers
 	ep_buf[ep] = (__u8*) malloc(TCP_BUFFER_SIZE);
 	
 	if(p_server)
-		ep_sockets[ep] = server_connect(ep);
+		ep_socket[ep] = server_connect(ep);
 	else
-		ep_sockets[ep] = client_connect(ep);
+		ep_socket[ep] = client_connect(ep);
 	
-	if (ep_sockets[ep] < 0)
+	if (ep_socket[ep] < 0)
 		free(ep_buf[ep]);
-	return ep_sockets[ep];
+	return ep_socket[ep];
+*/
+	return 0;
 }
 
 void TCP_Helper::reset() {
