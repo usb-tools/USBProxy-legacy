@@ -43,7 +43,7 @@ int TCP_Helper::debugLevel=0;
 
 TCP_Helper::TCP_Helper(const char* address) {
 	p_server = address==NULL;
-	p_address = address;
+	p_address = strdup(address);
 	p_is_connected = false;
 	int i;
 	for (i=0;i<32;i++) {
@@ -55,6 +55,7 @@ TCP_Helper::TCP_Helper(const char* address) {
 
 TCP_Helper::~TCP_Helper() {
 	disconnect();
+	free(p_address);
 }
 
 int TCP_Helper::connect(int timeout) {
@@ -175,82 +176,111 @@ void TCP_Helper::disconnect() {
 	}
 }
 
-int TCP_Helper::open_endpoints(__u8* eps,__u8 num_eps,int timeout) {
-/*
- * if server, it will start listening on all EPs
- * if client, it will start connection on all EPs
- * then it will poll all unconnected endpoints simultaneously until timeout
- * any that are connected(client) is will update ep_connected
- * any that are ready to accept it will accept and update ep_connected
- * if timedout with no activity it will return ETIMEDOUT
- * otherwise it will return the number of sockets left to connect
- */
 
-	//FIXME we should move the server test out of the loop, no point in testing p_server so many times. maybe just have two private open_endpoint functions one for server one for client
+int TCP_Helper::client_open_endpoints(__u8* eps,__u8 num_eps,int timeout) {
 	int i;
 	struct pollfd* poll_connections=NULL;
+	__u8* poll_idxs=NULL;
 	int poll_count=0;
 	int poll_idx=0;
 
 	for (i=0;i<num_eps;i++) {
 		int idx=(eps[i]&0x80)?(eps[i]&0x1f)|0x20:eps[i];
 		if (!ep_connect[idx]) {
-			if (p_server && !ep_listener[i]) {server_listen(idx);}
-			if (!p_server && !ep_socket[i]) {client_connect(idx,0);}
+			if (!ep_socket[i]) {client_connect(idx,0);}
 			if (!ep_connect[idx]) poll_count++;
 		}
 	}
 	poll_connections=(struct pollfd*)calloc(poll_count,sizeof(struct pollfd));
+	poll_idxs=(__u8*)calloc(poll_count,sizeof(__u8));
 	for (i=0;i<num_eps;i++) {
 		int idx=(eps[i]&0x80)?(eps[i]&0x1f)|0x20:eps[i];
 		if (!ep_connect[idx]) {
-			if (p_server) {
-				poll_connections[poll_idx].fd=ep_listener[i];
-				poll_connections[poll_idx].events=POLLIN;
-			} else {
-				poll_connections[poll_idx].fd=ep_socket[i];
-				poll_connections[poll_idx].events=POLLOUT;
-			}
+			poll_connections[poll_idx].fd=ep_socket[i];
+			poll_connections[poll_idx].events=POLLOUT;
+			poll_idxs[poll_idx]=idx;
 			poll_idx++;
 		}
 	}
 
 	int ep_count=poll_count;
+	int rc=-1;
 	if (poll(poll_connections,poll_count,timeout)) {
 		for (poll_idx=0;i<poll_count;poll_idx++) {
-			if (p_server) {
-				if (poll_connections[poll_idx]==POLLIN) {
-					//FINISH server_connect but we need to map poll_idx back to port
-					//ep_count-- if succesful
-				}
-			} else {
-				if (poll_connections[poll_idx]==POLLIN) {
-					//FINISH client_connect but we need to map poll_idx back to port
-					//ep_count-- if succesful
+			if (poll_connections[poll_idx].revents==POLLOUT) {
+				int idx=poll_idxs[poll_idx];
+				if (client_connect(idx,0)) {
+					ep_buf[idx] = (__u8*)malloc(TCP_BUFFER_SIZE);
+					ep_count--;
 				}
 			}
 		}
-		return ep_count;
+		rc=ep_count;
 	} else {
-		return ETIMEDOUT;
+		rc=ETIMEDOUT;
+	}
+	free(poll_connections);
+	poll_connections=NULL;
+	free(poll_idxs);
+	poll_idxs=NULL;
+	return rc;
+}
+
+int TCP_Helper::server_open_endpoints(__u8* eps,__u8 num_eps,int timeout) {
+	int i;
+	struct pollfd* poll_connections=NULL;
+	__u8* poll_idxs=NULL;
+	int poll_count=0;
+	int poll_idx=0;
+
+	for (i=0;i<num_eps;i++) {
+		int idx=(eps[i]&0x80)?(eps[i]&0x1f)|0x20:eps[i];
+		if (!ep_connect[idx]) {
+			if (!ep_listener[i]) {server_listen(idx);}
+			if (!ep_connect[idx]) poll_count++;
+		}
+	}
+	poll_connections=(struct pollfd*)calloc(poll_count,sizeof(struct pollfd));
+	poll_idxs=(__u8*)calloc(poll_count,sizeof(__u8));
+	for (i=0;i<num_eps;i++) {
+		int idx=(eps[i]&0x80)?(eps[i]&0x1f)|0x20:eps[i];
+		if (!ep_connect[idx]) {
+			poll_connections[poll_idx].fd=ep_listener[i];
+			poll_connections[poll_idx].events=POLLIN;
+			poll_idxs[poll_idx]=idx;
+			poll_idx++;
+		}
 	}
 
-	/*
- 	if (ep&0x80) ep=(ep&0x1f)|0x20;
-	ep_socket[ep] = -1;
-	//sized to handle ETHERNET less IP(20 byte)/TCP(max 24 byte) headers
-	ep_buf[ep] = (__u8*) malloc(TCP_BUFFER_SIZE);
-	
-	if(p_server)
-		ep_socket[ep] = server_connect(ep);
-	else
-		ep_socket[ep] = client_connect(ep);
-	
-	if (ep_socket[ep] < 0)
-		free(ep_buf[ep]);
-	return ep_socket[ep];
-*/
-	return 0;
+	int ep_count=poll_count;
+	int rc=-1;
+	if (poll(poll_connections,poll_count,timeout)) {
+		for (poll_idx=0;i<poll_count;poll_idx++) {
+			if (poll_connections[poll_idx].revents==POLLIN) {
+				int idx=poll_idxs[poll_idx];
+				if (server_connect(idx,0)) {
+					ep_buf[idx] = (__u8*) malloc(TCP_BUFFER_SIZE);
+					ep_count--;
+				}
+			}
+		}
+		rc=ep_count;
+	} else {
+		rc=ETIMEDOUT;
+	}
+	free(poll_connections);
+	poll_connections=NULL;
+	free(poll_idxs);
+	poll_idxs=NULL;
+	return rc;
+
+}
+
+int TCP_Helper::open_endpoints(__u8* eps,__u8 num_eps,int timeout) {
+if (p_server)
+	return server_open_endpoints(eps,num_eps,timeout);
+else
+	return client_open_endpoints(eps,num_eps,timeout);
 }
 
 void TCP_Helper::reset() {
@@ -260,3 +290,4 @@ void TCP_Helper::reset() {
 bool TCP_Helper::is_connected() {
 	return p_is_connected;
 }
+

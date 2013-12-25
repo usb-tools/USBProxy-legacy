@@ -43,10 +43,13 @@
 #include "TRACE.h"
 #include "Manager.h"
 #include "DeviceProxy_LibUSB.h"
+#include "DeviceProxy_TCP.h"
 #include "DeviceProxy_Loopback.h"
 #include "Injector_UDP.h"
 #include "HostProxy_GadgetFS.h"
+#include "HostProxy_TCP.h"
 #include "PacketFilter_PcapLogger.h"
+
 
 static int debug=0;
 
