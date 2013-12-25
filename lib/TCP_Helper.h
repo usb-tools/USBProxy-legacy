@@ -27,6 +27,7 @@
 #ifndef USBPROXY_TCP_HELPER_H
 #define USBPROXY_TCP_HELPER_H
 
+#include <stddef.h>
 #include <linux/types.h>
 #include <poll.h>
 

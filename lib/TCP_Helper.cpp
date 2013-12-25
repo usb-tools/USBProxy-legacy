@@ -59,8 +59,6 @@ TCP_Helper::~TCP_Helper() {
 }
 
 int TCP_Helper::connect(int timeout) {
-	//sized to handle ETHERNET less IP(20 byte)/TCP(max 24 byte) headers
-	
 	int rc;
 	if(p_server) {
 		server_listen(0);
@@ -69,6 +67,7 @@ int TCP_Helper::connect(int timeout) {
 		rc=client_connect(0,timeout);
 	
 	p_is_connected=rc==0;
+	//sized to handle ETHERNET less IP(20 byte)/TCP(max 24 byte) headers
 	if (p_is_connected) ep_buf[0] = (__u8*)malloc(TCP_BUFFER_SIZE);
 	return rc;
 }
@@ -106,7 +105,7 @@ int TCP_Helper::client_connect(int port,int timeout) {
 			return -1;
 		}
 	}
-	if (ep_socket[port]) { //wait for an ascyn connect to complete
+	if (ep_socket[port]) { //wait for an async connect to complete
 		struct pollfd poll_connect;
 		poll_connect.fd=sck;
 		poll_connect.events=POLLOUT;

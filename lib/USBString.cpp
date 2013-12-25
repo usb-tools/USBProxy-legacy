@@ -99,7 +99,6 @@ USBString::~USBString() {
 char * USBString::get_ascii() {
 	__u8 strlen=get_char_count();
 	char* buf=(char*)malloc(strlen+1);
-	int buflen=strlen+1;
 
 	int len=((descriptor->bLength)>>1)-1;
 	int i_uni;
