@@ -165,15 +165,7 @@ extern "C" int main(int argc, char **argv)
 	while (manager->get_status()==USBM_RELAYING) {usleep(10000);}
 
 	manager->stop_relaying();
-
-	//delete(pcaplogger);
-	//pcaplogger=NULL;
-
-	delete(logfilter);
-	logfilter=NULL;
-
-	//delete(udpinjector);
-	//udpinjector=NULL;
+	manager->cleanup();
 
 	delete(manager);
 	manager=NULL;

@@ -541,3 +541,11 @@ void Manager::setConfig(__u8 index) {
 	}
 	start_data_relaying();
 }
+
+/* Delete all injectors and filters - easier to manage */
+void Manager::cleanup() {
+	while(injectorCount)
+		remove_injector(injectorCount-1, true);
+	while(filterCount)
+		remove_filter(filterCount-1, true);
+}

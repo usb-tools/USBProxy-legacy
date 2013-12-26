@@ -100,6 +100,7 @@ public:
 
 	void start_control_relaying();
 	void stop_relaying();
+	void cleanup();
 };
 
 #endif /* USBPROXY_MANAGER_H */
