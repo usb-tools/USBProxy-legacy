@@ -32,6 +32,8 @@
 
 class HostProxy: public Proxy {
 public:
+	static const __u8 plugin_type=PLUGIN_HOSTPROXY;
+	
 	virtual ~HostProxy() {}
 
 	//return ETIMEDOUT if it times out

@@ -29,6 +29,8 @@ class Configuration;
 
 class DeviceProxy : public Proxy {
 public:
+	static const __u8 plugin_type=PLUGIN_DEVICEPROXY;
+	
 	virtual ~DeviceProxy() {}
 
 	//return ETIMEDOUT if it times out

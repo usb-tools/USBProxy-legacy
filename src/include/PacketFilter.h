@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "plugins.h"
 #include "Device.h"
 #include "Configuration.h"
 #include "Interface.h"
@@ -46,6 +47,7 @@ private:
 	bool packetHeaderSetupIn;
 
 public:
+	static const __u8 plugin_type=PLUGIN_FILTER;
 	struct criteria_endpoint endpoint;
 	struct criteria_interface interface;
 	struct criteria_configuration configuration;

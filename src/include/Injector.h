@@ -29,6 +29,7 @@
 #include <poll.h>
 #include <mqueue.h>
 
+#include "plugins.h"
 #include "Packet.h"
 #include "Criteria.h"
 
@@ -50,6 +51,7 @@ protected:
 	virtual void full_pipe(SetupPacket* p) {}
 
 public:
+	static const __u8 plugin_type=PLUGIN_INJECTOR;
 	struct criteria_endpoint endpoint;
 	struct criteria_interface interface;
 	struct criteria_configuration configuration;
