@@ -67,7 +67,7 @@ all: $(OBJS)
 
 -include $(OBJS:.o=.d)
 
-clean:
+clean::
 	rm -f *.o *.d
 
 .PHONY: all clean

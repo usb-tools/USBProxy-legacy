@@ -34,7 +34,7 @@ $(SUBDIRS):
 $(TARGET): $(SUBDIRS)
 	$(CC) $(CFLAGS) -g -o $(TARGET) $(OBJS) $(LDFLAGS)
 
-clean: $(SUBDIRS:%=%_clean)
+clean:: $(SUBDIRS:%=%_clean)
 	rm -f $(TARGET)
 
 $(SUBDIRS:%=%_clean):
