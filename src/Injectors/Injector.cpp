@@ -26,6 +26,7 @@
 
 #include <poll.h>
 #include <stdio.h>
+#include <sched.h>
 #include "get_tid.h"
 #include "HaltSignal.h"
 #include "TRACE.h"

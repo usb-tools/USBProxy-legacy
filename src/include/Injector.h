@@ -29,11 +29,8 @@
 #include <poll.h>
 #include <mqueue.h>
 
-#include "Manager.h"
 #include "Packet.h"
 #include "Criteria.h"
-
-class Manager;
 
 class Injector {
 private:

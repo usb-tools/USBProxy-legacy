@@ -30,7 +30,6 @@
 #include "DeviceProxy.h"
 #include "TCP_Helper.h"
 
-/* This is the server, it listens for connection from the other side */
 class DeviceProxy_TCP:public DeviceProxy {
 private:
 	bool p_is_connected;

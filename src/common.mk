@@ -18,7 +18,6 @@
 # the Free Software Foundation, Inc., 51 Franklin Street,
 # Boston, MA 02110-1301, USA.
 
-TARGET=usb-mitm
 
 # To cross compile for the BBB, install gcc linaro arm toolchain
 # Then set CROSS_COMPILE=1
@@ -37,7 +36,7 @@ ifeq ($(ENABLE_VALGRIND), )
 endif
 
 # CPPFLAGS = compiler options for C and C++
-CPPFLAGS = -Wall -g -fdata-sections -ffunction-sections -MMD -MP $(OPTIONS) -I/usr/src -I/usr/include -I/usr/local/include
+CPPFLAGS = -Wall -g -fdata-sections -ffunction-sections -MMD -MP $(OPTIONS) -I../include -I/usr/src -I/usr/include -I/usr/local/include
 #temporarily removed below as it was interfering with debugging
 #CPPFLAGS += -O2
 
@@ -64,14 +63,11 @@ CPP_FILES := $(wildcard *.cpp)
 OBJS := $(C_FILES:.c=.o) $(CPP_FILES:.cpp=.o)
 HEADERS := $(C_FILES:.c=.h) $(CPP_FILES:.cpp=.h)
 
-all: $(TARGET)
+all: $(OBJS)
 
 -include $(OBJS:.o=.d)
 
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -g -o $(TARGET) $(OBJS) $(LDFLAGS)
-
 clean:
-	rm -f $(TARGET) *.o *.d
+	rm -f *.o *.d
 
 .PHONY: all clean
