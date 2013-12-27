@@ -548,4 +548,8 @@ void Manager::cleanup() {
 		remove_injector(injectorCount-1, true);
 	while(filterCount)
 		remove_filter(filterCount-1, true);
+	delete deviceProxy;
+	deviceProxy = NULL;
+	delete hostProxy;
+	hostProxy = NULL;
 }

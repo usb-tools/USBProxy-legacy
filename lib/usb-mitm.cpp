@@ -164,15 +164,10 @@ extern "C" int main(int argc, char **argv)
 
 	while (manager->get_status()==USBM_RELAYING) {usleep(10000);}
 
+	// Tidy up
 	manager->stop_relaying();
 	manager->cleanup();
-
 	delete(manager);
-	manager=NULL;
-	delete(host_proxy);
-	host_proxy=NULL;
-	delete(device_proxy);
-	device_proxy=NULL;
 
 	printf("done\n");
 	return 0;
