@@ -24,7 +24,6 @@
  * Created on: Dec 19, 2013
  */
 
-#include "TCP_Helper.h"
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -35,6 +34,9 @@
 #include <poll.h>
 #include <sys/socket.h>
 #include <fcntl.h>
+#include <sys/time.h>
+#include "TCP_Helper.h"
+#include "TRACE.h"
 
 #define BASE_PORT 10400
 #define TCP_BUFFER_SIZE 1456
@@ -43,7 +45,7 @@ int TCP_Helper::debugLevel=0;
 
 TCP_Helper::TCP_Helper(const char* address) {
 	p_server = address==NULL;
-	p_address = strdup(address);
+	if (address) p_address = strdup(address);
 	p_is_connected = false;
 	int i;
 	for (i=0;i<32;i++) {
@@ -55,7 +57,7 @@ TCP_Helper::TCP_Helper(const char* address) {
 
 TCP_Helper::~TCP_Helper() {
 	disconnect();
-	free(p_address);
+	if (p_address) free(p_address);
 }
 
 int TCP_Helper::connect(int timeout) {
@@ -63,12 +65,15 @@ int TCP_Helper::connect(int timeout) {
 	if(p_server) {
 		server_listen(0);
 		rc=server_connect(0,timeout);
-	} else
+		fprintf(stderr,"server_connect: %d\n",rc);
+	} else {
 		rc=client_connect(0,timeout);
+		fprintf(stderr,"client_connect: %d\n",rc);
+	}
 	
 	p_is_connected=rc==0;
 	//sized to handle ETHERNET less IP(20 byte)/TCP(max 24 byte) headers
-	if (p_is_connected) ep_buf[0] = (__u8*)malloc(TCP_BUFFER_SIZE);
+	if (p_is_connected) ep_buf[0] = (__u8*)calloc(TCP_BUFFER_SIZE,sizeof(__u8));
 	return rc;
 }
 
@@ -78,7 +83,6 @@ int TCP_Helper::client_connect(int port,int timeout) {
 	if (!ep_socket[port]) { //create socket
 		struct sockaddr_in serv_addr;
 
-		memset(ep_buf[port], 0, TCP_BUFFER_SIZE);
 		if((sck = socket(AF_INET, SOCK_STREAM|SOCK_NONBLOCK|SOCK_CLOEXEC, 0))< 0)
 		{
 			printf("\n Error : Could not create socket \n");
@@ -94,6 +98,7 @@ int TCP_Helper::client_connect(int port,int timeout) {
 		if (rc==0) { //immediate connect
 			ep_socket[port]=sck;
 			ep_connect[port]=true;
+			TRACE
 			return 0;
 		}
 		if(rc<0 && errno==EINPROGRESS) { //async connect
@@ -107,11 +112,27 @@ int TCP_Helper::client_connect(int port,int timeout) {
 	}
 	if (ep_socket[port]) { //wait for an async connect to complete
 		struct pollfd poll_connect;
-		poll_connect.fd=sck;
+		poll_connect.fd=ep_socket[port];
 		poll_connect.events=POLLOUT;
-		if (poll(&poll_connect,1,timeout) && (poll_connect.revents&POLLOUT)) {
-			ep_connect[port]=true;
-			return 0;
+		struct timeval tvBegin,tvEnd;
+		gettimeofday(&tvBegin,NULL);
+		if (poll(&poll_connect,1,timeout)) {
+			//sleep for the remaining portion of timeout when socket itself has timed out
+			if (poll_connect.revents&POLLHUP) {
+				close(ep_socket[port]);
+				ep_socket[port]=0;
+				gettimeofday(&tvEnd,NULL);
+				long int usecs=(tvEnd.tv_usec+tvEnd.tv_sec*1000000)-(tvBegin.tv_usec+tvBegin.tv_sec*1000000);
+				long int utimeout=(long int)timeout*1000-usecs;
+				if (utimeout>0) usleep(utimeout);
+				return ETIMEDOUT;
+			}
+			if (poll_connect.revents==POLLOUT) {
+				ep_connect[port]=true;
+				TRACE1(poll_connect.revents);
+				return 0;
+			}
+			fprintf(stderr,"Unexpected client connect poll results: %d\n",poll_connect.revents);
 		} else {
 			return ETIMEDOUT;
 		}
@@ -128,8 +149,6 @@ void TCP_Helper::server_listen(int port) {
 	sck = socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC, 0);
 	fprintf(stderr, "socket retrieve success\n");
 	
-	memset(ep_buf[port], '0', sizeof(TCP_BUFFER_SIZE));
-
 	serv_addr.sin_family = AF_INET;    
 	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY); 
 	serv_addr.sin_port = htons(BASE_PORT + port);    
