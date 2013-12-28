@@ -69,46 +69,4 @@ public:
 	virtual char* toString() {return (char*)"Filter";}
 };
 
-//writes all traffic to a stream
-class PacketFilter_streamlog : public PacketFilter {
-private:
-	FILE* file;
-public:
-	PacketFilter_streamlog(FILE* _file) {file=_file;}
-	void filter_packet(Packet* packet) {
-		if (packet->wLength<=64) {
-			char* hex=hex_string((void*)packet->data,packet->wLength);
-			fprintf(file,"%02x[%d]: %s\n",packet->bEndpoint,packet->wLength,hex);
-			free(hex);
-		}
-	}
-	void filter_setup_packet(SetupPacket* packet,bool direction) {
-		if (packet->ctrl_req.wLength && packet->data) {
-			char* hex_setup=hex_string(&(packet->ctrl_req),sizeof(packet->ctrl_req));
-			char* hex_data=hex_string((void*)(packet->data),packet->ctrl_req.wLength);
-			fprintf(file,"[%s]: %s\n",hex_setup,hex_data);
-			free(hex_data);
-			free(hex_setup);
-		} else {
-			char* hex_setup=hex_string(&(packet->ctrl_req),sizeof(packet->ctrl_req));
-			fprintf(file,"[%s]\n",hex_setup);
-			free(hex_setup);
-		}
-	}
-	virtual char* toString() {return (char*)"Stream Log Filter";}
-};
-
-//uses function pointers to filter packets
-class PacketFilter_Callback : public PacketFilter {
-private:
-	void (*cb)(Packet*);
-	void (*cb_setup)(SetupPacket*,bool);
-public:
-	PacketFilter_Callback(void (*_cb)(Packet*),void (*_cb_setup)(SetupPacket*,bool)) {cb=_cb;cb_setup=_cb_setup;}
-	void filter_packet(Packet* packet) {cb(packet);}
-	void filter_setup_packet(SetupPacket* packet,bool direction_in) {cb_setup(packet,direction_in);}
-	virtual char* toString() {return (char*)"Filter";}
-
-};
-
 #endif /* USBPROXY_PACKETFILTER_H */
