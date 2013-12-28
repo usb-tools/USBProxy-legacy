@@ -65,10 +65,8 @@ int TCP_Helper::connect(int timeout) {
 	if(p_server) {
 		server_listen(0);
 		rc=server_connect(0,timeout);
-		fprintf(stderr,"server_connect: %d\n",rc);
 	} else {
 		rc=client_connect(0,timeout);
-		fprintf(stderr,"client_connect: %d\n",rc);
 	}
 	
 	p_is_connected=rc==0;

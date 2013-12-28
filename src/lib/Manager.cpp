@@ -211,6 +211,17 @@ __u8 Manager::get_filter_count(){
 	return filterCount;
 }
 
+void spinner(int dir) {
+	static int i;
+	if (dir==0) {i=-1;return;}
+	static char* spinchar="|/-\\";
+	if (i==-1) {i=0;} else {putchar('\x8');}
+	putchar(spinchar[i]);
+	i+=dir;
+	if (i<0) i=3;
+	if (i>3) i=0;
+	fflush(stdout);
+}
 
 void Manager::start_control_relaying(){
 	clean_mqueue();
@@ -221,7 +232,11 @@ void Manager::start_control_relaying(){
 
 	//connect device proxy
 	int rc=deviceProxy->connect();
-	while (rc==ETIMEDOUT && status==USBM_SETUP) {rc=deviceProxy->connect();}
+	spinner(0);
+	while (rc==ETIMEDOUT && status==USBM_SETUP) {
+		spinner(1);
+		rc=deviceProxy->connect();
+	}
 	if (rc!=0) {fprintf(stderr,"Unable to connect to device proxy.\n");status=USBM_IDLE;return;}
 
 	//populate device model
@@ -298,7 +313,11 @@ void Manager::start_control_relaying(){
 	}
 
 	rc=hostProxy->connect(device);
-	while (rc==ETIMEDOUT && status==USBM_SETUP) {rc=hostProxy->connect(device);}
+	spinner(0);
+	while (rc==ETIMEDOUT && status==USBM_SETUP) {
+		spinner(1);
+		rc=hostProxy->connect(device);
+	}
 	if (rc!=0) {status=USBM_SETUP_ABORT;stop_relaying();return;}
 
 	if (out_readers[0]) {
