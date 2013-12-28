@@ -49,6 +49,7 @@
 #include "HostProxy_GadgetFS.h"
 #include "HostProxy_TCP.h"
 #include "PacketFilter_PcapLogger.h"
+#include "PacketFilter_StreamLog.h"
 
 
 static int debug=0;
@@ -149,7 +150,7 @@ extern "C" int main(int argc, char **argv)
 	}
 	manager=new Manager(device_proxy,host_proxy);
 
-	PacketFilter_streamlog* logfilter=new PacketFilter_streamlog(stderr);
+	PacketFilter_StreamLog* logfilter=new PacketFilter_StreamLog(stderr);
 	//Injector_UDP* udpinjector=new Injector_UDP(12345);
 
 	//PacketFilter_PcapLogger* pcaplogger=new PacketFilter_PcapLogger("/tmp/usb.pcap");
