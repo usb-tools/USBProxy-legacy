@@ -22,6 +22,6 @@
 #CPP_FILES := $(wildcard *.cpp)
 #OBJS := $(C_FILES:.c=.o) $(CPP_FILES:.cpp=.o)
 
-INCLUDES += -I../include -I../lib -I../Injectors -I../Filters -I../Proxies
+INCLUDES += -I../include -I../lib -I../Injectors -I../Filters -I../Proxies -I../Hosts -I../Devices
 
 include ../common.mk
