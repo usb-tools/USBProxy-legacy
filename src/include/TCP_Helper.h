@@ -59,6 +59,9 @@ public:
 	void reset();
 	bool is_connected();
 
+	void send_data(int ep,__u8* data,int length);
+	void receive_data(int ep,__u8** data,int *length,int timeout);
+
 	char* toString() {return (char *) "TCP network helper";}
 };
 

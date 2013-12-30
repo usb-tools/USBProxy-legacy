@@ -64,7 +64,12 @@ int TCP_Helper::connect(int timeout) {
 	int rc;
 	if(p_server) {
 		server_listen(0);
-		rc=server_connect(0,timeout);
+		if(!ep_listener[0]) {
+			usleep(timeout*1000);
+			rc=ETIMEDOUT;
+		} else {
+			rc=server_connect(0,timeout);
+		}
 	} else {
 		rc=client_connect(0,timeout);
 	}
@@ -92,11 +97,10 @@ int TCP_Helper::client_connect(int port,int timeout) {
 		serv_addr.sin_addr.s_addr = inet_addr(p_address);
 
 		int rc=::connect(sck, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
-	
+
 		if (rc==0) { //immediate connect
 			ep_socket[port]=sck;
 			ep_connect[port]=true;
-			TRACE
 			return 0;
 		}
 		if(rc<0 && errno==EINPROGRESS) { //async connect
@@ -132,6 +136,7 @@ int TCP_Helper::client_connect(int port,int timeout) {
 			}
 			fprintf(stderr,"Unexpected client connect poll results: %d\n",poll_connect.revents);
 		} else {
+			TRACE
 			return ETIMEDOUT;
 		}
 	}
@@ -145,15 +150,24 @@ void TCP_Helper::server_listen(int port) {
 	struct sockaddr_in serv_addr = {};
 
 	sck = socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC, 0);
+	int optval=1;
+	setsockopt(sck,SOL_SOCKET,SO_REUSEADDR,&optval,sizeof(optval));
 	fprintf(stderr, "socket retrieve success\n");
 	
 	serv_addr.sin_family = AF_INET;    
 	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY); 
 	serv_addr.sin_port = htons(BASE_PORT + port);    
+
+	int rc=bind(sck, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+	if (rc==-1) {
+		fprintf(stderr, "Failed to bind\n");
+		return;
+	}
 	
-	bind(sck, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
-	
-	if(listen(sck, 10) == -1){
+	rc=listen(sck, 10);
+	fprintf(stderr,"Listen on port %d: %d\n",BASE_PORT + port,rc);
+
+	if(rc == -1){
 		fprintf(stderr, "Failed to listen\n");
 		return;
 	}
@@ -176,6 +190,7 @@ int TCP_Helper::server_connect(int port,int timeout) {
 			fcntl(rc,F_SETFD,FD_CLOEXEC);
 			ep_socket[port]=rc;
 			ep_connect[port]=true;
+			return 0;
 		}
 	} else {
 		return ETIMEDOUT;
@@ -305,5 +320,24 @@ void TCP_Helper::reset() {
 
 bool TCP_Helper::is_connected() {
 	return p_is_connected;
+}
+
+void TCP_Helper::send_data(int ep,__u8* data,int length) {
+	int port=(ep&0x80)?(ep&0x1f)|0x20:ep;
+	write(ep_socket[port],data,length);
+	fprintf(stderr,"Wrote %d bytes to FD %d\n",length,ep_socket[port]);
+}
+
+void TCP_Helper::receive_data(int ep,__u8** data,int *length,int timeout) {
+	int port=(ep&0x80)?(ep&0x1f)|0x20:ep;
+	struct pollfd poll_accept;
+	poll_accept.fd=ep_socket[port];
+	poll_accept.events=POLLIN;
+	if (poll(&poll_accept,1,timeout) && poll_accept.revents==POLLIN) {
+		*data=(__u8*)malloc(TCP_BUFFER_SIZE);
+		*length=read(ep_socket[port],*data,TCP_BUFFER_SIZE);
+		*data=(__u8*)realloc(*data,*length);
+		if (*length) fprintf(stderr,"Read %d bytes from FD %d\n",*length,ep_socket[port]);
+	}
 }
 

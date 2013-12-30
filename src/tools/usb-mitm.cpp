@@ -133,6 +133,9 @@ extern "C" int main(int argc, char **argv)
 
 	DeviceProxy_LibUSB::debugLevel=1;
 	DeviceProxy_Loopback::debugLevel=2;
+	DeviceProxy_TCP::debugLevel=2;
+	HostProxy_TCP::debugLevel=2;
+
 	//DeviceProxy* device_proxy=(DeviceProxy *)new DeviceProxy_Loopback(vendorId,productId);
 	DeviceProxy* device_proxy;
 	HostProxy* host_proxy;
