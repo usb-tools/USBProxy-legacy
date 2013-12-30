@@ -52,6 +52,7 @@ TCP_Helper::TCP_Helper(const char* address) {
 		ep_listener[i]=0;
 		ep_socket[i]=0;
 		ep_buf[i]=NULL;
+		ep_connect[i]=false;
 	}
 }
 
@@ -97,6 +98,7 @@ int TCP_Helper::client_connect(int port,int timeout) {
 		serv_addr.sin_addr.s_addr = inet_addr(p_address);
 
 		int rc=::connect(sck, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+		fprintf(stderr,"Connect on port %d: %d\n",BASE_PORT + port,rc);
 
 		if (rc==0) { //immediate connect
 			ep_socket[port]=sck;
@@ -131,7 +133,6 @@ int TCP_Helper::client_connect(int port,int timeout) {
 			}
 			if (poll_connect.revents==POLLOUT) {
 				ep_connect[port]=true;
-				TRACE1(poll_connect.revents);
 				return 0;
 			}
 			fprintf(stderr,"Unexpected client connect poll results: %d\n",poll_connect.revents);
@@ -216,18 +217,23 @@ int TCP_Helper::client_open_endpoints(__u8* eps,__u8 num_eps,int timeout) {
 	int poll_idx=0;
 
 	for (i=0;i<num_eps;i++) {
-		int idx=(eps[i]&0x80)?(eps[i]&0x1f)|0x20:eps[i];
+		int idx=(eps[i]&0x80)?(eps[i]&0xf)|0x10:eps[i];
 		if (!ep_connect[idx]) {
-			if (!ep_socket[i]) {client_connect(idx,0);}
+			if (!ep_socket[idx]) {
+				fprintf(stderr,"Connecting EP%02x\n",eps[i]);
+				client_connect(idx,0);
+			}
 			if (!ep_connect[idx]) poll_count++;
 		}
 	}
+	if (!poll_count) return 0;
+
 	poll_connections=(struct pollfd*)calloc(poll_count,sizeof(struct pollfd));
 	poll_idxs=(__u8*)calloc(poll_count,sizeof(__u8));
 	for (i=0;i<num_eps;i++) {
-		int idx=(eps[i]&0x80)?(eps[i]&0x1f)|0x20:eps[i];
+		int idx=(eps[i]&0x80)?(eps[i]&0xf)|0x10:eps[i];
 		if (!ep_connect[idx]) {
-			poll_connections[poll_idx].fd=ep_socket[i];
+			poll_connections[poll_idx].fd=ep_socket[idx];
 			poll_connections[poll_idx].events=POLLOUT;
 			poll_idxs[poll_idx]=idx;
 			poll_idx++;
@@ -236,16 +242,28 @@ int TCP_Helper::client_open_endpoints(__u8* eps,__u8 num_eps,int timeout) {
 
 	int ep_count=poll_count;
 	int rc=-1;
+	struct timeval tvBegin,tvEnd;
+	gettimeofday(&tvBegin,NULL);
 	if (poll(poll_connections,poll_count,timeout)) {
-		for (poll_idx=0;i<poll_count;poll_idx++) {
+		for (poll_idx=0;poll_idx<poll_count;poll_idx++) {
+			if (poll_connections[poll_idx].revents&POLLHUP) {
+				int idx=poll_idxs[poll_idx];
+				close(ep_socket[idx]);
+				ep_socket[idx]=0;
+			}
 			if (poll_connections[poll_idx].revents==POLLOUT) {
 				int idx=poll_idxs[poll_idx];
-				if (client_connect(idx,0)) {
+				if (client_connect(idx,0)==0) {
+					fprintf(stderr,"Connected EP%02x\n",(idx&0xf) | ((idx&0x10)<<3));
 					ep_buf[idx] = (__u8*)malloc(TCP_BUFFER_SIZE);
 					ep_count--;
 				}
 			}
 		}
+		gettimeofday(&tvEnd,NULL);
+		long int usecs=(tvEnd.tv_usec+tvEnd.tv_sec*1000000)-(tvBegin.tv_usec+tvBegin.tv_sec*1000000);
+		long int utimeout=(long int)timeout*1000-usecs;
+		if (utimeout>0) usleep(utimeout);
 		rc=ep_count;
 	} else {
 		rc=ETIMEDOUT;
@@ -265,18 +283,22 @@ int TCP_Helper::server_open_endpoints(__u8* eps,__u8 num_eps,int timeout) {
 	int poll_idx=0;
 
 	for (i=0;i<num_eps;i++) {
-		int idx=(eps[i]&0x80)?(eps[i]&0x1f)|0x20:eps[i];
+		int idx=(eps[i]&0x80)?(eps[i]&0xf)|0x10:eps[i];
 		if (!ep_connect[idx]) {
-			if (!ep_listener[i]) {server_listen(idx);}
-			if (!ep_connect[idx]) poll_count++;
+			if (!ep_listener[idx]) {
+				fprintf(stderr,"Listening EP%02x\n",eps[i]);
+				server_listen(idx);
+			}
+			poll_count++;
 		}
 	}
 	poll_connections=(struct pollfd*)calloc(poll_count,sizeof(struct pollfd));
 	poll_idxs=(__u8*)calloc(poll_count,sizeof(__u8));
 	for (i=0;i<num_eps;i++) {
-		int idx=(eps[i]&0x80)?(eps[i]&0x1f)|0x20:eps[i];
+		int idx=(eps[i]&0x80)?(eps[i]&0xf)|0x10:eps[i];
 		if (!ep_connect[idx]) {
-			poll_connections[poll_idx].fd=ep_listener[i];
+			TRACE3(i,idx,ep_listener[idx])
+			poll_connections[poll_idx].fd=ep_listener[idx];
 			poll_connections[poll_idx].events=POLLIN;
 			poll_idxs[poll_idx]=idx;
 			poll_idx++;
@@ -285,11 +307,15 @@ int TCP_Helper::server_open_endpoints(__u8* eps,__u8 num_eps,int timeout) {
 
 	int ep_count=poll_count;
 	int rc=-1;
+	TRACE1(poll_count)
 	if (poll(poll_connections,poll_count,timeout)) {
-		for (poll_idx=0;i<poll_count;poll_idx++) {
+		TRACE
+		for (poll_idx=0;poll_idx<poll_count;poll_idx++) {
+			TRACE1(poll_idx)
 			if (poll_connections[poll_idx].revents==POLLIN) {
 				int idx=poll_idxs[poll_idx];
-				if (server_connect(idx,0)) {
+				if (server_connect(idx,0)==0) {
+					fprintf(stderr,"Connected EP%02x\n",(idx&0xf) | ((idx&0x10)<<3));
 					ep_buf[idx] = (__u8*) malloc(TCP_BUFFER_SIZE);
 					ep_count--;
 				}
@@ -297,14 +323,15 @@ int TCP_Helper::server_open_endpoints(__u8* eps,__u8 num_eps,int timeout) {
 		}
 		rc=ep_count;
 	} else {
+		TRACE
 		rc=ETIMEDOUT;
 	}
 	free(poll_connections);
 	poll_connections=NULL;
 	free(poll_idxs);
 	poll_idxs=NULL;
+	TRACE1(rc)
 	return rc;
-
 }
 
 int TCP_Helper::open_endpoints(__u8* eps,__u8 num_eps,int timeout) {
@@ -323,13 +350,13 @@ bool TCP_Helper::is_connected() {
 }
 
 void TCP_Helper::send_data(int ep,__u8* data,int length) {
-	int port=(ep&0x80)?(ep&0x1f)|0x20:ep;
+	int port=(ep&0x80)?(ep&0xf)|0x10:ep;
 	write(ep_socket[port],data,length);
 	fprintf(stderr,"Wrote %d bytes to FD %d\n",length,ep_socket[port]);
 }
 
 void TCP_Helper::receive_data(int ep,__u8** data,int *length,int timeout) {
-	int port=(ep&0x80)?(ep&0x1f)|0x20:ep;
+	int port=(ep&0x80)?(ep&0xf)|0x10:ep;
 	struct pollfd poll_accept;
 	poll_accept.fd=ep_socket[port];
 	poll_accept.events=POLLIN;

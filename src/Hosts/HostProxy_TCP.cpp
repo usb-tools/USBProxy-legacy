@@ -28,7 +28,12 @@
 #include <stdlib.h>
 #include <memory.h>
 #include "HexString.h"
+#include "TRACE.h"
 #include "HostProxy_TCP.h"
+
+#include "Configuration.h"
+#include "Interface.h"
+#include "Endpoint.h"
 
 int HostProxy_TCP::debugLevel = 0;
 
@@ -101,17 +106,17 @@ void HostProxy_TCP::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,
 		memcpy(buf+3,dataptr,length);
 		network->send_data(0,buf,length+3);
 		free(buf);
+	} else {
+		network->send_data(endpoint,dataptr,length);
 	}
-	//FINISH
 }
 
 bool HostProxy_TCP::send_wait_complete(__u8 endpoint,int timeout) {
-	//FINISH
 	return true;
 }
 
 void HostProxy_TCP::receive_data(__u8 endpoint, __u8 attributes, __u16 maxPacketSize, __u8** dataptr, int* length, int timeout) {
-	//FINISH
+	network->receive_data(endpoint,dataptr,length,timeout);
 }
 
 void HostProxy_TCP::control_ack() {
@@ -128,5 +133,27 @@ void HostProxy_TCP::stall_ep(__u8 endpoint) {
 }
 
 void HostProxy_TCP::setConfig(Configuration* fs_cfg,Configuration* hs_cfg,bool hs) {
-	//FINISH
+	fprintf(stderr,"TCPHP SetConfig\n");
+	int ifc_idx;
+	__u8 ep_total=0;
+	__u8 ifc_count=fs_cfg->get_descriptor()->bNumInterfaces;
+	for (ifc_idx=0;ifc_idx<ifc_count;ifc_idx++) {
+		Interface* ifc=fs_cfg->get_interface(ifc_idx);
+		ep_total+=ifc->get_endpoint_count();
+	}
+
+	__u8* eps=(__u8*)malloc(ep_total);
+	__u8 ep_total_idx=0;
+	for (ifc_idx=0;ifc_idx<ifc_count;ifc_idx++) {
+		Interface* ifc=fs_cfg->get_interface(ifc_idx);
+		__u8 ep_count=ifc->get_endpoint_count();
+		int ep_idx;
+		for (ep_idx=0;ep_idx<ep_count;ep_idx++) {
+			const usb_endpoint_descriptor* ep=ifc->get_endpoint_by_idx(ep_idx)->get_descriptor();
+			eps[ep_total_idx++]=ep->bEndpointAddress;
+		}
+	}
+	int rc=network->open_endpoints(eps,ep_total,250);
+	while (rc>0) {rc=network->open_endpoints(eps,ep_total,250);putchar('.');fflush(stdout);}
+	free(eps);
 }
