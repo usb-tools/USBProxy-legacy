@@ -23,6 +23,7 @@
  *
  * Created on: Dec 28, 2013
  */
+#include "HexString.h"
 #include "PacketFilter_StreamLog.h"
 
 	void PacketFilter_StreamLog::filter_packet(Packet* packet) {

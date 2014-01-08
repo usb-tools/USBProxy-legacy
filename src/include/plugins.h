@@ -29,4 +29,9 @@
 #define PLUGIN_FILTER      3
 #define PLUGIN_INJECTOR    4
 
+template<typename Interface>
+class Factory {
+	virtual Interface *create() = 0;
+};
+
 #endif /* USBPROXY_PLUGINS_H */

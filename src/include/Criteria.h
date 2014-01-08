@@ -6,7 +6,7 @@
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2, or (at your option)
+ * the Free Software Foundation; either version 3, or (at your option)
  * any later version.
  *
  * This program is distributed in the hope that it will be useful,
@@ -23,8 +23,8 @@
  *
  * Created on: Dec 9, 2013
  */
-#ifndef CRITERIA_H_
-#define CRITERIA_H_
+#ifndef USBPROXY_CRITERIA_H
+#define USBPROXY_CRITERIA_H
 
 #include <linux/types.h>
 
@@ -106,4 +106,4 @@ struct criteria_device {
 		release(-1) {}
 	bool test(Device* device);
 };
-#endif /* CRITERIA_H_ */
+#endif /* USBPROXY_CRITERIA_H */

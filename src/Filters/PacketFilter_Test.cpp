@@ -19,16 +19,16 @@
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
  *
- * PacketFilter.cpp
+ * PacketFilter_Test.cpp
  *
  * Created on: Nov 11, 2013
  */
 
 #include <linux/usb/ch9.h>
-#include "PacketFilter.h"
+#include "PacketFilter_Test.h"
 #include "TRACE.h"
 
-void PacketFilter::set_packet_filter(__u8 header[8],__u8 mask[8]) {
+void PacketFilter_Test::set_packet_filter(__u8 header[8],__u8 mask[8]) {
 	int i;
 	packetHeaderMaskLength=1;
 	for(i=0;i<8;i++) {
@@ -36,7 +36,7 @@ void PacketFilter::set_packet_filter(__u8 header[8],__u8 mask[8]) {
 	}
 }
 
-bool PacketFilter::test_packet(Packet* packet) {
+bool PacketFilter_Test::test_packet(Packet* packet) {
 	__u8* data;
 	if (packet->wLength<packetHeaderMaskLength) {return false;}
 	data=packet->data;
@@ -47,7 +47,7 @@ bool PacketFilter::test_packet(Packet* packet) {
 	return true;
 }
 
-bool PacketFilter::test_setup_packet(SetupPacket* packet,bool direction_out) {
+bool PacketFilter_Test::test_setup_packet(SetupPacket* packet,bool direction_out) {
 	if (!((packetHeaderSetupOut || (!direction_out)) || (packetHeaderSetupIn || direction_out))) return false;
 	__u8* data;
 	data=(__u8*)&(packet->ctrl_req);
