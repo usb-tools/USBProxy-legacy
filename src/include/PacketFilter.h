@@ -19,7 +19,7 @@
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
  *
- * PacketFilter.h
+ * PacketFilter_Test.h
  *
  * Created on: Nov 11, 2013
  */
@@ -29,23 +29,40 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "plugins.h"
-#include "Packet.h"
+#include "PacketFilter.h"
+#include "Criteria.h"
 
 class PacketFilter {
+private:
+	__u8 packetHeader[8];
+	__u8 packetHeaderMask[8];
+	__u8 packetHeaderMaskLength;
+	bool packetHeaderSetupOut;
+	bool packetHeaderSetupIn;
 
 public:
 	static const __u8 plugin_type=PLUGIN_FILTER;
+	struct criteria_endpoint endpoint;
+	struct criteria_interface interface;
+	struct criteria_configuration configuration;
+	struct criteria_device device;
 
-	PacketFilter() {};
+	PacketFilter() {
+		int i;
+		for (i=0;i<8;i++) {packetHeader[i]=0;packetHeaderMask[i]=0;}
+		packetHeaderMaskLength=0;
+		packetHeaderSetupIn=true;
+		packetHeaderSetupOut=true;
+	}
 	virtual ~PacketFilter() {};
 
 	virtual void filter_packet(Packet* packet) {}
 	virtual void filter_setup_packet(SetupPacket* packet,bool direction_out) {}
 
+	bool test_packet(Packet* packet);
+	bool test_setup_packet(SetupPacket* packet,bool direction_out);
+	void set_packet_filter(__u8 header[4],__u8 mask[4]);
 	virtual char* toString() {return (char*)"Filter";}
 };
-
-typedef Factory<PacketFilter> PacketFilterFactory;
 
 #endif /* USBPROXY_PACKETFILTER_H */
