@@ -135,6 +135,7 @@ extern "C" int main(int argc, char **argv)
 	DeviceProxy_Loopback::debugLevel=2;
 	DeviceProxy_TCP::debugLevel=2;
 	HostProxy_TCP::debugLevel=2;
+	HostProxy_GadgetFS::debugLevel=2;
 
 	//DeviceProxy* device_proxy=(DeviceProxy *)new DeviceProxy_Loopback(vendorId,productId);
 	DeviceProxy* device_proxy;
@@ -146,10 +147,10 @@ extern "C" int main(int argc, char **argv)
 		host_proxy=(HostProxy* )new HostProxy_TCP("10.100.8.52");
 	} else if(server) {
 		device_proxy=(DeviceProxy *)new DeviceProxy_TCP();
-		host_proxy=(HostProxy* )new HostProxy_GadgetFS(1);
+		host_proxy=(HostProxy* )new HostProxy_GadgetFS();
 	} else {
 		device_proxy=(DeviceProxy *)new DeviceProxy_LibUSB(vendorId,productId);
-		host_proxy=(HostProxy* )new HostProxy_GadgetFS(1);
+		host_proxy=(HostProxy* )new HostProxy_GadgetFS();
 	}
 	manager=new Manager(device_proxy,host_proxy);
 

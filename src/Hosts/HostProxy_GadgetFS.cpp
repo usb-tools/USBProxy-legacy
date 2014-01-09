@@ -39,11 +39,12 @@
 #include "Interface.h"
 #include "Endpoint.h"
 
-HostProxy_GadgetFS::HostProxy_GadgetFS(int _debugLevel) {
+int DeviceProxy_LibUSB::debugLevel=0;
+
+HostProxy_GadgetFS::HostProxy_GadgetFS() {
 	mount_gadget();
 	p_is_connected = false;
 	p_device_file=0;
-	debugLevel=_debugLevel;
 	descriptor=NULL;
 	descriptorLength=0;
 	lastControl.bRequest=0;

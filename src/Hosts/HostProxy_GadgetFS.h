@@ -45,8 +45,6 @@ private:
 	struct aiocb* p_epout_async[16];
 	bool p_epin_active[16];
 
-	int debugLevel;
-
 	char* descriptor;
 	int descriptorLength;
 
@@ -56,7 +54,8 @@ private:
 	usb_ctrlrequest lastControl;
 
 public:
-	HostProxy_GadgetFS(int _debugLevel=0);
+	static int debugLevel;
+	HostProxy_GadgetFS();
 	virtual ~HostProxy_GadgetFS();
 
 	int connect(Device* device,int timeout=250);
