@@ -39,7 +39,7 @@
 #include "Interface.h"
 #include "Endpoint.h"
 
-int DeviceProxy_LibUSB::debugLevel=0;
+int HostProxy_GadgetFS::debugLevel=0;
 
 HostProxy_GadgetFS::HostProxy_GadgetFS() {
 	mount_gadget();

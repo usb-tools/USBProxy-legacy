@@ -19,7 +19,7 @@
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
  *
- * PacketFilter_Test.h
+ * PacketFilter.h
  *
  * Created on: Nov 11, 2013
  */
@@ -29,7 +29,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "PacketFilter.h"
+#include "plugins.h"
+#include "Device.h"
+#include "Configuration.h"
+#include "Interface.h"
+#include "Endpoint.h"
+#include "Packet.h"
+#include "HexString.h"
 #include "Criteria.h"
 
 class PacketFilter {
