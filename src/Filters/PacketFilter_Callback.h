@@ -36,7 +36,7 @@ private:
 public:
 	PacketFilter_Callback(void (*_cb)(Packet*),void (*_cb_setup)(SetupPacket*,bool));
 	void filter_packet(Packet* packet);
-	void filter_setup_packet(SetupPacket* packet,bool direction_in);
+	void filter_setup_packet(SetupPacket* packet,bool direction_out);
 	virtual char* toString() {return (char*)"Filter";}
 
 };
