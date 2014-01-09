@@ -32,5 +32,5 @@
 		cb(packet);
 	}
 	void PacketFilter_Callback::filter_setup_packet(SetupPacket* packet,bool direction_out) {
-		cb_setup(packet,direction_in);
+		cb_setup(packet,direction_out);
 	}
