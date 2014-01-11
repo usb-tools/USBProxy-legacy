@@ -50,6 +50,7 @@
 #include "HostProxy_TCP.h"
 #include "PacketFilter_PcapLogger.h"
 #include "PacketFilter_StreamLog.h"
+#include "PacketFilter_Python.h"
 
 
 static int debug=0;
@@ -158,12 +159,15 @@ extern "C" int main(int argc, char **argv)
 	//Injector_UDP* udpinjector=new Injector_UDP(12345);
 
 	//PacketFilter_PcapLogger* pcaplogger=new PacketFilter_PcapLogger("/tmp/usb.pcap");
+	PacketFilter_Python* pyexample=new PacketFilter_Python("example_filter.py");
+	
 
 	manager->add_filter(logfilter);
 	//manager->add_filter(rotfilter);
 	//manager->add_filter(keyfilter);
 	//manager->add_injector(udpinjector);
 	//manager->add_filter(pcaplogger);
+	manager->add_filter(pyexample);
 
 	manager->start_control_relaying();
 

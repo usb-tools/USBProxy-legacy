@@ -10,38 +10,24 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program; see the file COPYING. If not, write to
+# along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, Inc., 51 Franklin Street,
 # Boston, MA 02110-1301, USA.
+#
+# USBProxy.py
+#
+# Created on: Jan 11, 2014
 
-TARGET=usb-mitm
+from USBProxy import Packet, SetupPacket
 
-all: $(TARGET)
+filter_name = "Example Filter"
 
-include common.mk
+def filter_packet(Packet):
+	print Packet.wLength
 
-OBJS = $(wildcard */*.o)
-
-CFLAGS += $(shell python3-config --cflags)
-LDFLAGS += $(shell python3-config --ldflags)
-
-SUBDIRS = lib Proxies Injectors Filters tools Devices Hosts Bindings
-
-$(SUBDIRS):
-	$(MAKE) -C $@
-
-$(TARGET): $(SUBDIRS)
-	echo $(CFLAGS)
-	$(CC) $(CFLAGS) -g -o $(TARGET) $(OBJS) $(LDFLAGS)
-
-clean:: $(SUBDIRS:%=%_clean)
-	rm -f $(TARGET)
-
-$(SUBDIRS:%=%_clean):
-	$(MAKE) -C $(@:%_clean=%) clean
-
-.PHONY : clean all $(SUBDIRS)
+def filter_setup_packet(SetupPacket, direction_out):
+	print Packet.wLength

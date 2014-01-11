@@ -24,4 +24,6 @@
 
 INCLUDES += -I../include -I../lib -I../Injectors -I../Filters -I../Proxies -I../Hosts -I../Devices
 
+CXXFLAGS += $(shell python3-config --cflags)
+
 include ../common.mk

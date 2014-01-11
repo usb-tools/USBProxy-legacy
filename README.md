@@ -1,5 +1,5 @@
-USB Man-in-the-Middle
-=====================
+USBProxy
+========
 
 Status
 ------
@@ -9,8 +9,7 @@ doesn't even compile.
 
 What?
 -----
-A man in the middle device for USB connections using the BeagleBone Black
-hardware.
+A USB man in the middle device using the BeagleBone Black hardware.
 
 Why?
 ----
@@ -21,9 +20,9 @@ inspection, it would only build against a relatively old kernel version.
 
 ToDo
 ----
- * Man in the middle function hooks
  * Some sort of library to make all of this easier to use
  * Support alternative chipsets - gadgetfs should take care of this
+ * Clean up code - check return values, etc
 
 License
 -------

@@ -18,30 +18,15 @@
 # the Free Software Foundation, Inc., 51 Franklin Street,
 # Boston, MA 02110-1301, USA.
 
-TARGET=usb-mitm
+#C_FILES := $(wildcard *.c)
+#CPP_FILES := $(wildcard *.cpp)
+#OBJS := $(C_FILES:.c=.o) $(CPP_FILES:.cpp=.o)
+#HEADERS := $(C_FILES:.c=.h) $(CPP_FILES:.cpp=.h)
 
-all: $(TARGET)
+INCLUDES += -I../include $(shell python3-config --includes)
 
-include common.mk
+CXXFLAGS += $(shell /usr/bin/env python3-config --cflags)
 
-OBJS = $(wildcard */*.o)
+LDFLAGS += $(shell /usr/bin/env python3-config --ldflags)
 
-CFLAGS += $(shell python3-config --cflags)
-LDFLAGS += $(shell python3-config --ldflags)
-
-SUBDIRS = lib Proxies Injectors Filters tools Devices Hosts Bindings
-
-$(SUBDIRS):
-	$(MAKE) -C $@
-
-$(TARGET): $(SUBDIRS)
-	echo $(CFLAGS)
-	$(CC) $(CFLAGS) -g -o $(TARGET) $(OBJS) $(LDFLAGS)
-
-clean:: $(SUBDIRS:%=%_clean)
-	rm -f $(TARGET)
-
-$(SUBDIRS:%=%_clean):
-	$(MAKE) -C $(@:%_clean=%) clean
-
-.PHONY : clean all $(SUBDIRS)
+include ../common.mk
