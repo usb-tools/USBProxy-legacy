@@ -39,6 +39,7 @@ private:
 	char* filter_name;
 
 public:
+	static int debugLevel;
 	PacketFilter_Python(char* modulename);
 	~PacketFilter_Python();
 	void filter_packet(Packet* packet);

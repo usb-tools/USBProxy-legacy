@@ -137,6 +137,7 @@ extern "C" int main(int argc, char **argv)
 	DeviceProxy_TCP::debugLevel=2;
 	HostProxy_TCP::debugLevel=2;
 	HostProxy_GadgetFS::debugLevel=2;
+	PacketFilter_Python::debudLevel=2;
 
 	//DeviceProxy* device_proxy=(DeviceProxy *)new DeviceProxy_Loopback(vendorId,productId);
 	DeviceProxy* device_proxy;
@@ -159,7 +160,7 @@ extern "C" int main(int argc, char **argv)
 	//Injector_UDP* udpinjector=new Injector_UDP(12345);
 
 	//PacketFilter_PcapLogger* pcaplogger=new PacketFilter_PcapLogger("/tmp/usb.pcap");
-	PacketFilter_Python* pyexample=new PacketFilter_Python("example_filter.py");
+	PacketFilter_Python* pyexample=new PacketFilter_Python("example_filter");
 	
 
 	manager->add_filter(logfilter);

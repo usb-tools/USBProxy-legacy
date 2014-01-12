@@ -27,7 +27,7 @@ from USBProxy import Packet, SetupPacket
 filter_name = "Example Filter"
 
 def filter_packet(Packet):
-	print Packet.wLength
+	print(Packet.wLength)
 
 def filter_setup_packet(SetupPacket, direction_out):
-	print Packet.wLength
+	print (Packet.wLength)

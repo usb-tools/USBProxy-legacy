@@ -27,6 +27,8 @@
 #include "PacketFilter_Python.h"
 #include <stdio.h>
 
+int PacketFilter_Python::debugLevel=0;
+
 PacketFilter_Python::PacketFilter_Python(char* modulename) {
 	//PyObject *p_filter_name;
 
