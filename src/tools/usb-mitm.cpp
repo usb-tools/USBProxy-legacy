@@ -49,6 +49,8 @@
 #include "HostProxy_GadgetFS.h"
 #include "HostProxy_TCP.h"
 #include "PacketFilter_PcapLogger.h"
+#include "PacketFilter_KeyLogger.h"
+#include "PacketFilter_ROT13.h"
 #include "PacketFilter_StreamLog.h"
 #include "PacketFilter_Python.h"
 
@@ -67,7 +69,7 @@ void usage(char *arg) {
 	printf("\t-s Server mode, listen on port 10400\n");
 	printf("\t-c <hostname | address> Client mode, connect to server at hostname or address\n");
 	printf("\t-w <filename> Write to pcap file for viewing in Wireshark\n");
-	printf("\t-k Keylogger with ROT13 filter (for demo)\n");
+	printf("\t-k <filename> Keylogger with ROT13 filter (for demo)\n");
 	printf("\t-h Display this message\n");
 }
 
@@ -116,11 +118,14 @@ extern "C" int main(int argc, char **argv)
 	sigaction(SIGHUP, &action, NULL);
 	sigaction(SIGINT, &action, NULL);
 	
+	Injector_UDP* udpinjector;
+	PacketFilter_ROT13* rotfilter;
+	PacketFilter_KeyLogger* keyfilter;
 	PacketFilter_PcapLogger* pcaplogger;
 	
 	manager=new Manager();
 
-	while ((c = getopt (argc, argv, "p:v:dhsc:kw:")) != EOF) {
+	while ((c = getopt (argc, argv, "p:v:dhsc:k:w:")) != EOF) {
 		switch (c) {
 		case 'p':
 			productId = strtol(optarg, &end, 16);
@@ -139,12 +144,12 @@ extern "C" int main(int argc, char **argv)
 			server=true;
 			break;
 		case 'i':
-			Injector_UDP* udpinjector=new Injector_UDP(12345);
+			udpinjector=new Injector_UDP(12345);
 			manager->add_injector(udpinjector);
 			break;
 		case 'k':
-			PacketFilter_ROT13* rotfilter=new PacketFilter_ROT13();
-			PacketFilter_KeyLogger* keyfilter=new PacketFilter_KeyLogger();
+			rotfilter=new PacketFilter_ROT13();
+			keyfilter=new PacketFilter_KeyLogger(fopen(optarg, "w"));
 			manager->add_filter(rotfilter);
 			manager->add_filter(keyfilter);
 			break;
