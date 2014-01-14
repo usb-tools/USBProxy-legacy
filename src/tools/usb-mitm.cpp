@@ -58,9 +58,17 @@ static int debug=0;
 Manager* manager;
 
 void usage(char *arg) {
-	fprintf(stderr, "usage: %s [-v vendorId] [-p productId] [-d (debug)]\n",
-			arg);
-	
+	printf("usb-mitm - command line tool for controlling USBProxy\n");
+	printf("Usage: %s [OPTIONS]\n", arg);
+	printf("Options:\n");
+	printf("\t-v <vendorId> VendorID of target device\n");
+	printf("\t-p <productId> ProductID of target device\n");
+	printf("\t-d Enable debug messages (-dd for increased verbosity)\n");
+	printf("\t-s Server mode, listen on port 10400\n");
+	printf("\t-c <hostname | address> Client mode, connect to server at hostname or address\n");
+	printf("\t-w <filename> Write to pcap file for viewing in Wireshark\n");
+	printf("\t-k Keylogger with ROT13 filter (for demo)\n");
+	printf("\t-h Display this message\n");
 }
 
 void cleanup(void) {
@@ -95,7 +103,7 @@ void handle_signal(int signum)
 extern "C" int main(int argc, char **argv)
 {
 	int c;
-	char* end;
+	char* end, *host;
 	bool client=false,server=false;
 	fprintf(stderr,"SIGRTMIN: %d\n",SIGRTMIN);
 
@@ -108,7 +116,11 @@ extern "C" int main(int argc, char **argv)
 	sigaction(SIGHUP, &action, NULL);
 	sigaction(SIGINT, &action, NULL);
 	
-	while ((c = getopt (argc, argv, "p:v:dhsc")) != EOF) {
+	PacketFilter_PcapLogger* pcaplogger;
+	
+	manager=new Manager();
+
+	while ((c = getopt (argc, argv, "p:v:dhsc:kw:")) != EOF) {
 		switch (c) {
 		case 'p':
 			productId = strtol(optarg, &end, 16);
@@ -121,9 +133,24 @@ extern "C" int main(int argc, char **argv)
 			break;
 		case 'c':
 			client=true;
+			host = optarg;
 			break;
 		case 's':
 			server=true;
+			break;
+		case 'i':
+			Injector_UDP* udpinjector=new Injector_UDP(12345);
+			manager->add_injector(udpinjector);
+			break;
+		case 'k':
+			PacketFilter_ROT13* rotfilter=new PacketFilter_ROT13();
+			PacketFilter_KeyLogger* keyfilter=new PacketFilter_KeyLogger();
+			manager->add_filter(rotfilter);
+			manager->add_filter(keyfilter);
+			break;
+		case 'w':
+			pcaplogger=new PacketFilter_PcapLogger(optarg);
+			manager->add_filter(pcaplogger);
 			break;
 		case 'h':
 		default:
@@ -132,21 +159,19 @@ extern "C" int main(int argc, char **argv)
 		}
 	}
 
-	DeviceProxy_LibUSB::debugLevel=1;
-	DeviceProxy_Loopback::debugLevel=2;
-	DeviceProxy_TCP::debugLevel=2;
-	HostProxy_TCP::debugLevel=2;
-	HostProxy_GadgetFS::debugLevel=2;
-	PacketFilter_Python::debudLevel=2;
-
-	//DeviceProxy* device_proxy=(DeviceProxy *)new DeviceProxy_Loopback(vendorId,productId);
+	DeviceProxy_LibUSB::debugLevel=debug;
+	DeviceProxy_Loopback::debugLevel=debug;
+	DeviceProxy_TCP::debugLevel=debug;
+	HostProxy_TCP::debugLevel=debug;
+	HostProxy_GadgetFS::debugLevel=debug;
+	PacketFilter_Python::debugLevel=debug;
+	
 	DeviceProxy* device_proxy;
 	HostProxy* host_proxy;
 
-
 	if (client) {
 		device_proxy=(DeviceProxy *)new DeviceProxy_LibUSB(vendorId,productId);
-		host_proxy=(HostProxy* )new HostProxy_TCP("10.100.8.52");
+		host_proxy=(HostProxy* )new HostProxy_TCP(host);
 	} else if(server) {
 		device_proxy=(DeviceProxy *)new DeviceProxy_TCP();
 		host_proxy=(HostProxy* )new HostProxy_GadgetFS();
@@ -154,21 +179,13 @@ extern "C" int main(int argc, char **argv)
 		device_proxy=(DeviceProxy *)new DeviceProxy_LibUSB(vendorId,productId);
 		host_proxy=(HostProxy* )new HostProxy_GadgetFS();
 	}
-	manager=new Manager(device_proxy,host_proxy);
+	manager->add_proxies(device_proxy,host_proxy);
 
 	PacketFilter_StreamLog* logfilter=new PacketFilter_StreamLog(stderr);
-	//Injector_UDP* udpinjector=new Injector_UDP(12345);
-
-	//PacketFilter_PcapLogger* pcaplogger=new PacketFilter_PcapLogger("/tmp/usb.pcap");
-	PacketFilter_Python* pyexample=new PacketFilter_Python("example_filter");
+	//PacketFilter_Python* pyexample=new PacketFilter_Python("example_filter");
 	
-
 	manager->add_filter(logfilter);
-	//manager->add_filter(rotfilter);
-	//manager->add_filter(keyfilter);
-	//manager->add_injector(udpinjector);
-	//manager->add_filter(pcaplogger);
-	manager->add_filter(pyexample);
+	//manager->add_filter(pyexample);
 
 	manager->start_control_relaying();
 

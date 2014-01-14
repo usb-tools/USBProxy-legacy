@@ -82,7 +82,10 @@ private:
 
 public:
 	Manager(DeviceProxy* _deviceProxy,HostProxy* _hostProxy);
+	Manager();
 	virtual ~Manager();
+
+	void add_proxies(DeviceProxy* _deviceProxy,HostProxy* _hostProxy);
 
 	void add_injector(Injector* _injector);
 	void remove_injector(__u8 index,bool freeMemory=true);

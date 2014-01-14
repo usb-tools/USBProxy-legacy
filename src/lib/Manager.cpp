@@ -72,6 +72,34 @@ Manager::Manager(DeviceProxy* _deviceProxy,HostProxy* _hostProxy) {
 	}
 }
 
+Manager::Manager() {
+	haltSignal=0;
+	status=USBM_IDLE;
+	deviceProxy=NULL;
+	hostProxy=NULL;
+	device=NULL;
+	filters=NULL;
+	filterCount=0;
+	injectors=NULL;
+	injectorCount=0;
+	injectorThreads=NULL;
+
+	int i;
+	for(i=0;i<16;i++) {
+		in_endpoints[i]=NULL;
+		in_readers[i]=NULL;
+		in_writers[i]=NULL;
+		in_readerThreads[i]=0;
+		in_writerThreads[i]=0;
+
+		out_endpoints[i]=NULL;
+		out_readers[i]=NULL;
+		out_writers[i]=NULL;
+		out_readerThreads[i]=0;
+		out_writerThreads[i]=0;
+	}
+}
+
 Manager::~Manager() {
 	if (device) {
 		delete(device);
@@ -135,6 +163,12 @@ Manager::~Manager() {
 		injectors=NULL;
 	}
 
+}
+
+
+void Manager::add_proxies(DeviceProxy* _deviceProxy,HostProxy* _hostProxy) {
+	deviceProxy=_deviceProxy;
+	hostProxy=_hostProxy;
 }
 
 void Manager::add_injector(Injector* _injector){
