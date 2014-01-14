@@ -137,7 +137,6 @@ int TCP_Helper::client_connect(int port,int timeout) {
 			}
 			fprintf(stderr,"Unexpected client connect poll results: %d\n",poll_connect.revents);
 		} else {
-			TRACE
 			return ETIMEDOUT;
 		}
 	}

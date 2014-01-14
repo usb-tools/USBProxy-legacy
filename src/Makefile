@@ -29,7 +29,7 @@ OBJS = $(wildcard */*.o)
 CFLAGS += $(shell python3-config --cflags)
 LDFLAGS += $(shell python3-config --ldflags)
 
-SUBDIRS = lib Proxies Injectors Filters tools Devices Hosts Bindings
+SUBDIRS = lib Injectors Filters tools Devices Hosts Bindings
 
 $(SUBDIRS):
 	$(MAKE) -C $@

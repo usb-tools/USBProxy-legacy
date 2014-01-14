@@ -22,12 +22,13 @@
 #
 # Created on: Jan 11, 2014
 
+import sys
 from USBProxy import Packet, SetupPacket
 
 filter_name = "Example Filter"
 
 def filter_packet(Packet):
-	print(Packet.wLength)
+	print(Packet.wLength, file=sys.stderr)
 
 def filter_setup_packet(SetupPacket, direction_out):
-	print (Packet.wLength)
+	print (Packet.wLength, file=sys.stderr)
