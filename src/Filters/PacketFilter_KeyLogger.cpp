@@ -210,14 +210,14 @@ void PacketFilter_KeyLogger::keyPressed(__u8 keyCode,__u8 mods) {
 			fprintf(file,"{INVALID}");
 		}
 	} else {
-		if (mods & MOD_LCTRL)  { fprintf(file, fmt_colour, "{LCTRL}"); }
-		if (mods & MOD_LSHIFT) { fprintf(file, fmt_colour, "{LSHIFT}"); }
-		if (mods & MOD_LALT)   { fprintf(file, fmt_colour, "{LALT}"); }
-		if (mods & MOD_LWIN)   { fprintf(file, fmt_colour, "{LWIN}"); }
-		if (mods & MOD_RCTRL)  { fprintf(file, fmt_colour, "{RCTRL}"); }
-		if (mods & MOD_RSHIFT) { fprintf(file, fmt_colour, "{RSHIFT}"); }
-		if (mods & MOD_RALT)   { fprintf(file, fmt_colour, "{RALT}"); }
-		if (mods & MOD_RWIN)   { fprintf(file, fmt_colour, "{RWIN}"); }
+		if (mods & MOD_LCTRL)  { fprintf(file, fmt_colour, COL_BLUE, "{LCTRL}"); }
+		if (mods & MOD_LSHIFT) { fprintf(file, fmt_colour, COL_BLUE, "{LSHIFT}"); }
+		if (mods & MOD_LALT)   { fprintf(file, fmt_colour, COL_BLUE, "{LALT}"); }
+		if (mods & MOD_LWIN)   { fprintf(file, fmt_colour, COL_BLUE, "{LWIN}"); }
+		if (mods & MOD_RCTRL)  { fprintf(file, fmt_colour, COL_BLUE, "{RCTRL}"); }
+		if (mods & MOD_RSHIFT) { fprintf(file, fmt_colour, COL_BLUE, "{RSHIFT}"); }
+		if (mods & MOD_RALT)   { fprintf(file, fmt_colour, COL_BLUE, "{RALT}"); }
+		if (mods & MOD_RWIN)   { fprintf(file, fmt_colour, COL_BLUE, "{RWIN}"); }
 	}
 }
 
