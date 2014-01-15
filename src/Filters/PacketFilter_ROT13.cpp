@@ -30,7 +30,10 @@ void PacketFilter_ROT13::filter_packet(Packet* packet) {
 	int i;
 	for (i=2;i<8;i++) {
 		if (packet->data[i]<=0x1d && packet->data[i]>=0x04) {
-			packet->data[i]=0x21-packet->data[i];
+			if(packet->data[i]<=0x10)
+				packet->data[i]=packet->data[i]+13;
+			else
+				packet->data[i]=packet->data[i]-13;
 		}
 	}
 }

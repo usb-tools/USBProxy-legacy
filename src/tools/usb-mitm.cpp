@@ -68,8 +68,10 @@ void usage(char *arg) {
 	printf("\t-d Enable debug messages (-dd for increased verbosity)\n");
 	printf("\t-s Server mode, listen on port 10400\n");
 	printf("\t-c <hostname | address> Client mode, connect to server at hostname or address\n");
+	printf("\t-l Enable stream logger (logs to stderr)\n");
+	printf("\t-i Enable UDP injector\n");
+	printf("\t-k Keylogger with ROT13 filter (for demo)\n");
 	printf("\t-w <filename> Write to pcap file for viewing in Wireshark\n");
-	printf("\t-k <filename> Keylogger with ROT13 filter (for demo)\n");
 	printf("\t-h Display this message\n");
 }
 
@@ -119,29 +121,34 @@ extern "C" int main(int argc, char **argv)
 	sigaction(SIGINT, &action, NULL);
 	
 	Injector_UDP* udpinjector;
+	PacketFilter_StreamLog* logfilter;
 	PacketFilter_ROT13* rotfilter;
 	PacketFilter_KeyLogger* keyfilter;
 	PacketFilter_PcapLogger* pcaplogger;
 	
 	manager=new Manager();
 
-	while ((c = getopt (argc, argv, "p:v:dhsc:k:w:")) != EOF) {
+	while ((c = getopt (argc, argv, "v:p:dsc:likw:h")) != EOF) {
 		switch (c) {
-		case 'p':
-			productId = strtol(optarg, &end, 16);
-			break;
 		case 'v':
 			vendorId = strtol(optarg, &end, 16);
 			break;
+		case 'p':
+			productId = strtol(optarg, &end, 16);
+			break;
 		case 'd':		/* verbose */
 			debug++;
+			break;
+		case 's':
+			server=true;
 			break;
 		case 'c':
 			client=true;
 			host = optarg;
 			break;
-		case 's':
-			server=true;
+		case 'l':
+			logfilter=new PacketFilter_StreamLog(stderr);
+			manager->add_filter(logfilter);
 			break;
 		case 'i':
 			udpinjector=new Injector_UDP(12345);
@@ -149,7 +156,7 @@ extern "C" int main(int argc, char **argv)
 			break;
 		case 'k':
 			rotfilter=new PacketFilter_ROT13();
-			keyfilter=new PacketFilter_KeyLogger(fopen(optarg, "w"));
+			keyfilter=new PacketFilter_KeyLogger(stderr);
 			manager->add_filter(rotfilter);
 			manager->add_filter(keyfilter);
 			break;
@@ -186,10 +193,7 @@ extern "C" int main(int argc, char **argv)
 	}
 	manager->add_proxies(device_proxy,host_proxy);
 
-	PacketFilter_StreamLog* logfilter=new PacketFilter_StreamLog(stderr);
 	//PacketFilter_Python* pyexample=new PacketFilter_Python("example_filter");
-	
-	manager->add_filter(logfilter);
 	//manager->add_filter(pyexample);
 
 	manager->start_control_relaying();
