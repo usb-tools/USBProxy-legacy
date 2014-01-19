@@ -157,8 +157,8 @@ extern "C" int main(int argc, char **argv)
 		case 'k':
 			rotfilter=new PacketFilter_ROT13();
 			keyfilter=new PacketFilter_KeyLogger(stderr);
-			manager->add_filter(rotfilter);
 			manager->add_filter(keyfilter);
+			manager->add_filter(rotfilter);
 			break;
 		case 'w':
 			pcaplogger=new PacketFilter_PcapLogger(optarg);
