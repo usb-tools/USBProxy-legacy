@@ -108,7 +108,8 @@ void PacketFilter_PcapLogger::filter_setup_packet(SetupPacket* packet,bool direc
 	usb_pkthdr->ts_sec = ts.tv_sec;
 	usb_pkthdr->ts_usec = ts.tv_usec;
 	usb_pkthdr->status = 0; /* I believe 0 means success */
-	usb_pkthdr->urb_len = usb_pkthdr->data_len = data_len;
+	usb_pkthdr->urb_len = 8;
+	usb_pkthdr->data_len = data_len;
 	
 	/* Copy SetupPacket's ctrl_req values */
 	usb_pkthdr->setup.bmRequestType = packet->ctrl_req.bRequestType;
@@ -177,7 +178,8 @@ void PacketFilter_PcapLogger::filter_packet(Packet* packet) {
 	usb_pkthdr->ts_sec = ts.tv_sec;
 	usb_pkthdr->ts_usec = ts.tv_usec;
 	usb_pkthdr->status = 0; /* I believe 0 means success */
-	usb_pkthdr->urb_len = usb_pkthdr->data_len = data_len;
+	usb_pkthdr->urb_len = 0;
+	usb_pkthdr->data_len = data_len;
 	
 	ptr += sizeof(pcap_usb_header);
 	memcpy(ptr, packet->data, data_len);
