@@ -46,6 +46,7 @@
 #include "DeviceProxy_TCP.h"
 #include "DeviceProxy_Loopback.h"
 #include "Injector_UDP.h"
+#include "Injector_UDPHID.h"
 #include "HostProxy_GadgetFS.h"
 #include "HostProxy_TCP.h"
 #include "PacketFilter_PcapLogger.h"
@@ -53,6 +54,7 @@
 #include "PacketFilter_ROT13.h"
 #include "PacketFilter_StreamLog.h"
 #include "PacketFilter_Python.h"
+#include "PacketFilter_UDPHID.h"
 
 
 static int debug=0;
@@ -70,6 +72,7 @@ void usage(char *arg) {
 	printf("\t-c <hostname | address> Client mode, connect to server at hostname or address\n");
 	printf("\t-l Enable stream logger (logs to stderr)\n");
 	printf("\t-i Enable UDP injector\n");
+	printf("\t-x Enable Xbox360 UDPHID injector & filter\n");
 	printf("\t-k Keylogger with ROT13 filter (for demo)\n");
 	printf("\t-w <filename> Write to pcap file for viewing in Wireshark\n");
 	printf("\t-h Display this message\n");
@@ -121,14 +124,16 @@ extern "C" int main(int argc, char **argv)
 	sigaction(SIGINT, &action, NULL);
 	
 	Injector_UDP* udpinjector;
+	Injector_UDPHID* xboxinjector;
 	PacketFilter_StreamLog* logfilter;
 	PacketFilter_ROT13* rotfilter;
 	PacketFilter_KeyLogger* keyfilter;
 	PacketFilter_PcapLogger* pcaplogger;
+	PacketFilter_UDPHID* xboxfilter;
 	
 	manager=new Manager();
 
-	while ((c = getopt (argc, argv, "v:p:dsc:likw:h")) != EOF) {
+	while ((c = getopt (argc, argv, "v:p:dsc:likw:hx")) != EOF) {
 		switch (c) {
 		case 'v':
 			vendorId = strtol(optarg, &end, 16);
@@ -164,11 +169,19 @@ extern "C" int main(int argc, char **argv)
 			pcaplogger=new PacketFilter_PcapLogger(optarg);
 			manager->add_filter(pcaplogger);
 			break;
+		case 'x':
+			xboxinjector=new Injector_UDPHID(12345);
+			manager->add_injector(xboxinjector);
+			xboxfilter=new PacketFilter_UDPHID(xboxinjector);
+			manager->add_filter(xboxfilter);
+			break;
 		case 'h':
 		default:
 			usage(argv[0]);
 			return 1;
 		}
+		//manager->add_filter(pcaplogger);
+
 	}
 
 	DeviceProxy_LibUSB::debugLevel=debug;

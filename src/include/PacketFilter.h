@@ -39,7 +39,7 @@
 #include "Criteria.h"
 
 class PacketFilter {
-private:
+protected:
 	__u8 packetHeader[8];
 	__u8 packetHeaderMask[8];
 	__u8 packetHeaderMaskLength;
