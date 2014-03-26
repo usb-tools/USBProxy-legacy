@@ -94,12 +94,11 @@ void PacketFilter_PcapLogger::filter_setup_packet(SetupPacket* packet,bool direc
 	/*if !=0 the urb setup header is not present*/
 	usb_pkthdr->setup_flag = 0;
 	/*if !=0 no urb data is present*/
+	usb_pkthdr->data_flag = 1;
 	if (data_len) {
-		usb_pkthdr->data_flag = 0;
 		/* FIXME Need to set transfer mode correctly (see pcap/usb.h) */
 		usb_pkthdr->event_type = URB_COMPLETE;
 	} else {
-		usb_pkthdr->data_flag = 1;
 		/* FIXME Need to set transfer mode correctly (see pcap/usb.h) */
 		usb_pkthdr->event_type = URB_SUBMIT;
 	}
@@ -108,7 +107,7 @@ void PacketFilter_PcapLogger::filter_setup_packet(SetupPacket* packet,bool direc
 	usb_pkthdr->ts_sec = ts.tv_sec;
 	usb_pkthdr->ts_usec = ts.tv_usec;
 	usb_pkthdr->status = 0; /* I believe 0 means success */
-	usb_pkthdr->urb_len = 8;
+	usb_pkthdr->urb_len = 0;
 	usb_pkthdr->data_len = data_len;
 	
 	/* Copy SetupPacket's ctrl_req values */
@@ -164,12 +163,11 @@ void PacketFilter_PcapLogger::filter_packet(Packet* packet) {
 	/*if !=0 the urb setup header is not present*/
 	usb_pkthdr->setup_flag = 1;
 	/*if !=0 no urb data is present*/
+		usb_pkthdr->data_flag = 1;
 	if (data_len) {
-		usb_pkthdr->data_flag = 0;
 		/* FIXME Need to set transfer mode correctly (see pcap/usb.h) */
 		usb_pkthdr->event_type = URB_COMPLETE;
 	} else {
-		usb_pkthdr->data_flag = 1;
 		/* FIXME Need to set transfer mode correctly (see pcap/usb.h) */
 		usb_pkthdr->event_type = URB_SUBMIT;
 	}
