@@ -54,6 +54,9 @@ public:
 	virtual void release_interface(__u8 interface)=0;
 
 	virtual __u8 get_address()=0;
+	
+	void init_plugin() {};
+	void destroy_plugin() {};
 };
 
 #endif /* USBPROXY_DEVICEPROXY_H */
