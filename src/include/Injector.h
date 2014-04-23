@@ -29,7 +29,7 @@
 #include <poll.h>
 #include <mqueue.h>
 
-#include "plugins.h"
+#include "Plugins.h"
 #include "Packet.h"
 #include "Criteria.h"
 

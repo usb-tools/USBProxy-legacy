@@ -29,7 +29,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "plugins.h"
+#include "Plugins.h"
 #include "Device.h"
 #include "Configuration.h"
 #include "Interface.h"

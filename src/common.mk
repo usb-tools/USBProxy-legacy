@@ -45,7 +45,8 @@ CPPFLAGS += -Wall -g -fdata-sections -ffunction-sections -MMD -MP $(OPTIONS) $(I
 
 
 # compiler options for C++ only
-CXXFLAGS += -std=gnu++98 -pedantic -felide-constructors -fno-exceptions -fno-rtti
+#CXXFLAGS += -std=gnu++98 -pedantic -felide-constructors -fno-exceptions -fno-rtti
+CXXFLAGS += -std=gnu++0x -pedantic -felide-constructors -fno-exceptions -fno-rtti
 
 # compiler options for C only
 CFLAGS +=
@@ -59,7 +60,7 @@ else
 endif
 
 LDFLAGS += -Wl,--gc-sections
-LDFLAGS += -l$(LIBUSB) -ludev -lstdc++ -lpthread -lpcap -lrt
+LDFLAGS += -l$(LIBUSB) -ludev -lstdc++ -lpthread -lpcap -lrt -ldl
 
 C_FILES := $(wildcard *.c)
 CPP_FILES := $(wildcard *.cpp)

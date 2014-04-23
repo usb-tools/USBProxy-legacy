@@ -68,4 +68,9 @@ public:
 	char* toString();
 };
 
+extern "C" {
+	DeviceProxy * get_plugin();
+	void destroy_plugin();
+}
+
 #endif /* USBPROXY_DEVICEPROXY_LIBUSB_H */

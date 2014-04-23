@@ -26,7 +26,7 @@
 #ifndef USBPROXY_PROXY_H
 #define USBPROXY_PROXY_H
 
-#include "plugins.h"
+#include "Plugins.h"
 #include <stddef.h>
 #include <linux/types.h>
 

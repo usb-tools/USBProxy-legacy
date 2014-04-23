@@ -42,13 +42,12 @@
 
 #include "TRACE.h"
 #include "Manager.h"
-#include "DeviceProxy_LibUSB.h"
-#include "DeviceProxy_TCP.h"
-#include "DeviceProxy_Loopback.h"
+#include "PluginManager.h"
 #include "Injector_UDP.h"
 #include "Injector_UDPHID.h"
 #include "HostProxy_GadgetFS.h"
 #include "HostProxy_TCP.h"
+#include "DeviceProxy_TCP.h"
 #include "PacketFilter_PcapLogger.h"
 #include "PacketFilter_KeyLogger.h"
 #include "PacketFilter_ROT13.h"
@@ -114,7 +113,8 @@ extern "C" int main(int argc, char **argv)
 	bool client=false,server=false;
 	fprintf(stderr,"SIGRTMIN: %d\n",SIGRTMIN);
 
-	int vendorId=LIBUSB_HOTPLUG_MATCH_ANY, productId=LIBUSB_HOTPLUG_MATCH_ANY;
+	//int vendorId=LIBUSB_HOTPLUG_MATCH_ANY, productId=LIBUSB_HOTPLUG_MATCH_ANY;
+	int vendorId=0, productId=0;
 	
 	struct sigaction action;
 	memset(&action, 0, sizeof(struct sigaction));
@@ -132,6 +132,7 @@ extern "C" int main(int argc, char **argv)
 	PacketFilter_UDPHID* xboxfilter;
 	
 	manager=new Manager();
+	PluginManager *plugin_manager = new PluginManager();
 
 	while ((c = getopt (argc, argv, "v:p:dsc:likw:hx")) != EOF) {
 		switch (c) {
@@ -184,9 +185,6 @@ extern "C" int main(int argc, char **argv)
 
 	}
 
-	DeviceProxy_LibUSB::debugLevel=debug;
-	DeviceProxy_Loopback::debugLevel=debug;
-	DeviceProxy_TCP::debugLevel=debug;
 	HostProxy_TCP::debugLevel=debug;
 	HostProxy_GadgetFS::debugLevel=debug;
 	PacketFilter_Python::debugLevel=debug;
@@ -195,13 +193,15 @@ extern "C" int main(int argc, char **argv)
 	HostProxy* host_proxy;
 
 	if (client) {
-		device_proxy=(DeviceProxy *)new DeviceProxy_LibUSB(vendorId,productId);
+		//device_proxy=(DeviceProxy *)new DeviceProxy_LibUSB(vendorId,productId);
+		device_proxy = (DeviceProxy *) plugin_manager->load_plugins("DeviceProxy_LibUSB");
 		host_proxy=(HostProxy* )new HostProxy_TCP(host);
 	} else if(server) {
 		device_proxy=(DeviceProxy *)new DeviceProxy_TCP();
 		host_proxy=(HostProxy* )new HostProxy_GadgetFS();
 	} else {
-		device_proxy=(DeviceProxy *)new DeviceProxy_LibUSB(vendorId,productId);
+		//device_proxy=(DeviceProxy *)new DeviceProxy_LibUSB(vendorId,productId);
+		device_proxy = (DeviceProxy *) plugin_manager->load_plugins("DeviceProxy_LibUSB");
 		host_proxy=(HostProxy* )new HostProxy_GadgetFS();
 	}
 	manager->add_proxies(device_proxy,host_proxy);

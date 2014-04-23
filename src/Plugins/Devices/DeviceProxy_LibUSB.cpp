@@ -297,3 +297,17 @@ void DeviceProxy_LibUSB::release_interface(__u8 interface) {
 		if (rc && rc!=-5) {fprintf(stderr,"Error (%d) releasing interface %d\n",rc,interface);}
 	}
 }
+
+static DeviceProxy_LibUSB *proxy;
+
+extern "C" {
+DeviceProxy * get_plugin() {
+	proxy = new DeviceProxy_LibUSB();
+	return (DeviceProxy *) proxy;
+}
+
+void destroy_plugin() {
+	delete proxy;
+}
+
+}
