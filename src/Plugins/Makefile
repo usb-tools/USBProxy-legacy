@@ -18,14 +18,18 @@
 # the Free Software Foundation, Inc., 51 Franklin Street,
 # Boston, MA 02110-1301, USA.
 
+SUBDIRS = Devices
+
 all: $(SUBDIRS)
 
-SUBDIRS = Devices
+include ../common.mk
 
 $(SUBDIRS):
 	$(MAKE) -C $@
 
-$(SUBDIRS:%=%_clean):
-	$(MAKE) -C $(@:%_clean=%) clea
+clean:: $(SUBDIRS:%=%_clean)
 
-include ../common.mk
+$(SUBDIRS:%=%_clean):
+	$(MAKE) -C $(@:%_clean=%) clean
+
+.PHONY : clean all $(SUBDIRS)

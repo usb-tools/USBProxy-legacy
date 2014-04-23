@@ -23,6 +23,6 @@
 #OBJS := $(C_FILES:.c=.o) $(CPP_FILES:.cpp=.o)
 #HEADERS := $(C_FILES:.c=.h) $(CPP_FILES:.cpp=.h)
 
-INCLUDES += -I../include
+INCLUDES += -I../../include
 
 include ../../common.mk

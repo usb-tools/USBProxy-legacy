@@ -52,7 +52,7 @@
 #include "PacketFilter_KeyLogger.h"
 #include "PacketFilter_ROT13.h"
 #include "PacketFilter_StreamLog.h"
-#include "PacketFilter_Python.h"
+//#include "PacketFilter_Python.h"
 #include "PacketFilter_UDPHID.h"
 
 
@@ -187,7 +187,7 @@ extern "C" int main(int argc, char **argv)
 
 	HostProxy_TCP::debugLevel=debug;
 	HostProxy_GadgetFS::debugLevel=debug;
-	PacketFilter_Python::debugLevel=debug;
+	//PacketFilter_Python::debugLevel=debug;
 	
 	DeviceProxy* device_proxy;
 	HostProxy* host_proxy;
