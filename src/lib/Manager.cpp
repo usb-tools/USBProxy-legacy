@@ -248,7 +248,7 @@ __u8 Manager::get_filter_count(){
 void spinner(int dir) {
 	static int i;
 	if (dir==0) {i=-1;return;}
-	static char* spinchar="|/-\\";
+	const char* spinchar="|/-\\";
 	if (i==-1) {i=0;} else {putchar('\x8');}
 	putchar(spinchar[i]);
 	i+=dir;
