@@ -38,7 +38,7 @@ endif
 INCLUDES += -I/usr/src -I/usr/include -I/usr/local/include
 
 # CPPFLAGS = compiler options for C and C++
-CPPFLAGS += -Wall -g -fdata-sections -ffunction-sections -MMD -MP $(OPTIONS) $(INCLUDES)
+CPPFLAGS += -Wall -g -fPIC -fdata-sections -ffunction-sections -MMD -MP $(OPTIONS) $(INCLUDES)
 
 #temporarily removed below as it was interfering with debugging
 #CPPFLAGS += -O2

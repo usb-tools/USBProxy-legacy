@@ -26,3 +26,8 @@
 INCLUDES += -I../../include
 
 include ../../common.mk
+
+all: DeviceProxy_LibUSB.so
+
+DeviceProxy_LibUSB.so: DeviceProxy_LibUSB.o
+	$(CC) -shared -Wl,-soname,DeviceProxy_LibUSB.so $^ -o $@
