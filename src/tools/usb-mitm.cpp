@@ -54,7 +54,7 @@
 #include "PacketFilter_StreamLog.h"
 //#include "PacketFilter_Python.h"
 #include "PacketFilter_UDPHID.h"
-
+#include "PacketFilter_MassStorage.h"
 
 static int debug=0;
 
@@ -126,6 +126,7 @@ extern "C" int main(int argc, char **argv)
 	Injector_UDP* udpinjector;
 	Injector_UDPHID* xboxinjector;
 	PacketFilter_StreamLog* logfilter;
+	PacketFilter_MassStorage* msfilter;
 	PacketFilter_ROT13* rotfilter;
 	PacketFilter_KeyLogger* keyfilter;
 	PacketFilter_PcapLogger* pcaplogger;
@@ -155,6 +156,10 @@ extern "C" int main(int argc, char **argv)
 		case 'l':
 			logfilter=new PacketFilter_StreamLog(stderr);
 			manager->add_filter(logfilter);
+			break;
+		case 'm':
+			msfilter=new PacketFilter_MassStorage(stderr);
+			manager->add_filter(msfilter);
 			break;
 		case 'i':
 			udpinjector=new Injector_UDP(12345);
