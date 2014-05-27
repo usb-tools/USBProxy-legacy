@@ -18,20 +18,34 @@
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
  *
- * PacketFilter_StreamLog.h
+ * PacketFilter_MassStorage.h
  */
 #ifndef PACKETFILTER_MASSSTORAGE_H
 #define PACKETFILTER_MASSSTORAGE_H
 
 #include "PacketFilter.h"
+#include <linux/types.h>
+#include <mqueue.h>
+#include <poll.h>
 
 //writes all traffic to a stream
 class PacketFilter_MassStorage : public PacketFilter {
 private:
-	FILE* file;
+	int state;
+	int flag;
+	char tag[4];
+	__u8 haltSignal;
+	mqd_t sendQueue;
+	bool halt;
+	struct pollfd haltpoll;
+	int haltfd;
+	struct pollfd poll_out;
+
 public:
-	PacketFilter_MassStorage(FILE* _file) {file=_file;}
+	PacketFilter_MassStorage();
 	void filter_packet(Packet* packet);
+	void start_queue();
+	void send_packet();
 	virtual char* toString() {return (char*)"Mass Storage Filter";}
 };
 #endif /* PACKETFILTER_MASSSTORAGE_H */
