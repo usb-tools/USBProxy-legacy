@@ -24,28 +24,29 @@
 #define PACKETFILTER_MASSSTORAGE_H
 
 #include "PacketFilter.h"
-#include <linux/types.h>
-#include <mqueue.h>
+#include "Injector.h"
 #include <poll.h>
 
 //writes all traffic to a stream
-class PacketFilter_MassStorage : public PacketFilter {
+class PacketFilter_MassStorage : public PacketFilter, public Injector {
 private:
 	int state;
-	int flag;
 	char tag[4];
-	__u8 haltSignal;
-	mqd_t sendQueue;
-	bool halt;
-	struct pollfd haltpoll;
-	int haltfd;
-	struct pollfd poll_out;
+	struct pollfd spoll;
 
 public:
 	PacketFilter_MassStorage();
+	~PacketFilter_MassStorage();
+	
+	/* Filter functions */
 	void filter_packet(Packet* packet);
-	void start_queue();
-	void send_packet();
-	virtual char* toString() {return (char*)"Mass Storage Filter";}
+	void queue_packet();
+	
+	/* Injector Functions */
+	void start_injector();
+	void stop_injector();
+	int* get_pollable_fds();
+	void full_pipe(Packet* p);
+	void get_packets(Packet** packet,SetupPacket** setup,int timeout=500);
 };
 #endif /* PACKETFILTER_MASSSTORAGE_H */

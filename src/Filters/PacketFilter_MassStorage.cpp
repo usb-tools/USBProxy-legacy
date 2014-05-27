@@ -18,160 +18,177 @@
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
  *
- * PacketFilter_StreamLog.cpp
+ * PacketFilter_MassStorage.cpp
  */
+
 #include "PacketFilter_MassStorage.h"
-#include "TRACE.h"
-#include "get_tid.h"
-#include "HaltSignal.h"
+#include <linux/types.h>
 
-#define COMMAND 0
-#define READ 1
-#define WRITE 2
-#define STATUS 3
+#define IDLE 0
+#define COMMAND 1
+#define READ 2
+#define WRITE 3
+#define STATUS 4
+#define UNKNOWN 5
 
-	PacketFilter_MassStorage::PacketFilter_MassStorage() {
-		state = COMMAND;
-		flag = 0;
-		halt = false;
-	}
-	PacketFilter_MassStorage::~PacketFilter_MassStorage() {
-		if(sendQueue)
-			mq_close(sendQueue);
-	}
+PacketFilter_MassStorage::PacketFilter_MassStorage() {
+	state = IDLE;
+}
 
-	void PacketFilter_MassStorage::start_queue() {
-		if (haltsignal_setup(haltSignal,&haltpoll,&haltfd)!=0) return;
+PacketFilter_MassStorage::~PacketFilter_MassStorage() {
+}
+
+void PacketFilter_MassStorage::queue_packet() {
+	__u8 buf[] = {0x55, 0x53, 0x42, 0x53,
+						  0xFF, 0xFF, 0xFF, 0xFF,
+						  0x00, 0x00, 0x00, 0x00, 0x00};
+	buf[4] = tag[0];
+	buf[5] = tag[1];
+	buf[6] = tag[2];
+	buf[7] = tag[3];
 	
-		char mqname[16];
-		struct mq_attr mqa;
-		mqa.mq_maxmsg=1;
-		mqa.mq_msgsize=4;
-		sprintf(mqname,"/USBProxy(UMS)-DGS");
-		sendQueue=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
-		poll_out.fd=sendQueue;
-		poll_out.events=POLLOUT;
+	Packet *p = new Packet(0x82, buf, 13);
+}
+
+void PacketFilter_MassStorage::filter_packet(Packet* packet) {
+	int length, i, type = UNKNOWN;
+	if ((packet->wLength == 31) &&
+		(packet->data[0] == 0x55) &&
+		(packet->data[1] == 0x53) &&
+		(packet->data[2] == 0x42) &&
+		(packet->data[3] == 0x43)) {
+			type = COMMAND;
+	}
+	if ((packet->wLength == 13) &&
+		(packet->data[0] == 0x55) &&
+		(packet->data[1] == 0x53) &&
+		(packet->data[2] == 0x42) &&
+		(packet->data[3] == 0x53)) {
+			type = STATUS;
 	}
 
-	void PacketFilter_MassStorage::send_packet() {
-		__u8 buf[] = {0x55, 0x53, 0x42, 0x53,
-							  0xFF, 0xFF, 0xFF, 0xFF,
-							  0x00, 0x00, 0x00, 0x00, 0x00};
-		buf[4] = tag[0];
-		buf[5] = tag[1];
-		buf[6] = tag[2];
-		buf[7] = tag[3];
+	if((type==UNKNOWN) &&
+	   (packet->wLength > 64)) {
+		// Probably data
+		type = state;
+	}
+
+	switch(type) {
+		case COMMAND:
+			switch(packet->data[0xf]) {
+				case 0x28:
+					state = READ;
+					length = (packet->data[0x16]<<8) | packet->data[0x17];
+					fprintf(stderr, "CBW: Read LBA: 0x%02X%02X%02X%02X, %d blocks\n",
+							packet->data[0x11],
+							packet->data[0x12],
+							packet->data[0x13],
+							packet->data[0x14],
+							length);
+					break;
+				case 0x2a:
+					state = WRITE;
+					packet->transmit = false;
+					tag[0] = packet->data[4];
+					tag[1] = packet->data[5];
+					tag[2] = packet->data[6];
+					tag[3] = packet->data[7];
+					fprintf(stderr, "CBW: Write, tag: %02X %02X %02X %02X\n", tag[0], tag[1], tag[2], tag[3]);
+					length = (packet->data[0x16]<<8) | packet->data[0x17];
+					fprintf(stderr, "CBW: Write LBA: 0x%02X%02X%02X%02X, %d blocks\n",
+							packet->data[0x11],
+							packet->data[0x12],
+							packet->data[0x13],
+							packet->data[0x14],
+							length);
+					break;
+			}
+			break;
 		
-		Packet *p = new Packet(0x82, buf, 13);
-		if (poll(&poll_out, 1, 500) && (poll_out.revents&POLLOUT)) {
-			mq_send(sendQueue,(char*)&p,sizeof(Packet*),0);
-			poll_out.revents=0;
-		}
+		case WRITE:
+			fprintf(stderr, "WRITE:%d (EP%02x)\n", packet->wLength, packet->bEndpoint);
+			packet->transmit = false;
+			// Need to inject a status response here
+			queue_packet();
+			break;
+		
+		case READ:
+			fprintf(stderr, "READ:%d\n", packet->wLength);
+			break;
+		
+		case STATUS:
+			// A CSW (Command Status Wrapper)
+			switch(packet->data[12]) {
+				case 0:
+					fprintf(stderr, "CSW: Success\n");
+					break;
+				default:
+					fprintf(stderr, "CBW: Error(%d)\n", packet->data[12]);
+					//if (flag) {
+					//	fprintf(stderr, "Ignoring error\n");
+					//	for(i=6; i<packet->wLength; i++)
+					//		packet->data[i] = 0;
+					//}
+					break;
+			}
+				state = IDLE;
+			break;
+	}
+}
+
+void PacketFilter_MassStorage::start_injector() {
+	fprintf(stderr,"Opening Queue Injector.\n");
+	// TODO any queue setup required
+}
+
+int* PacketFilter_MassStorage::get_pollable_fds() {
+	int* tmp=(int*)calloc(2,sizeof(int));
+	tmp[0]=spoll.fd;
+	return tmp;
+}
+
+void PacketFilter_MassStorage::stop_injector() {
+	
+}
+void PacketFilter_MassStorage::get_packets(Packet** packet,SetupPacket** setup,int timeout) {
+	*packet=NULL;
+	*setup=NULL;
+
+	if (!poll(&spoll, 1, timeout) || !(spoll.revents&POLLIN)) {
+		return;
 	}
 
-	void PacketFilter_MassStorage::filter_packet(Packet* packet) {
-		int length, i;
-		switch(state) {
-			case COMMAND:
-				if ((packet->wLength == 31) &&
-					(packet->data[0] == 0x55) &&
-					(packet->data[1] == 0x53) &&
-					(packet->data[2] == 0x42) &&
-					(packet->data[3] == 0x43)) {
-					// A CBW (Command Block Wrapper)
-					switch(packet->data[0xf]) {
-						case 0x28:
-							state = READ;
-							length = (packet->data[0x16]<<8) | packet->data[0x17];
-							fprintf(stderr, "CBW: Read LBA: 0x%02X%02X%02X%02X, %d blocks\n",
-									packet->data[0x11],
-									packet->data[0x12],
-									packet->data[0x13],
-									packet->data[0x14],
-									length);
-							break;
-						case 0x2a:
-							state = WRITE;
-							packet->transmit = false;
-							//packet->data[0xf] = 0x28;
-							//flag = 1;
-							tag[0] = packet->data[4];
-							tag[1] = packet->data[5];
-							tag[2] = packet->data[6];
-							tag[3] = packet->data[7];
-							fprintf(stderr, "CBW: Write, tag: %02X %02X %02X %02X\n", tag[0], tag[1], tag[2], tag[3]);
-							length = (packet->data[0x16]<<8) | packet->data[0x17];
-							fprintf(stderr, "CBW: Write LBA: 0x%02X%02X%02X%02X, %d blocks\n",
-									packet->data[0x11],
-									packet->data[0x12],
-									packet->data[0x13],
-									packet->data[0x14],
-									length);
-							break;
-					}
-				}
-				break;
-			
-			case WRITE:
-				// First we'll recieve the write from the host
-				// Then we'll need to trigger the read from the device (complicated and messy!)
-				// Drop both packets and allow the status message to pass
-				//packet->data is the block to be written
-				packet->transmit = false;
-				// Need to inject a status response here
-				// "echo -e \\x82\\x00\\x00\\x0d\\x55\\x53\\x42\\x53\\x%02x\\x%02x\\x%02x\\x%02x\\x00\\x00\\x00\\x00\\x00 | nc -u 127.0.0.1 12345\0",
-				// tag[0], tag[1], tag[2], tag[3]
-				//state = STATUS;
-				
-				// Assume both write and read come through before status message
-				fprintf(stderr, "WRITE:%d (EP%02x)\n", packet->wLength, packet->bEndpoint);
-				// State is set to command, we'll fake the status message
-				state = COMMAND;
-				if(!sendQueue)
-					start_queue();
-				send_packet();
-				//if(flag) {
-				//	fprintf(stderr, "WRITE:%d (EP%02x)\n", packet->wLength, packet->bEndpoint);
-				//	flag--;
-				//} else {
-				//	fprintf(stderr, "READ (WR):%d (EP%02x)\n", packet->wLength, packet->bEndpoint);
-				//	state = STATUS;
-				//}
-				break;
-			
-			case READ:
-				//packet->data is the block to be written
-				fprintf(stderr, "READ:%d\n", packet->wLength);
-				state = STATUS;
-				break;
-			
-			case STATUS:
-				//packet->data is the CSW from the device
-				if ((packet->wLength == 13) &&
-					(packet->data[0] == 0x55) &&
-					(packet->data[1] == 0x53) &&
-					(packet->data[2] == 0x42) &&
-					(packet->data[3] == 0x53)) {
-					// A CSW (Command Status Wrapper)
-					switch(packet->data[12]) {
-						case 0:
-							fprintf(stderr, "CSW: Success\n");
-							break;
-						default:
-							fprintf(stderr, "CBW: Error(%d)\n", packet->data[12]);
-							if (flag) {
-								fprintf(stderr, "Ignoring error\n");
-								for(i=6; i<packet->wLength; i++)
-									packet->data[i] = 0;
-							}
-							break;
-					}
-					state = COMMAND;
-				} else {
-					fprintf(stderr, "Not a CSW. len = %d\n", packet->wLength);
-				}
-				break;
+	ssize_t len=recv(sck,buf,UDP_BUFFER_SIZE,0);
+	if (len>0) {
+		if (buf[0]) {
+			__u16 usblen=buf[2]<<8 | buf[3];
+			__u8* usbbuf=(__u8*)malloc(usblen);
+			memcpy(usbbuf,buf+4,usblen);
+			*packet=new Packet(buf[0],usbbuf,usblen,buf[1]&0x01?false:true);
+			(*packet)->transmit=buf[1]&0x02?false:true;
+			return;
+		} else {
+			struct usb_ctrlrequest ctrl_req;
+			memcpy(&ctrl_req,buf+3,8);
+			if (ctrl_req.bRequestType&0x80) {
+				*setup=new SetupPacket(ctrl_req,NULL,true);
+			} else {
+				__u8* usbbuf=(__u8*)malloc(ctrl_req.wLength);
+				memcpy(usbbuf,buf+11,ctrl_req.wLength);
+				*setup=new SetupPacket(ctrl_req,usbbuf,true);
+			}
+			(*setup)->filter_out=~(buf[1]&0x01);
+			(*setup)->transmit_out=~(buf[1]&0x02);
+			(*setup)->filter_in=~(buf[1]&0x04);
+			(*setup)->transmit_in=~(buf[1]&0x08);
+			return;
 		}
-		if(flag)
-			TRACE1(flag)
 	}
+	if (len<0) {
+		fprintf(stderr,"Socket read error [%s].\n",strerror(errno));
+	}
+	return;
+}
+
+void PacketFilter_MassStorage::full_pipe(Packet* p) {fprintf(stderr,"Packet returned due to full pipe & buffer\n");}
+
