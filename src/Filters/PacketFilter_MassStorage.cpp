@@ -35,9 +35,6 @@ PacketFilter_MassStorage::PacketFilter_MassStorage() {
 	state = IDLE;
 }
 
-PacketFilter_MassStorage::~PacketFilter_MassStorage() {
-}
-
 void PacketFilter_MassStorage::queue_packet() {
 	__u8 buf[] = {0x55, 0x53, 0x42, 0x53,
 						  0xFF, 0xFF, 0xFF, 0xFF,
@@ -88,7 +85,9 @@ void PacketFilter_MassStorage::filter_packet(Packet* packet) {
 					break;
 				case 0x2a:
 					state = WRITE;
-					packet->transmit = false;
+					//packet->transmit = false;
+					packet->data[0x16] = 0;
+					packet->data[0x17] = 0;
 					tag[0] = packet->data[4];
 					tag[1] = packet->data[5];
 					tag[2] = packet->data[6];
@@ -107,9 +106,11 @@ void PacketFilter_MassStorage::filter_packet(Packet* packet) {
 		
 		case WRITE:
 			fprintf(stderr, "WRITE:%d (EP%02x)\n", packet->wLength, packet->bEndpoint);
-			packet->transmit = false;
+			packet->wLength = 0;
+			//free(packet->data);
+			//packet->transmit = false;
 			// Need to inject a status response here
-			queue_packet();
+			//queue_packet();
 			break;
 		
 		case READ:
@@ -135,60 +136,3 @@ void PacketFilter_MassStorage::filter_packet(Packet* packet) {
 			break;
 	}
 }
-
-void PacketFilter_MassStorage::start_injector() {
-	fprintf(stderr,"Opening Queue Injector.\n");
-	// TODO any queue setup required
-}
-
-int* PacketFilter_MassStorage::get_pollable_fds() {
-	int* tmp=(int*)calloc(2,sizeof(int));
-	tmp[0]=spoll.fd;
-	return tmp;
-}
-
-void PacketFilter_MassStorage::stop_injector() {
-	
-}
-void PacketFilter_MassStorage::get_packets(Packet** packet,SetupPacket** setup,int timeout) {
-	*packet=NULL;
-	*setup=NULL;
-
-	if (!poll(&spoll, 1, timeout) || !(spoll.revents&POLLIN)) {
-		return;
-	}
-
-	ssize_t len=recv(sck,buf,UDP_BUFFER_SIZE,0);
-	if (len>0) {
-		if (buf[0]) {
-			__u16 usblen=buf[2]<<8 | buf[3];
-			__u8* usbbuf=(__u8*)malloc(usblen);
-			memcpy(usbbuf,buf+4,usblen);
-			*packet=new Packet(buf[0],usbbuf,usblen,buf[1]&0x01?false:true);
-			(*packet)->transmit=buf[1]&0x02?false:true;
-			return;
-		} else {
-			struct usb_ctrlrequest ctrl_req;
-			memcpy(&ctrl_req,buf+3,8);
-			if (ctrl_req.bRequestType&0x80) {
-				*setup=new SetupPacket(ctrl_req,NULL,true);
-			} else {
-				__u8* usbbuf=(__u8*)malloc(ctrl_req.wLength);
-				memcpy(usbbuf,buf+11,ctrl_req.wLength);
-				*setup=new SetupPacket(ctrl_req,usbbuf,true);
-			}
-			(*setup)->filter_out=~(buf[1]&0x01);
-			(*setup)->transmit_out=~(buf[1]&0x02);
-			(*setup)->filter_in=~(buf[1]&0x04);
-			(*setup)->transmit_in=~(buf[1]&0x08);
-			return;
-		}
-	}
-	if (len<0) {
-		fprintf(stderr,"Socket read error [%s].\n",strerror(errno));
-	}
-	return;
-}
-
-void PacketFilter_MassStorage::full_pipe(Packet* p) {fprintf(stderr,"Packet returned due to full pipe & buffer\n");}
-

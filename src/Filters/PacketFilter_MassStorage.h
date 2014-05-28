@@ -24,11 +24,10 @@
 #define PACKETFILTER_MASSSTORAGE_H
 
 #include "PacketFilter.h"
-#include "Injector.h"
 #include <poll.h>
 
 //writes all traffic to a stream
-class PacketFilter_MassStorage : public PacketFilter, public Injector {
+class PacketFilter_MassStorage : public PacketFilter {
 private:
 	int state;
 	char tag[4];
@@ -36,17 +35,9 @@ private:
 
 public:
 	PacketFilter_MassStorage();
-	~PacketFilter_MassStorage();
 	
 	/* Filter functions */
 	void filter_packet(Packet* packet);
 	void queue_packet();
-	
-	/* Injector Functions */
-	void start_injector();
-	void stop_injector();
-	int* get_pollable_fds();
-	void full_pipe(Packet* p);
-	void get_packets(Packet** packet,SetupPacket** setup,int timeout=500);
 };
 #endif /* PACKETFILTER_MASSSTORAGE_H */
