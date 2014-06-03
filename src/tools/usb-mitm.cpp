@@ -135,7 +135,7 @@ extern "C" int main(int argc, char **argv)
 	manager=new Manager();
 	PluginManager *plugin_manager = new PluginManager();
 
-	while ((c = getopt (argc, argv, "v:p:dsc:likw:hx")) != EOF) {
+	while ((c = getopt (argc, argv, "v:p:dsc:lmikw:hx")) != EOF) {
 		switch (c) {
 		case 'v':
 			vendorId = strtol(optarg, &end, 16);
@@ -158,8 +158,9 @@ extern "C" int main(int argc, char **argv)
 			manager->add_filter(logfilter);
 			break;
 		case 'm':
-			msfilter=new PacketFilter_MassStorage(stderr);
+			msfilter=new PacketFilter_MassStorage();
 			manager->add_filter(msfilter);
+			manager->add_injector(msfilter);
 			break;
 		case 'i':
 			udpinjector=new Injector_UDP(12345);
@@ -186,8 +187,6 @@ extern "C" int main(int argc, char **argv)
 			usage(argv[0]);
 			return 1;
 		}
-		//manager->add_filter(pcaplogger);
-
 	}
 
 	HostProxy_TCP::debugLevel=debug;

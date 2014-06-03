@@ -17,9 +17,9 @@
  * along with this program; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
+ *
+ * Sample UDP client
  */
-
-/* Sample UDP client */
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -30,8 +30,8 @@
 
 /***** after studying the Injector_UDP.cpp code, it looks like it expects it in the following format*/
 /*buf[0]=endpoint*/
-/*buf[1]b0 = flag for filter bool*/
-/*buf[1]b2 = flag for transmit bool*/
+/*buf[1]b0 = flag for filter bool (0=True, 1=False)*/
+/*buf[1]b1 = flag for transmit bool (0=True, 1=False)*/
 /*buf[2] = MSB for usblen*/
 /*buf[3] = LSB for usblen*/
 /*starting at buf[4] is actual data*/
@@ -116,9 +116,9 @@ int main(int argc, char**argv)
             return 1;
         }	
         
-        chunk = (unsigned char *) malloc(usblen + 4);
+        chunk = (unsigned char*) malloc(usblen+4);
         chunk[0] = endpoint;
-        chunk[1] = 0x02;
+        chunk[1] = 0x00;
         chunk[2] = (usblen & 0xFF00) >> 8;
         chunk[3] = usblen & 0x00FF;
         printf("len= %d\n", usblen);
@@ -149,10 +149,10 @@ int main(int argc, char**argv)
         if (chunk[0] == 0x02) {
             //maybe need to log timestamps and simulate timing
             //by using sleep?
-//        sleep(0.01);
+//        sleep(2);
         for (i = 0; i < chunk_size; i++) {
-		    printf("%.2X ", chunk[i]);
-	    }
+		printf("%.2X ", chunk[i]);
+	}
         sendto(sockfd,chunk,chunk_size,0,
          (struct sockaddr *)&servaddr,sizeof(servaddr));
          packets_sent++;

@@ -24,14 +24,16 @@
 #define PACKETFILTER_MASSSTORAGE_H
 
 #include "PacketFilter.h"
-#include <poll.h>
+#include "Injector.h"
 
 //writes all traffic to a stream
 class PacketFilter_MassStorage : public PacketFilter {
 private:
 	int state;
 	char tag[4];
-	struct pollfd spoll;
+	int pipe_fd[2]; /* [read, write] */
+	Packet *p;
+	bool packet_waiting;
 
 public:
 	PacketFilter_MassStorage();

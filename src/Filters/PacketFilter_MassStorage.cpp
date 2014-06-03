@@ -23,6 +23,7 @@
 
 #include "PacketFilter_MassStorage.h"
 #include <linux/types.h>
+#include <unistd.h>
 
 #define IDLE 0
 #define COMMAND 1
@@ -32,7 +33,16 @@
 #define UNKNOWN 5
 
 PacketFilter_MassStorage::PacketFilter_MassStorage() {
+	int rs;
 	state = IDLE;
+	packet_waiting = false;
+	
+	rs = pipe(pipe_fd);
+	if (rs < 0) 
+	{
+		perror("pipe");
+		exit(EXIT_FAILURE);
+	}
 }
 
 void PacketFilter_MassStorage::queue_packet() {
@@ -44,11 +54,15 @@ void PacketFilter_MassStorage::queue_packet() {
 	buf[6] = tag[2];
 	buf[7] = tag[3];
 	
-	Packet *p = new Packet(0x82, buf, 13);
+	p = new Packet(0x82, buf, 13);
+	p->transmit=true;
+	packet_waiting = true;
+	write(pipe_fd[1], '\0', 1);
+	//delete p;
 }
 
 void PacketFilter_MassStorage::filter_packet(Packet* packet) {
-	int length, i, type = UNKNOWN;
+	int length, type = UNKNOWN;
 	if ((packet->wLength == 31) &&
 		(packet->data[0] == 0x55) &&
 		(packet->data[1] == 0x53) &&
@@ -136,3 +150,37 @@ void PacketFilter_MassStorage::filter_packet(Packet* packet) {
 			break;
 	}
 }
+
+void PacketFilter_MassStorage::start_injector() {
+	fprintf(stderr,"Opening Queue Injector.\n");
+	// TODO any queue setup required
+}
+
+int* PacketFilter_MassStorage::get_pollable_fds() {
+	// TODO, create pollable fd that we prod whenever we have packets ready
+	int* tmp=(int*)calloc(2,sizeof(int));
+	tmp[0]=pipe_fd[0];
+	return tmp;
+}
+
+void PacketFilter_MassStorage::stop_injector() {
+	close(pipe_fd[0]);
+	close(pipe_fd[1]);
+}
+
+void PacketFilter_MassStorage::get_packets(Packet** packet, SetupPacket** setup, int timeout) {
+	*packet=NULL;
+	*setup=NULL;
+	char buf;
+	read(pipe_fd[0], &buf, 1);
+
+	// TODO Check buffer - if we have a packet, do something with it
+	if (packet_waiting) {
+		*packet = p;
+		packet_waiting = false;
+		return;
+	}
+}
+
+void PacketFilter_MassStorage::full_pipe(Packet* p) {fprintf(stderr,"Packet returned due to full pipe & buffer\n");}
+
