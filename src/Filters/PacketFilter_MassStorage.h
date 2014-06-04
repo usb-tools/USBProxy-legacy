@@ -27,7 +27,7 @@
 #include "Injector.h"
 
 //writes all traffic to a stream
-class PacketFilter_MassStorage : public PacketFilter {
+class PacketFilter_MassStorage : public PacketFilter, public Injector {
 private:
 	int state;
 	char tag[4];
@@ -41,5 +41,13 @@ public:
 	/* Filter functions */
 	void filter_packet(Packet* packet);
 	void queue_packet();
+	
+	/* Injector functions */
+	void start_injector();
+	int *get_pollable_fds();
+	void stop_injector();
+	void get_packets(Packet** packet, SetupPacket** setup, int timeout);
+	void full_pipe(Packet* p);
 };
+
 #endif /* PACKETFILTER_MASSSTORAGE_H */
