@@ -3,6 +3,7 @@ usb-mitm
 #object files
 *.o
 *.d
+*.so
 #shell to move changes from usb-test
 merge.sh
 #eclipse stuff
