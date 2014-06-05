@@ -32,7 +32,9 @@ using namespace std;
 
 void *PluginManager::load_plugins(const char* DeviceProxyName)
 {
-	void* DeviceProxyPlugin = dlopen(string("Plugins/Devices/DeviceProxy_LibUSB.so").c_str(), RTLD_LAZY);
+	string plugin_dir = string("Plugins/Devices/");
+	string plugin_lib = plugin_dir + DeviceProxyName + ".so";
+	void* DeviceProxyPlugin = dlopen(plugin_lib.c_str(), RTLD_LAZY);
 	if(!DeviceProxyPlugin)
 	{
 		cout<<"error opening library\n";

@@ -40,9 +40,9 @@ class PluginManager
 		/* These should have getter/setters */
 		//DeviceProxy* DeviceProxyPlugin;
 		void* DeviceProxyPlugin;
-		//HostProxy* HostProxyPlugin;
-		//std::vector<PacketFilter*> PacketFilterPlugins;
-		//std::vector<Injector*> InjectorPlugins;
+		HostProxy* HostProxyPlugin;
+		std::vector<PacketFilter*> PacketFilterPlugins;
+		std::vector<Injector*> InjectorPlugins;
 		
 		PluginManager(){};
 		void *load_plugins(const char* DeviceProxyName);
