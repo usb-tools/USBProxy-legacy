@@ -47,7 +47,6 @@
 #include "Injector_UDPHID.h"
 #include "HostProxy_GadgetFS.h"
 #include "HostProxy_TCP.h"
-#include "DeviceProxy_TCP.h"
 #include "PacketFilter_PcapLogger.h"
 #include "PacketFilter_KeyLogger.h"
 #include "PacketFilter_ROT13.h"
@@ -197,14 +196,12 @@ extern "C" int main(int argc, char **argv)
 	HostProxy* host_proxy;
 
 	if (client) {
-		//device_proxy=(DeviceProxy *)new DeviceProxy_LibUSB(vendorId,productId);
 		device_proxy = (DeviceProxy *) plugin_manager->load_plugins("DeviceProxy_LibUSB");
 		host_proxy=(HostProxy* )new HostProxy_TCP(host);
 	} else if(server) {
-		device_proxy=(DeviceProxy *)new DeviceProxy_TCP();
+		device_proxy = (DeviceProxy *) plugin_manager->load_plugins("DeviceProxy_TCP");
 		host_proxy=(HostProxy* )new HostProxy_GadgetFS();
 	} else {
-		//device_proxy=(DeviceProxy *)new DeviceProxy_LibUSB(vendorId,productId);
 		device_proxy = (DeviceProxy *) plugin_manager->load_plugins("DeviceProxy_LibUSB");
 		host_proxy=(HostProxy* )new HostProxy_GadgetFS();
 	}

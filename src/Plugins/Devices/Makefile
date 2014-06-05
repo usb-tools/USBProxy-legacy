@@ -18,16 +18,16 @@
 # the Free Software Foundation, Inc., 51 Franklin Street,
 # Boston, MA 02110-1301, USA.
 
-#C_FILES := $(wildcard *.c)
-#CPP_FILES := $(wildcard *.cpp)
-#OBJS := $(C_FILES:.c=.o) $(CPP_FILES:.cpp=.o)
-#HEADERS := $(C_FILES:.c=.h) $(CPP_FILES:.cpp=.h)
-
 INCLUDES += -I../../include
 
 include ../../common.mk
 
-all: DeviceProxy_LibUSB.so
+SHAREDOBJS := $(CPP_FILES:.cpp=.so)
 
-DeviceProxy_LibUSB.so: DeviceProxy_LibUSB.o
-	$(CC) -shared -Wl,-soname,DeviceProxy_LibUSB.so $^ -o $@
+$(SHAREDOBJS): $(OBJS)
+	$(CC) -shared -Wl,-soname,$@ $^ -o $@
+
+all: $(SHAREDOBJS)
+
+clean::
+	rm -f $(OBJS) $(DEPS) $(SHAREDOBJS)

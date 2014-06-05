@@ -66,12 +66,13 @@ C_FILES := $(wildcard *.c)
 CPP_FILES := $(wildcard *.cpp)
 OBJS := $(C_FILES:.c=.o) $(CPP_FILES:.cpp=.o)
 HEADERS := $(C_FILES:.c=.h) $(CPP_FILES:.cpp=.h)
+DEPS := $(CPP_FILES:.cpp=.d)
 
 all: $(OBJS)
 
 -include $(OBJS:.o=.d)
 
 clean::
-	rm -f *.o *.d
+	rm -f $(OBJS) $(DEPS)
 
 .PHONY: all clean
