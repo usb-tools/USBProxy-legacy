@@ -24,6 +24,7 @@
 
 #include <linux/usb/ch9.h>
 #include "Proxy.h"
+#include <ConfigParser.h>
 
 class Configuration;
 
@@ -57,7 +58,7 @@ public:
 };
 
 extern "C" {
-	DeviceProxy * get_plugin();
+	DeviceProxy *get_deviceproxy_plugin(ConfigParser *cfg);
 	void destroy_plugin();
 }
 #endif /* USBPROXY_DEVICEPROXY_H */

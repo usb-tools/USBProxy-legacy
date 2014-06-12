@@ -71,4 +71,7 @@ public:
 	virtual char* toString() {return (char*)"Filter";}
 };
 
+extern "C" {
+	PacketFilter *get_packetfilter_plugin();
+}
 #endif /* USBPROXY_PACKETFILTER_H */

@@ -26,10 +26,10 @@ include common.mk
 
 OBJS = $(wildcard */*.o)
 
-CFLAGS += $(shell python3-config --cflags)
-LDFLAGS += $(shell python3-config --ldflags)
+#CFLAGS += $(shell python3-config --cflags)
+#LDFLAGS += $(shell python3-config --ldflags)
 
-SUBDIRS = lib Plugins Injectors Filters tools Devices Hosts #Bindings
+SUBDIRS = lib Plugins Injectors tools Filters Hosts
 
 $(SUBDIRS):
 	$(MAKE) -C $@

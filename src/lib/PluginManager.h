@@ -45,7 +45,11 @@ class PluginManager
 		std::vector<Injector*> InjectorPlugins;
 		
 		PluginManager(){};
-		void *load_plugins(const char* DeviceProxyName);
+		void *load_plugins(const char* DeviceProxyName/*,
+						   const char* HostProxyName,
+						   const std::vector<char*>,
+						   const std::vector<char*>*/,
+						   ConfigParser *cfg);
 		void destroy_plugins();
 	
 };

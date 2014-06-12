@@ -118,6 +118,82 @@ DeviceProxy_Loopback::DeviceProxy_Loopback(int vendorId,int productId) {
 	head=tail=0;
 }
 
+DeviceProxy_Loopback::DeviceProxy_Loopback(ConfigParser *cfg) {
+	/* FIXME pull these values from the config object */
+	int vendorId = 0xffff;
+	int productId = 0xffff;
+
+	p_is_connected = false;
+	
+	loopback_device_descriptor.bLength = USB_DT_DEVICE_SIZE;
+	loopback_device_descriptor.bDescriptorType = USB_DT_DEVICE;
+	loopback_device_descriptor.bcdUSB = cpu_to_le16(0x0100);
+	loopback_device_descriptor.bDeviceClass = USB_CLASS_VENDOR_SPEC;
+	loopback_device_descriptor.bDeviceSubClass = 0;
+	loopback_device_descriptor.bDeviceProtocol = 0;
+	loopback_device_descriptor.bMaxPacketSize0=64;
+	loopback_device_descriptor.idVendor = cpu_to_le16(vendorId & 0xffff);
+	loopback_device_descriptor.idProduct = cpu_to_le16(productId & 0xffff);
+	fprintf(stderr,"V: %04x P: %04x\n",loopback_device_descriptor.idVendor,loopback_device_descriptor.idProduct);
+	loopback_device_descriptor.bcdDevice = 0;
+	loopback_device_descriptor.iManufacturer = STRING_MANUFACTURER;
+	loopback_device_descriptor.iProduct = STRING_PRODUCT;
+	loopback_device_descriptor.iSerialNumber = STRING_SERIAL;
+	loopback_device_descriptor.bNumConfigurations = 1;
+	
+	loopback_config_descriptor.bLength = USB_DT_CONFIG_SIZE;
+	loopback_config_descriptor.bDescriptorType = USB_DT_CONFIG;
+	loopback_config_descriptor.bNumInterfaces = 1;
+	loopback_config_descriptor.bConfigurationValue = 1;
+	loopback_config_descriptor.iConfiguration = STRING_LOOPBACK;
+	loopback_config_descriptor.bmAttributes = USB_CONFIG_ATT_ONE | USB_CONFIG_ATT_SELFPOWER;
+	loopback_config_descriptor.bMaxPower = 1;		/* self-powered */
+	
+	loopback_interface_descriptor.bLength = USB_DT_INTERFACE_SIZE;
+	loopback_interface_descriptor.bDescriptorType = USB_DT_INTERFACE;
+	loopback_interface_descriptor.bInterfaceNumber=0;
+	loopback_interface_descriptor.bAlternateSetting=0;
+	loopback_interface_descriptor.bNumEndpoints = 2;
+	loopback_interface_descriptor.bInterfaceClass = USB_CLASS_VENDOR_SPEC;
+	loopback_interface_descriptor.bInterfaceSubClass=0;
+	loopback_interface_descriptor.bInterfaceProtocol=0;
+	loopback_interface_descriptor.iInterface = STRING_LOOPBACK;
+
+	struct usb_endpoint_descriptor *ep;
+	ep = &loopback_eps[0];
+	ep->bLength = USB_DT_ENDPOINT_SIZE;
+	ep->bDescriptorType = USB_DT_ENDPOINT;
+	ep->bEndpointAddress = USB_ENDPOINT_DIR_MASK | 1;
+	ep->bmAttributes = USB_ENDPOINT_XFER_INT;
+	ep->wMaxPacketSize = 64;
+	ep->bInterval = 10;
+	
+	ep = &loopback_eps[1];
+	ep->bLength = USB_DT_ENDPOINT_SIZE;
+	ep->bDescriptorType = USB_DT_ENDPOINT;
+	ep->bEndpointAddress = 1;
+	ep->bmAttributes = USB_ENDPOINT_XFER_INT;
+	ep->wMaxPacketSize = 64;
+	ep->bInterval = 10;
+
+	loopback_config_descriptor.wTotalLength=loopback_config_descriptor.bLength+loopback_interface_descriptor.bLength+loopback_eps[0].bLength+loopback_eps[1].bLength;
+
+	__u16 string0[2]={0x0409,0x0000};
+	loopback_strings=(USBString**)calloc(5,sizeof(USBString*));
+
+	loopback_strings[0]=new USBString(string0,0,0);
+
+	loopback_strings[STRING_MANUFACTURER]=new USBString("Manufacturer",STRING_MANUFACTURER,0x409);
+	loopback_strings[STRING_PRODUCT]=new USBString("Product",STRING_PRODUCT,0x409);
+	loopback_strings[STRING_SERIAL]=new USBString("Serial",STRING_SERIAL,0x409);
+	loopback_strings[STRING_LOOPBACK]=new USBString("Loopback",STRING_LOOPBACK,0x409);
+	loopback_stringMaxIndex=STRING_LOOPBACK;
+
+	buffer=NULL;
+	full=false;
+	head=tail=0;
+}
+
 DeviceProxy_Loopback::~DeviceProxy_Loopback() {
 	disconnect();
 
@@ -286,4 +362,17 @@ void DeviceProxy_Loopback::release_interface(__u8 interface) {
 
 __u8 DeviceProxy_Loopback::get_address() {
 	return 1;
+}
+
+static DeviceProxy_Loopback *proxy;
+
+extern "C" {
+	DeviceProxy * get_deviceproxy_plugin(ConfigParser *cfg) {
+		proxy = new DeviceProxy_Loopback(cfg);
+		return (DeviceProxy *) proxy;
+	}
+	
+	void destroy_plugin() {
+		delete proxy;
+	}
 }

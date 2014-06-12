@@ -41,6 +41,22 @@ DeviceProxy_LibUSB::DeviceProxy_LibUSB(int vendorId,int productId,bool includeHu
 	desired_hubs=includeHubs;
 }
 
+DeviceProxy_LibUSB::DeviceProxy_LibUSB(ConfigParser *cfg)
+{
+	/* FIXME pull these values from the config object */
+	int vendorId = 0xffff;
+	int productId = 0xffff;
+	bool includeHubs = false;
+	
+	context=NULL;
+	dev_handle=NULL;
+	privateContext=true;
+	privateDevice=true;
+	desired_vid=vendorId;
+	desired_pid=productId;
+	desired_hubs=includeHubs;
+}
+
 DeviceProxy_LibUSB::~DeviceProxy_LibUSB() {
 	 if (privateDevice && dev_handle) {libusb_close(dev_handle);}
 	 if (privateContext && context) {libusb_exit(context);}
@@ -301,13 +317,12 @@ void DeviceProxy_LibUSB::release_interface(__u8 interface) {
 static DeviceProxy_LibUSB *proxy;
 
 extern "C" {
-DeviceProxy * get_plugin() {
-	proxy = new DeviceProxy_LibUSB();
-	return (DeviceProxy *) proxy;
-}
-
-void destroy_plugin() {
-	delete proxy;
-}
-
+	DeviceProxy * get_deviceproxy_plugin(ConfigParser *cfg) {
+		proxy = new DeviceProxy_LibUSB(cfg);
+		return (DeviceProxy *) proxy;
+	}
+	
+	void destroy_plugin() {
+		delete proxy;
+	}
 }

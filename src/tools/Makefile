@@ -22,8 +22,8 @@
 #CPP_FILES := $(wildcard *.cpp)
 #OBJS := $(C_FILES:.c=.o) $(CPP_FILES:.cpp=.o)
 
-INCLUDES += -I../include -I../lib -I../Injectors -I../Filters -I../Proxies -I../Hosts -I../Devices
+INCLUDES += -I../include -I../lib -I../Injectors -I../Filters -I../Hosts
 
-CXXFLAGS += $(shell python3-config --cflags)
+#CXXFLAGS += $(shell python3-config --cflags)
 
 include ../common.mk

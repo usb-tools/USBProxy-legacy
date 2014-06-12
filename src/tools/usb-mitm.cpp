@@ -43,17 +43,19 @@
 #include "TRACE.h"
 #include "Manager.h"
 #include "PluginManager.h"
-#include "Injector_UDP.h"
-#include "Injector_UDPHID.h"
-#include "HostProxy_GadgetFS.h"
-#include "HostProxy_TCP.h"
+
 #include "PacketFilter_PcapLogger.h"
 #include "PacketFilter_KeyLogger.h"
 #include "PacketFilter_ROT13.h"
 #include "PacketFilter_StreamLog.h"
-//#include "PacketFilter_Python.h"
 #include "PacketFilter_UDPHID.h"
 #include "PacketFilter_MassStorage.h"
+
+#include "Injector_UDP.h"
+#include "Injector_UDPHID.h"
+
+#include "HostProxy_GadgetFS.h"
+#include "HostProxy_TCP.h"
 
 static int debug=0;
 
@@ -133,6 +135,10 @@ extern "C" int main(int argc, char **argv)
 	
 	manager=new Manager();
 	PluginManager *plugin_manager = new PluginManager();
+	ConfigParser *cfg = new ConfigParser("/dev/null");
+	DeviceProxy* device_proxy;
+	HostProxy* host_proxy;
+	std::vector<char*> filter_names, injector_names;
 
 	while ((c = getopt (argc, argv, "v:p:dsc:lmikw:hx")) != EOF) {
 		switch (c) {
@@ -190,19 +196,15 @@ extern "C" int main(int argc, char **argv)
 
 	HostProxy_TCP::debugLevel=debug;
 	HostProxy_GadgetFS::debugLevel=debug;
-	//PacketFilter_Python::debugLevel=debug;
-	
-	DeviceProxy* device_proxy;
-	HostProxy* host_proxy;
 
 	if (client) {
-		device_proxy = (DeviceProxy *) plugin_manager->load_plugins("DeviceProxy_LibUSB");
+		device_proxy = (DeviceProxy *) plugin_manager->load_plugins("DeviceProxy_LibUSB", cfg);
 		host_proxy=(HostProxy* )new HostProxy_TCP(host);
 	} else if(server) {
-		device_proxy = (DeviceProxy *) plugin_manager->load_plugins("DeviceProxy_TCP");
+		device_proxy = (DeviceProxy *) plugin_manager->load_plugins("DeviceProxy_TCP", cfg);
 		host_proxy=(HostProxy* )new HostProxy_GadgetFS();
 	} else {
-		device_proxy = (DeviceProxy *) plugin_manager->load_plugins("DeviceProxy_LibUSB");
+		device_proxy = (DeviceProxy *) plugin_manager->load_plugins("DeviceProxy_LibUSB", cfg);
 		host_proxy=(HostProxy* )new HostProxy_GadgetFS();
 	}
 	manager->add_proxies(device_proxy,host_proxy);

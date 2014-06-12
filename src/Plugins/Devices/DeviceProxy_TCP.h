@@ -38,6 +38,7 @@ private:
 public:
 	static int debugLevel;
 	DeviceProxy_TCP(const char* address=NULL);
+	DeviceProxy_TCP(ConfigParser *cfg);
 	~DeviceProxy_TCP();
 
 	int connect(int timeout=250);

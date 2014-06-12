@@ -43,6 +43,7 @@ private:
 public:
 	static int debugLevel;
 	DeviceProxy_LibUSB(int vendorId=LIBUSB_HOTPLUG_MATCH_ANY,int productId=LIBUSB_HOTPLUG_MATCH_ANY,bool includeHubs=false);
+	DeviceProxy_LibUSB(ConfigParser *cfg);
 	~DeviceProxy_LibUSB();
 
 	int connect(int timeout=250);
@@ -67,10 +68,5 @@ public:
 	__u8 get_address();
 	char* toString();
 };
-
-extern "C" {
-	DeviceProxy * get_plugin();
-	void destroy_plugin();
-}
 
 #endif /* USBPROXY_DEVICEPROXY_LIBUSB_H */

@@ -71,4 +71,7 @@ public:
 
 };
 
+extern "C" {
+	Injector *get_injector_plugin();
+}
 #endif /* USBPROXY_INJECTOR_H */

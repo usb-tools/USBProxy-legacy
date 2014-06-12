@@ -30,7 +30,11 @@
 
 using namespace std;
 
-void *PluginManager::load_plugins(const char* DeviceProxyName)
+void *PluginManager::load_plugins(const char* DeviceProxyName/*,
+								  const char* HostProxyName,
+								  const vector<char*>,
+								  const vector<char*>*/,
+								  ConfigParser *cfg)
 {
 	string plugin_dir = string("Plugins/Devices/");
 	string plugin_lib = plugin_dir + DeviceProxyName + ".so";
@@ -40,7 +44,7 @@ void *PluginManager::load_plugins(const char* DeviceProxyName)
 		cout<<"error opening library\n";
 	}
 	
-	void* ptr = dlsym(DeviceProxyPlugin, "get_plugin");
+	void* ptr = dlsym(DeviceProxyPlugin, "get_deviceproxy_plugin");
 	//typedef ((DeviceProxy* ())();
 	//DeviceProxy_constructor_type constructor = (DeviceProxy_constructor_type)ptr;
 	//DeviceProxy* plugin = constructor();

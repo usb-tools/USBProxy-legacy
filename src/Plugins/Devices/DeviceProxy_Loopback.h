@@ -24,7 +24,6 @@
 #define USBPROXY_DEVICEPROXY_LOOPBACK_H
 
 #include "DeviceProxy.h"
-#include <linux/usb/ch9.h>
 
 class Configuration;
 
@@ -50,6 +49,7 @@ private:
 public:
 	static int debugLevel;
 	DeviceProxy_Loopback(int vendorId, int productId);
+	DeviceProxy_Loopback(ConfigParser *cfg);
 	~DeviceProxy_Loopback();
 
 	int connect(int timeout=250);

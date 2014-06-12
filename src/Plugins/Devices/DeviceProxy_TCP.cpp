@@ -40,6 +40,11 @@ DeviceProxy_TCP::DeviceProxy_TCP(const char* address) {
 	p_is_connected = false;
 }
 
+/* FIXME pull settings from config parser */
+DeviceProxy_TCP::DeviceProxy_TCP(ConfigParser *cfg) {
+	p_is_connected = false;
+}
+
 DeviceProxy_TCP::~DeviceProxy_TCP() {
 	if (network) {
 		delete(network);
@@ -98,6 +103,7 @@ int DeviceProxy_TCP::control_request(const usb_ctrlrequest *setup_packet, int *n
 	}
 	memcpy(dataptr,buf+3,*nbytes);
 	free(buf);
+	return 0;
 }
 
 void DeviceProxy_TCP::send_data(__u8 endpoint,__u8 attributes, __u16 maxPacketSize, __u8* dataptr, int length) {
@@ -141,4 +147,17 @@ void DeviceProxy_TCP::release_interface(__u8 interface) {}
 
 __u8 DeviceProxy_TCP::get_address() {
 	return 1;
+}
+
+static DeviceProxy_TCP *proxy;
+
+extern "C" {
+	DeviceProxy * get_deviceproxy_plugin(ConfigParser *cfg) {
+		proxy = new DeviceProxy_TCP(cfg);
+		return (DeviceProxy *) proxy;
+	}
+	
+	void destroy_plugin() {
+		delete proxy;
+	}
 }
