@@ -23,15 +23,21 @@
 #define USBPROXY_CONFIGPARSER_H
 
 #include <fstream>
+#include <string>
+#include <map>
 
 class ConfigParser {
 private:
+	const char* filename;
 	std::ifstream configfile;
+	std::map<std::string, std::string> config_map;
 
 public:
 	static int debugLevel;
-	ConfigParser(const char* filename);
+	ConfigParser(const char** args);
+	ConfigParser(const char* configfilename);
 	~ConfigParser();
+	void ParseFile();
 };
 
 #endif /* USBPROXY_CONFIGPARSER_H */
