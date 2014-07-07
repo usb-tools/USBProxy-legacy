@@ -24,7 +24,7 @@
 
 #include <linux/usb/ch9.h>
 #include "Proxy.h"
-#include <ConfigParser.h>
+#include "ConfigParser.h"
 
 class Configuration;
 

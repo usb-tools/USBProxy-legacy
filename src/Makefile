@@ -18,28 +18,16 @@
 # the Free Software Foundation, Inc., 51 Franklin Street,
 # Boston, MA 02110-1301, USA.
 
-TARGET=usb-mitm
-
-all: $(TARGET)
-
 include common.mk
 
-OBJS = $(wildcard */*.o)
+SUBDIRS = lib Plugins Injectors Filters Hosts tools 
 
-#CFLAGS += $(shell python3-config --cflags)
-#LDFLAGS += $(shell python3-config --ldflags)
-
-SUBDIRS = lib Plugins Injectors tools Filters Hosts
+all: $(SUBDIRS)
 
 $(SUBDIRS):
 	$(MAKE) -C $@
 
-$(TARGET): $(SUBDIRS)
-	echo $(CFLAGS)
-	$(CC) $(CFLAGS) -g -o $(TARGET) $(OBJS) $(LDFLAGS)
-
 clean:: $(SUBDIRS:%=%_clean)
-	rm -f $(TARGET)
 
 $(SUBDIRS:%=%_clean):
 	$(MAKE) -C $(@:%_clean=%) clean

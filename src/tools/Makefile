@@ -18,12 +18,18 @@
 # the Free Software Foundation, Inc., 51 Franklin Street,
 # Boston, MA 02110-1301, USA.
 
-#C_FILES := $(wildcard *.c)
-#CPP_FILES := $(wildcard *.cpp)
-#OBJS := $(C_FILES:.c=.o) $(CPP_FILES:.cpp=.o)
+TARGET=usb-mitm
 
-INCLUDES += -I../include -I../lib -I../Injectors -I../Filters -I../Hosts
-
-#CXXFLAGS += $(shell python3-config --cflags)
+all: $(TARGET)
 
 include ../common.mk
+
+LDFLAGS=-Wl,--gc-sections -L../lib -lUSBProxy -ludev -lstdc++ -lpthread -lpcap -lrt -ldl
+
+$(TARGET):
+	$(CC) $(CXXFLAGS) $(CPPFLAGS) -I../include -I../Filters -I../Injectors -I../Hosts -o $@ ../Filters/*.o ../Injectors/*.o ../Hosts/*.o $(LDFLAGS) $@.cpp
+
+clean::
+	rm -f $(TARGET)
+
+.PHONY : clean all

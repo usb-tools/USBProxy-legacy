@@ -26,3 +26,13 @@
 INCLUDES += -I../include
 
 include ../common.mk
+
+SHAREDOBJ := libUSBProxy.so
+
+$(SHAREDOBJ): $(OBJS)
+	$(CC) -shared -Wl,-soname,$@ $(OBJS) -o $@
+
+all: $(SHAREDOBJ)
+
+clean::
+	rm -f $(SHAREDOBJ)

@@ -36,8 +36,9 @@ public:
 	static int debugLevel;
 	ConfigParser(const char** args);
 	ConfigParser(const char* configfilename);
-	~ConfigParser();
 	void ParseFile();
+	std::string get(std::string key);
+	int get_as_int(std::string key);
 };
 
 #endif /* USBPROXY_CONFIGPARSER_H */

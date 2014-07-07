@@ -22,6 +22,7 @@
 #include "ConfigParser.h"
 #include <errno.h>
 #include <string.h>
+#include <stdlib.h>
 #include <getopt.h>
 #include <algorithm>
 
@@ -53,9 +54,16 @@ std::string StrStrip(std::string in_str) {
     return in_str.substr(start, end-start+1);
 }
 
+std::string StrLower(std::string instr) {
+	std::transform(instr.begin(), instr.end(), instr.begin(),
+				   [](unsigned char c) { return std::tolower(c); });
+	return instr;
+}
+
 int ConfigParser::debugLevel = 0;
 
 ConfigParser::ConfigParser(const char** args) {
+	fprintf(stderr, "Parsing configuration from command line args is not yet supported\n");
 	//filename = configfile;
 }
 
@@ -97,15 +105,29 @@ void ConfigParser::ParseFile() {
 						parsestr.c_str());
 				continue;
 			}
-
-			std::transform(directive.begin(), directive.end(),
-						   directive.begin(),
-						   [](unsigned char c) { return std::tolower(c); });
-			config_map[directive] = value;
+			config_map[StrLower(directive)] = value;
 		}
 	}
 	configfile.close();
 }
 
-ConfigParser::~ConfigParser() {
+std::string ConfigParser::get(std::string key) {
+    // Empty string to return
+    std::string errstr;
+
+    std::map<std::string, std::string>::iterator cmitr = config_map.find(StrLower(key));
+    // No such key
+    if (cmitr == config_map.end())
+        return errstr;
+
+    return cmitr->second;
+}
+
+int ConfigParser::get_as_int(std::string key) {
+    std::map<std::string, std::string>::iterator cmitr = config_map.find(StrLower(key));
+    // No such key
+    if (cmitr == config_map.end())
+        return 0;
+
+    return atoi(cmitr->second.c_str());
 }

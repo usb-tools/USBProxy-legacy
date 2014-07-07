@@ -25,7 +25,7 @@ include ../../common.mk
 SHAREDOBJS := $(CPP_FILES:.cpp=.so)
 
 $(SHAREDOBJS): $(OBJS)
-	$(CC) -shared -Wl,-soname,$@ $(@:.so=.o) -o $@
+	$(CC) -shared -Wl,-soname,$@ $(@:.so=.o) -o $@ -lusb-1.0
 
 all: $(SHAREDOBJS)
 

@@ -110,7 +110,7 @@ void handle_signal(int signum)
 extern "C" int main(int argc, char **argv)
 {
 	int c;
-	char* end, *host;
+	char* end, *host, *configfile;
 	bool client=false,server=false;
 	fprintf(stderr,"SIGRTMIN: %d\n",SIGRTMIN);
 
@@ -135,12 +135,11 @@ extern "C" int main(int argc, char **argv)
 	
 	manager=new Manager();
 	PluginManager *plugin_manager = new PluginManager();
-	ConfigParser *cfg = new ConfigParser("/dev/null");
 	DeviceProxy* device_proxy;
 	HostProxy* host_proxy;
 	std::vector<char*> filter_names, injector_names;
 
-	while ((c = getopt (argc, argv, "v:p:dsc:lmikw:hx")) != EOF) {
+	while ((c = getopt (argc, argv, "v:p:dsc:C:lmikw:hx")) != EOF) {
 		switch (c) {
 		case 'v':
 			vendorId = strtol(optarg, &end, 16);
@@ -157,6 +156,9 @@ extern "C" int main(int argc, char **argv)
 		case 'c':
 			client=true;
 			host = optarg;
+			break;
+		case 'C':
+			configfile = optarg;
 			break;
 		case 'l':
 			logfilter=new PacketFilter_StreamLog(stderr);
@@ -194,6 +196,7 @@ extern "C" int main(int argc, char **argv)
 		}
 	}
 
+	ConfigParser *cfg = new ConfigParser(configfile);
 	HostProxy_TCP::debugLevel=debug;
 	HostProxy_GadgetFS::debugLevel=debug;
 
