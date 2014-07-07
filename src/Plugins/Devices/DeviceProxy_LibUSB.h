@@ -27,9 +27,7 @@
 #define LIBUSB_HOTPLUG_MATCH_ANY -1
 #endif
 
-extern "C" {
 #include <libusb-1.0/libusb.h>
-}
 #include "DeviceProxy.h"
 
 class DeviceProxy_LibUSB:public DeviceProxy {
