@@ -34,9 +34,9 @@ private:
 
 public:
 	static int debugLevel;
-	ConfigParser(const char** args);
-	ConfigParser(const char* configfilename);
-	void ParseFile();
+	ConfigParser();
+	void parse_file(const char* configfilename);
+	void set(std::string key, std::string value);
 	std::string get(std::string key);
 	int get_as_int(std::string key);
 };

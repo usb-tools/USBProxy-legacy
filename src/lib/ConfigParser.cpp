@@ -60,32 +60,28 @@ std::string StrLower(std::string instr) {
 	return instr;
 }
 
-int ConfigParser::debugLevel = 0;
+int ConfigParser::debugLevel = 1;
 
-ConfigParser::ConfigParser(const char** args) {
-	fprintf(stderr, "Parsing configuration from command line args is not yet supported\n");
-	//filename = configfile;
-}
-
-ConfigParser::ConfigParser(const char* configfilename) {
-	filename = configfilename;
+ConfigParser::ConfigParser() {
 }
 
 /* Very much inspired by Kismet's config parser */
-void ConfigParser::ParseFile() {
+void ConfigParser::parse_file(const char* configfilename) {
 	configfile.open(filename, std::ifstream::in);
 	if (!configfile) {
 		fprintf(stderr, "ERROR: Reading config file '%s': %d (%s)\n", filename,
 				errno, strerror(errno));
 		return;
 	}
+	if(debugLevel)
+		fprintf(stderr, "Reading confilg file\n");
 
 	std::string confline;
 	while (!configfile.eof()) {
 		std::getline(configfile, confline);
 
 		std::string parsestr = StrStrip(confline);
-		std::string directive, value;
+		std::string key, value;
 
 		if (parsestr.length() == 0)
 			continue;
@@ -94,21 +90,21 @@ void ConfigParser::ParseFile() {
 
 		unsigned int eq;
 		if ((eq = parsestr.find("=")) > parsestr.length()) {
-			directive = parsestr;
+			key = parsestr;
 			value = "";
 		} else {
-			directive = StrStrip(parsestr.substr(0, eq));
+			key = StrStrip(parsestr.substr(0, eq));
 			value = StrStrip(parsestr.substr(eq+1, parsestr.length()));
-
-			if (value == "") {
-				fprintf(stderr, "ERROR: Illegal config option: %s\n", 
-						parsestr.c_str());
-				continue;
-			}
-			config_map[StrLower(directive)] = value;
+			set(key, value);
 		}
 	}
 	configfile.close();
+}
+
+void ConfigParser::set(std::string key, std::string value) {
+	if(debugLevel)
+		fprintf(stderr, "Storing %s\n", key.c_str());
+	config_map[StrLower(key)] = value;
 }
 
 std::string ConfigParser::get(std::string key) {
@@ -126,8 +122,10 @@ std::string ConfigParser::get(std::string key) {
 int ConfigParser::get_as_int(std::string key) {
     std::map<std::string, std::string>::iterator cmitr = config_map.find(StrLower(key));
     // No such key
-    if (cmitr == config_map.end())
+    if (cmitr == config_map.end()) {
+		fprintf(stderr, "key not found\n");
         return 0;
+    }
 
     return atoi(cmitr->second.c_str());
 }
