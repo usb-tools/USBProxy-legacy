@@ -66,15 +66,16 @@ ConfigParser::ConfigParser() {
 }
 
 /* Very much inspired by Kismet's config parser */
-void ConfigParser::parse_file(const char* configfilename) {
+void ConfigParser::parse_file(char* filename) {
+	if(debugLevel)
+		fprintf(stderr, "Reading confilg file: %s\n", filename);
+
 	configfile.open(filename, std::ifstream::in);
 	if (!configfile) {
 		fprintf(stderr, "ERROR: Reading config file '%s': %d (%s)\n", filename,
 				errno, strerror(errno));
 		return;
 	}
-	if(debugLevel)
-		fprintf(stderr, "Reading confilg file\n");
 
 	std::string confline;
 	while (!configfile.eof()) {
@@ -119,7 +120,7 @@ std::string ConfigParser::get(std::string key) {
     return cmitr->second;
 }
 
-int ConfigParser::get_as_int(std::string key) {
+int ConfigParser::get_as_int(std::string key, int base) {
     std::map<std::string, std::string>::iterator cmitr = config_map.find(StrLower(key));
     // No such key
     if (cmitr == config_map.end()) {
@@ -127,5 +128,5 @@ int ConfigParser::get_as_int(std::string key) {
         return 0;
     }
 
-    return atoi(cmitr->second.c_str());
+    return std::stoi(cmitr->second, nullptr, base);
 }

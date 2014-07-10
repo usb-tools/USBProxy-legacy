@@ -30,12 +30,15 @@
 
 using namespace std;
 
+typedef DeviceProxy* (*plugin_infocall)(ConfigParser *);
+
 void *PluginManager::load_plugins(const char* DeviceProxyName/*,
 								  const char* HostProxyName,
 								  const vector<char*>,
 								  const vector<char*>*/,
 								  ConfigParser *cfg)
 {
+	// FIXME make this more generic/install plugins to known location
 	string plugin_dir = string("Plugins/Devices/");
 	string plugin_lib = plugin_dir + DeviceProxyName + ".so";
 	void* DeviceProxyPlugin = dlopen(plugin_lib.c_str(), RTLD_LAZY);
@@ -44,11 +47,11 @@ void *PluginManager::load_plugins(const char* DeviceProxyName/*,
 		cout<<"error opening library\n";
 	}
 	
-	void* ptr = dlsym(DeviceProxyPlugin, "get_deviceproxy_plugin");
-	//typedef ((DeviceProxy* ())();
-	//DeviceProxy_constructor_type constructor = (DeviceProxy_constructor_type)ptr;
-	//DeviceProxy* plugin = constructor();
-	DeviceProxy* plugin = ((DeviceProxy* (*)())ptr)();
+	plugin_infocall ptr;
+	ptr = (plugin_infocall) dlsym(DeviceProxyPlugin, "get_deviceproxy_plugin");
+	
+	DeviceProxy* plugin;
+	plugin = (*(ptr))(cfg);
 	return (void *) plugin;
 }
 

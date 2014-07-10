@@ -28,17 +28,16 @@
 
 class ConfigParser {
 private:
-	const char* filename;
 	std::ifstream configfile;
 	std::map<std::string, std::string> config_map;
 
 public:
 	static int debugLevel;
 	ConfigParser();
-	void parse_file(const char* configfilename);
+	void parse_file(char* filename);
 	void set(std::string key, std::string value);
 	std::string get(std::string key);
-	int get_as_int(std::string key);
+	int get_as_int(std::string key, int base=10);
 };
 
 #endif /* USBPROXY_CONFIGPARSER_H */

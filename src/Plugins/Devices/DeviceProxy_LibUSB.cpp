@@ -43,9 +43,16 @@ DeviceProxy_LibUSB::DeviceProxy_LibUSB(int vendorId,int productId,bool includeHu
 
 DeviceProxy_LibUSB::DeviceProxy_LibUSB(ConfigParser *cfg)
 {
-	/* FIXME pull these values from the config object */
-	int vendorId = cfg->get_as_int("vendorId");
-	int productId = cfg->get_as_int("productId");
+	int vendorId, productId;
+	
+	std::string vid_str = cfg->get("vendorId");
+	vendorId = std::stoi(vid_str, nullptr, 16);
+	fprintf(stderr, "vendorId=%04x\n", vendorId);
+	
+	std::string pid_str = cfg->get("productId");
+	productId = std::stoi(pid_str, nullptr, 16);
+	fprintf(stderr, "productId=%04x\n", productId);
+	
 	bool includeHubs = false;
 	
 	context=NULL;

@@ -109,13 +109,12 @@ void handle_signal(int signum)
 
 extern "C" int main(int argc, char **argv)
 {
-	int c;
-	char* end, *host, *configfile;
+	int opt;
+	char *end, *host;
 	bool client=false,server=false;
 	fprintf(stderr,"SIGRTMIN: %d\n",SIGRTMIN);
 
 	//int vendorId=LIBUSB_HOTPLUG_MATCH_ANY, productId=LIBUSB_HOTPLUG_MATCH_ANY;
-	int vendorId=0, productId=0;
 	
 	struct sigaction action;
 	memset(&action, 0, sizeof(struct sigaction));
@@ -134,18 +133,19 @@ extern "C" int main(int argc, char **argv)
 	PacketFilter_UDPHID* xboxfilter;
 	
 	manager=new Manager();
+	ConfigParser *cfg = new ConfigParser();
 	PluginManager *plugin_manager = new PluginManager();
 	DeviceProxy* device_proxy;
 	HostProxy* host_proxy;
 	std::vector<char*> filter_names, injector_names;
 
-	while ((c = getopt (argc, argv, "v:p:dsc:C:lmikw:hx")) != EOF) {
-		switch (c) {
+	while ((opt = getopt (argc, argv, "v:p:dsc:C:lmikw:hx")) != EOF) {
+		switch (opt) {
 		case 'v':
-			vendorId = strtol(optarg, &end, 16);
+			cfg->set("vendorId", optarg);
 			break;
 		case 'p':
-			productId = strtol(optarg, &end, 16);
+			cfg->set("productId", optarg);
 			break;
 		case 'd':		/* verbose */
 			debug++;
@@ -158,7 +158,7 @@ extern "C" int main(int argc, char **argv)
 			host = optarg;
 			break;
 		case 'C':
-			configfile = optarg;
+			cfg->parse_file(optarg);
 			break;
 		case 'l':
 			logfilter=new PacketFilter_StreamLog(stderr);
@@ -196,7 +196,6 @@ extern "C" int main(int argc, char **argv)
 		}
 	}
 
-	ConfigParser *cfg = new ConfigParser(configfile);
 	HostProxy_TCP::debugLevel=debug;
 	HostProxy_GadgetFS::debugLevel=debug;
 
@@ -211,9 +210,6 @@ extern "C" int main(int argc, char **argv)
 		host_proxy=(HostProxy* )new HostProxy_GadgetFS();
 	}
 	manager->add_proxies(device_proxy,host_proxy);
-
-	//PacketFilter_Python* pyexample=new PacketFilter_Python("example_filter");
-	//manager->add_filter(pyexample);
 
 	manager->start_control_relaying();
 
