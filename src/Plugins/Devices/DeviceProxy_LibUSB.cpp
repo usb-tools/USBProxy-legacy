@@ -186,7 +186,7 @@ bool DeviceProxy_LibUSB::is_connected() {
 bool DeviceProxy_LibUSB::is_highspeed() {
 	libusb_device* dvc=libusb_get_device(dev_handle);
 	int speed=libusb_get_device_speed(dvc);
-	return (speed==LIBUSB_SPEED_HIGH) || (speed=LIBUSB_SPEED_SUPER);
+	return (speed==LIBUSB_SPEED_HIGH) || (speed==LIBUSB_SPEED_SUPER);
 }
 
 char* DeviceProxy_LibUSB::toString() {
