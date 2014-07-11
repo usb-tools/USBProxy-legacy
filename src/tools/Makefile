@@ -20,16 +20,14 @@
 
 TARGET=usb-mitm
 
-all: $(TARGET)
-
-include ../common.mk
-
+CXXFLAGS=-std=gnu++0x -pedantic -felide-constructors -fno-exceptions -fno-rtti
+CPPFLAGS=-Wall -g -fPIC -fdata-sections -ffunction-sections -MMD -MP -DNVALGRIND -I/usr/src -I/usr/include -I/usr/local/include -I../include -I../Filters -I../Injectors -I../Hosts
 LDFLAGS=-Wl,--gc-sections -L../lib -lUSBProxy -ludev -lstdc++ -lpthread -lpcap -lrt -ldl
 
 $(TARGET):
-	$(CC) $(CXXFLAGS) $(CPPFLAGS) -I../include -I../Filters -I../Injectors -I../Hosts -o $@ ../Filters/*.o ../Injectors/*.o ../Hosts/*.o $(LDFLAGS) $@.cpp
+	$(CC) $(CXXFLAGS) $(CPPFLAGS) -o $@ ../Filters/*.o ../Injectors/*.o ../Hosts/*.o $(LDFLAGS) $@.cpp
 
-clean::
-	rm -f $(TARGET)
+clean:
+	rm -f $(TARGET) $(TARGET).d
 
-.PHONY : clean all
+.PHONY : clean

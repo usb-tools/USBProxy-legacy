@@ -110,7 +110,7 @@ void handle_signal(int signum)
 extern "C" int main(int argc, char **argv)
 {
 	int opt;
-	char *end, *host;
+	char *host;
 	bool client=false,server=false;
 	fprintf(stderr,"SIGRTMIN: %d\n",SIGRTMIN);
 
