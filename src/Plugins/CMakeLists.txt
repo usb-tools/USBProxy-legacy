@@ -25,3 +25,5 @@ set(PACKAGE usbproxy_plugins)
 
 add_subdirectory(Devices)
 add_subdirectory(Hosts)
+add_subdirectory(Filters)
+add_subdirectory(Injectors)

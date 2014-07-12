@@ -29,9 +29,6 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 set(INSTALL_DEFAULT_BINDIR "bin" CACHE STRING "Appended to CMAKE_INSTALL_PREFIX")
 
 add_subdirectory(lib)
-#add_subdirectory(Hosts)
-#add_subdirectory(Filters)
-#add_subdirectory(Injectors)
 add_subdirectory(Plugins)
 #add_subdirectory(tools)
 

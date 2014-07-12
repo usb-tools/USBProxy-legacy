@@ -20,10 +20,10 @@
 #
 # Based upon the hackrf/ubertooth cmake setup.
 
-project(usbproxy_devices C)
-set(PACKAGE usbproxy_devices)
+project(usbproxy_injectors C)
+set(PACKAGE usbproxy_injectors)
 
-LIST(APPEND PLUGINS DeviceProxy_LibUSB DeviceProxy_Loopback DeviceProxy_TCP)
+LIST(APPEND PLUGINS Injector_UDP Injector_UDPHID)
 
 include_directories(${libusbproxy_SOURCE_DIR})
 LIST(APPEND PLUGINS_LINK_LIBS USBProxy)
