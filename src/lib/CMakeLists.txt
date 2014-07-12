@@ -81,7 +81,6 @@ add_library(USBProxy SHARED ${cpp_sources} ${c_sources})
 set_source_files_properties(${cpp_sources} PROPERTIES COMPILE_FLAGS  "-std=c++0x")
 
 set_target_properties(USBProxy PROPERTIES VERSION ${MAJOR_VERSION}.${MINOR_VERSION} SOVERSION 0)
-set_target_properties(USBProxy PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 
 target_link_libraries(USBProxy ${LIBUSBPROXY_LIBS})
 
