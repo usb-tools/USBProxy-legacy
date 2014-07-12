@@ -18,7 +18,10 @@
 # the Free Software Foundation, Inc., 51 Franklin Street,
 # Boston, MA 02110-1301, USA.
 #
-# Based upon the hackrf/usbproxy cmake setup.
+# Based upon the hackrf/ubertooth cmake setup.
+
+project(libusbproxy C)
+set(PACKAGE libusbproxy)
 
 # Targets
 set(cpp_sources
@@ -73,21 +76,20 @@ set(headers
 	CACHE INTERNAL "List of headers")
 
 # Dynamic library
-add_library(usbproxy SHARED ${cpp_sources} ${c_sources})
-set_target_properties(usbproxy PROPERTIES VERSION ${MAJOR_VERSION}.${MINOR_VERSION} SOVERSION 0)
+add_library(USBProxy SHARED ${cpp_sources} ${c_sources})
 
-set_target_properties(usbproxy PROPERTIES CLEAN_DIRECT_OUTPUT 1)
+set_source_files_properties(${cpp_sources} PROPERTIES COMPILE_FLAGS  "-std=c++0x")
 
-include_directories(${LIBUSB_INCLUDE_DIR} ${LIBBTBB_INCLUDE_DIR})
-LIST(APPEND LIBUSBPROXY_LIBS ${LIBUSB_LIBRARIES} ${LIBBTBB_LIBRARIES})
+set_target_properties(USBProxy PROPERTIES VERSION ${MAJOR_VERSION}.${MINOR_VERSION} SOVERSION 0)
+set_target_properties(USBProxy PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 
-target_link_libraries(usbproxy ${LIBUSBPROXY_LIBS})
+target_link_libraries(USBProxy ${LIBUSBPROXY_LIBS})
 
-install(TARGETS usbproxy
+install(TARGETS USBProxy
         LIBRARY DESTINATION lib${LIB_SUFFIX}
         COMPONENT sharedlibs
         )
 install(FILES ${headers}
-		DESTINATION include
+		DESTINATION include/USBProxy
         COMPONENT headers
         )

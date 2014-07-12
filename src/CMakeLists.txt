@@ -32,11 +32,13 @@ add_subdirectory(lib)
 #add_subdirectory(Hosts)
 #add_subdirectory(Filters)
 #add_subdirectory(Injectors)
-#add_subdirectory(Plugins)
+add_subdirectory(Plugins)
 #add_subdirectory(tools)
 
 # Comment the following out for releases.
 set(CMAKE_C_FLAGS "$ENV{CFLAGS}")
+
+set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} -std=gnu++0x -pedantic -felide-constructors -fno-exceptions -fno-rtti")
 
 # Create uninstall target
 configure_file(
