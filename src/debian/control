@@ -1,0 +1,21 @@
+Source: usbproxy
+Section: net
+Priority: optional
+Maintainer: Dominic Spill <dominicgs@gmail.com>
+Standards-Version: 2014-07-R1-git
+Build-Depends: libusb-1.0-0-dev, libpcap0.8-dev, cmake
+Vcs-Git: https://github.com/dominicgs/USBProxy.git
+Vcs-Browser: https://github.com/dominicgs/USBProxy/
+Homepage: https://github.com/dominicgs/USBProxy/
+
+Package: usbproxy
+Architecture: any
+Depends: libusb-1.0-0, libpcap0.8
+Description: USBProxy library and tools
+
+Package: usbproxy-dev
+Architecture: any
+Section: devel
+Depends: libusb-1.0-0-dev, libpcap0.8-dev
+Description: USBProxy library and tools - development files
+
