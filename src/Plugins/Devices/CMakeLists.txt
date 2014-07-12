@@ -23,10 +23,23 @@
 project(usbproxy_devices C)
 set(PACKAGE usbproxy_devices)
 
-LIST(APPEND PLUGINS DeviceProxy_LibUSB DeviceProxy_Loopback DeviceProxy_TCP)
-
 include_directories(${libusbproxy_SOURCE_DIR})
 LIST(APPEND PLUGINS_LINK_LIBS USBProxy)
+
+LIST(APPEND PLUGINS DeviceProxy_Loopback DeviceProxy_TCP)
+
+find_package(USB1)
+
+if( ${LIBUSB_FOUND} )
+	LIST(APPEND PLUGINS DeviceProxy_LibUSB)
+	include_directories(${LIBUSB_INCLUDE_DIR})
+	LIST(APPEND PLUGINS_LINK_LIBS ${LIBUSB_LIBRARIES})
+else( ${LIBUSB_FOUND} )
+	if( USE_LIBUSB1 AND NOT ${LIBUSB_FOUND} )
+		message( FATAL_ERROR
+			"Cannot find libUSB-1.0, which is required for USE_LIBUSB1")
+	endif()
+endif( ${LIBUSB_FOUND} )
 
 foreach(plugin ${PLUGINS})
 	add_library(${plugin} SHARED ${plugin}.cpp)
