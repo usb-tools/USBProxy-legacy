@@ -42,6 +42,12 @@ HostProxy_TCP::HostProxy_TCP(const char* address) {
 	p_is_connected = false;
 }
 
+HostProxy_TCP::HostProxy_TCP(ConfigParser *cfg) {
+	std::string address = cfg->get("TCPAddress");
+	network = new TCP_Helper(address.c_str());
+	p_is_connected = false;
+}
+
 HostProxy_TCP::~HostProxy_TCP() {
 	if (network) {
 		delete(network);
@@ -156,4 +162,17 @@ void HostProxy_TCP::setConfig(Configuration* fs_cfg,Configuration* hs_cfg,bool h
 	int rc=network->open_endpoints(eps,ep_total,250);
 	while (rc>0) {rc=network->open_endpoints(eps,ep_total,250);putchar('.');fflush(stdout);}
 	free(eps);
+}
+
+static HostProxy_TCP *proxy;
+
+extern "C" {
+	HostProxy * get_hostproxy_plugin(ConfigParser *cfg) {
+		proxy = new HostProxy_TCP(cfg);
+		return (HostProxy *) proxy;
+	}
+	
+	void destroy_plugin() {
+		delete proxy;
+	}
 }

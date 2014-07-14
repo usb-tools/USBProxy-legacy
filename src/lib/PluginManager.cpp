@@ -22,42 +22,66 @@
 
 #include <dlfcn.h>
 #include <sys/types.h>
-#include <dirent.h>
-#include <iostream>
+#include <stdio.h>
 
 #include "Plugins.h"
 #include "PluginManager.h"
 
-using namespace std;
+typedef DeviceProxy* (*device_plugin_getter)(ConfigParser *);
+typedef HostProxy* (*host_plugin_getter)(ConfigParser *);
+typedef PacketFilter* (*filter_plugin_getter)(ConfigParser *);
+typedef Injector* (*injector_plugin_getter)(ConfigParser *);
 
-typedef DeviceProxy* (*plugin_infocall)(ConfigParser *);
-
-void *PluginManager::load_plugins(const char* DeviceProxyName/*,
-								  const char* HostProxyName,
-								  const vector<char*>,
-								  const vector<char*>*/,
-								  ConfigParser *cfg)
+void PluginManager::load_plugins(ConfigParser *cfg)
 {
-	// FIXME make this more generic/install plugins to known location
-	string plugin_dir = string("Plugins/Devices/");
-	string plugin_lib = plugin_dir + DeviceProxyName + ".so";
+	std::string plugin_lib;
+	fprintf(stderr, "Loading plugins from %s\n", PLUGIN_PATH);
+	
+	plugin_lib = PLUGIN_PATH + cfg->get("DeviceProxy") + ".so";
 	void* DeviceProxyPlugin = dlopen(plugin_lib.c_str(), RTLD_LAZY);
 	if(!DeviceProxyPlugin)
 	{
-		cout<<"error opening library\n";
+		fprintf(stderr, "error opening library %s\n", plugin_lib.c_str());
 	}
 	
-	plugin_infocall ptr;
-	ptr = (plugin_infocall) dlsym(DeviceProxyPlugin, "get_deviceproxy_plugin");
+	device_plugin_getter dp_ptr;
+	dp_ptr = (device_plugin_getter) dlsym(DeviceProxyPlugin, "get_deviceproxy_plugin");
+	handleList.push_back((void *)dp_ptr);
+	device_proxy = (*(dp_ptr))(cfg);
 	
-	DeviceProxy* plugin;
-	plugin = (*(ptr))(cfg);
-	return (void *) plugin;
+	plugin_lib = PLUGIN_PATH + cfg->get("HostProxy") + ".so";
+	void* HostProxyPlugin = dlopen(plugin_lib.c_str(), RTLD_LAZY);
+	if(!HostProxyPlugin)
+	{
+		fprintf(stderr, "error opening library %s\n", plugin_lib.c_str());
+	}
+	
+	host_plugin_getter hp_ptr;
+	hp_ptr = (host_plugin_getter) dlsym(HostProxyPlugin, "get_hostproxy_plugin");
+	handleList.push_back((void *)hp_ptr);
+	host_proxy = (*(hp_ptr))(cfg);
+	
+	std::vector<std::string> filter_names = cfg->get_vector("Filters");
+	for(std::vector<std::string>::iterator it = filter_names.begin(); it != filter_names.end(); ++it)
+	{
+		plugin_lib = PLUGIN_PATH + it[0] + ".so";
+		fprintf(stderr, "Opening %s\n", plugin_lib.c_str());
+		void* FilterPlugin = dlopen(plugin_lib.c_str(), RTLD_LAZY);
+		if(!FilterPlugin)
+		{
+			fprintf(stderr, "error opening library %s\n", plugin_lib.c_str());
+		}
+		
+		filter_plugin_getter f_ptr;
+		f_ptr = (filter_plugin_getter) dlsym(FilterPlugin, "get_filter_plugin");
+		handleList.push_back((void *)f_ptr);
+		filters.push_back((*(f_ptr))(cfg));
+	}
 }
 
 void PluginManager::destroy_plugins()
 {	
-	for(vector<void*>::iterator it = handleList.begin(); it != handleList.end(); ++it)
+	for(std::vector<void*>::iterator it = handleList.begin(); it != handleList.end(); ++it)
 	{
 		dlclose(*it);
 	}

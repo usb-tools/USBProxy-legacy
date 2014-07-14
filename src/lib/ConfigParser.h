@@ -25,10 +25,12 @@
 #include <fstream>
 #include <string>
 #include <map>
+#include <vector>
 
 class ConfigParser {
 private:
 	std::ifstream configfile;
+	std::map<std::string, std::vector<std::string>> vectors;
 	std::map<std::string, std::string> config_map;
 
 public:
@@ -38,6 +40,8 @@ public:
 	void set(std::string key, std::string value);
 	std::string get(std::string key);
 	int get_as_int(std::string key, int base=10);
+	void add_to_vector(std::string key, std::string value);
+	std::vector<std::string> get_vector(std::string key);
 };
 
 #endif /* USBPROXY_CONFIGPARSER_H */

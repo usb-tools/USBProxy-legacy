@@ -29,6 +29,7 @@
 #include "Plugins.h"
 #include <stddef.h>
 #include <linux/types.h>
+#include "ConfigParser.h"
 
 class Configuration;
 

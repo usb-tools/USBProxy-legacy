@@ -55,4 +55,8 @@ public:
 	virtual void stall_ep(__u8 endpoint)=0;
 };
 
+extern "C" {
+	HostProxy *get_hostproxy_plugin(ConfigParser *cfg);
+	void destroy_plugin();
+}
 #endif /* USBPROXY_HOSTPROXY_H */

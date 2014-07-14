@@ -37,6 +37,7 @@ private:
 public:
 	static int debugLevel;
 	HostProxy_TCP(const char* address=NULL);
+	HostProxy_TCP(ConfigParser *cfg);
 	virtual ~HostProxy_TCP();
 
 	int connect(Device *device,int timeout=250);

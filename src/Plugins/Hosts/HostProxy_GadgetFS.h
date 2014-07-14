@@ -55,7 +55,7 @@ private:
 
 public:
 	static int debugLevel;
-	HostProxy_GadgetFS();
+	HostProxy_GadgetFS(ConfigParser *cfg);
 	virtual ~HostProxy_GadgetFS();
 
 	int connect(Device* device,int timeout=250);

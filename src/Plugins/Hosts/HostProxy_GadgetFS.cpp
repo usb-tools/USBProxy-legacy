@@ -41,7 +41,7 @@
 
 int HostProxy_GadgetFS::debugLevel=0;
 
-HostProxy_GadgetFS::HostProxy_GadgetFS() {
+HostProxy_GadgetFS::HostProxy_GadgetFS(ConfigParser *cfg) {
 	mount_gadget();
 	p_is_connected = false;
 	p_device_file=0;
@@ -531,5 +531,18 @@ void HostProxy_GadgetFS::setConfig(Configuration* fs_cfg,Configuration* hs_cfg,b
 			free(buf);
 			fprintf(stderr,"Opened EP%02x\n",epAddress);
 		}
+	}
+}
+
+static HostProxy_GadgetFS *proxy;
+
+extern "C" {
+	HostProxy * get_hostproxy_plugin(ConfigParser *cfg) {
+		proxy = new HostProxy_GadgetFS(cfg);
+		return (HostProxy *) proxy;
+	}
+	
+	void destroy_plugin() {
+		delete proxy;
 	}
 }

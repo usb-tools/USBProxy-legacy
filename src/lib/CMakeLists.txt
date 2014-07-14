@@ -75,6 +75,8 @@ set(headers
 	${CMAKE_CURRENT_SOURCE_DIR}/USBString.h
 	CACHE INTERNAL "List of headers")
 
+add_definitions( -DPLUGIN_PATH="${CMAKE_INSTALL_PREFIX}/lib/USBProxy/")
+
 # Dynamic library
 add_library(USBProxy SHARED ${cpp_sources} ${c_sources})
 

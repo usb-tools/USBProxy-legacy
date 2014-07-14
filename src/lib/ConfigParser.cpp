@@ -54,11 +54,11 @@ std::string StrStrip(std::string in_str) {
     return in_str.substr(start, end-start+1);
 }
 
-std::string StrLower(std::string instr) {
-	std::transform(instr.begin(), instr.end(), instr.begin(),
-				   [](unsigned char c) { return std::tolower(c); });
-	return instr;
-}
+//std::string StrLower(std::string instr) {
+//	std::transform(instr.begin(), instr.end(), instr.begin(),
+//				   [](unsigned char c) { return std::tolower(c); });
+//	return instr;
+//}
 
 int ConfigParser::debugLevel = 1;
 
@@ -105,14 +105,14 @@ void ConfigParser::parse_file(char* filename) {
 void ConfigParser::set(std::string key, std::string value) {
 	if(debugLevel)
 		fprintf(stderr, "Storing %s\n", key.c_str());
-	config_map[StrLower(key)] = value;
+	config_map[key] = value;
 }
 
 std::string ConfigParser::get(std::string key) {
     // Empty string to return
     std::string errstr;
 
-    std::map<std::string, std::string>::iterator cmitr = config_map.find(StrLower(key));
+    std::map<std::string, std::string>::iterator cmitr = config_map.find(key);
     // No such key
     if (cmitr == config_map.end())
         return errstr;
@@ -121,7 +121,7 @@ std::string ConfigParser::get(std::string key) {
 }
 
 int ConfigParser::get_as_int(std::string key, int base) {
-    std::map<std::string, std::string>::iterator cmitr = config_map.find(StrLower(key));
+    std::map<std::string, std::string>::iterator cmitr = config_map.find(key);
     // No such key
     if (cmitr == config_map.end()) {
 		fprintf(stderr, "key not found\n");
@@ -129,4 +129,26 @@ int ConfigParser::get_as_int(std::string key, int base) {
     }
 
     return std::stoi(cmitr->second, nullptr, base);
+}
+
+void ConfigParser::add_to_vector(std::string key, std::string value) {
+	std::map<std::string, std::vector<std::string>>::iterator cmitr = vectors.find(key);
+	// No such key
+	if (cmitr == vectors.end()) {
+		std::vector<std::string> vec;
+		vec.push_back(value);
+		vectors[key] = vec;
+	}
+
+	cmitr->second.push_back(value);
+}
+
+std::vector<std::string> ConfigParser::get_vector(std::string key) {
+	std::vector<std::string> errvec;
+	std::map<std::string, std::vector<std::string>>::iterator cmitr = vectors.find(key);
+	// No such key
+	if (cmitr == vectors.end())
+		return errvec;
+
+	return cmitr->second;
 }
