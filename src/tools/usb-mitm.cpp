@@ -42,7 +42,6 @@
 
 #include "TRACE.h"
 #include "Manager.h"
-#include "PluginManager.h"
 
 #include "PacketFilter_PcapLogger.h"
 #include "PacketFilter_KeyLogger.h"
@@ -123,21 +122,8 @@ extern "C" int main(int argc, char **argv)
 	sigaction(SIGHUP, &action, NULL);
 	sigaction(SIGINT, &action, NULL);
 	
-	Injector_UDP* udpinjector;
-	Injector_UDPHID* xboxinjector;
-	PacketFilter_StreamLog* logfilter;
-	PacketFilter_MassStorage* msfilter;
-	PacketFilter_ROT13* rotfilter;
-	PacketFilter_KeyLogger* keyfilter;
-	PacketFilter_PcapLogger* pcaplogger;
-	PacketFilter_UDPHID* xboxfilter;
-	
 	manager=new Manager();
 	ConfigParser *cfg = new ConfigParser();
-	PluginManager *plugin_manager = new PluginManager();
-	DeviceProxy* device_proxy;
-	HostProxy* host_proxy;
-	std::vector<char*> filter_names, injector_names;
 
 	while ((opt = getopt (argc, argv, "v:p:dsc:C:lmikw:hx")) != EOF) {
 		switch (opt) {
@@ -162,32 +148,29 @@ extern "C" int main(int argc, char **argv)
 			break;
 		case 'l':
 			logfilter=new PacketFilter_StreamLog(stderr);
-			manager->add_filter(logfilter);
 			break;
 		case 'm':
 			msfilter=new PacketFilter_MassStorage();
+			// FIXME: handle combined filter/injector case
 			manager->add_filter(msfilter);
 			manager->add_injector(msfilter);
 			break;
 		case 'i':
-			udpinjector=new Injector_UDP(12345);
-			manager->add_injector(udpinjector);
+			cfg->add_to_vector("Injectors", "Injector_UDP");
+			cfg->set("Injector_UDP::Port", "12345");
 			break;
 		case 'k':
 			rotfilter=new PacketFilter_ROT13();
 			keyfilter=new PacketFilter_KeyLogger(stderr);
-			manager->add_filter(keyfilter);
-			manager->add_filter(rotfilter);
 			break;
 		case 'w':
 			pcaplogger=new PacketFilter_PcapLogger(optarg);
-			manager->add_filter(pcaplogger);
+			cfg->add_to_vector("Injectors", "PacketFilter_PcapLogger");
+			cfg->set("PacketFilter_PcapLogger::Filename", optarg);
 			break;
 		case 'x':
 			xboxinjector=new Injector_UDPHID(12345);
-			manager->add_injector(xboxinjector);
 			xboxfilter=new PacketFilter_UDPHID(xboxinjector);
-			manager->add_filter(xboxfilter);
 			break;
 		case 'h':
 		default:
@@ -196,20 +179,18 @@ extern "C" int main(int argc, char **argv)
 		}
 	}
 
-	HostProxy_TCP::debugLevel=debug;
-	HostProxy_GadgetFS::debugLevel=debug;
-
 	if (client) {
-		device_proxy = (DeviceProxy *) plugin_manager->load_plugins("DeviceProxy_LibUSB", cfg);
-		host_proxy=(HostProxy* )new HostProxy_TCP(host);
+		cfg->set("DeviceProxy", "DeviceProxy_LibUSB");
+		cfg->set("HostProxy", "HostProxy_TCP");
+		cfg->set("HostProxy_TCP::TCPAddress", host);
 	} else if(server) {
-		device_proxy = (DeviceProxy *) plugin_manager->load_plugins("DeviceProxy_TCP", cfg);
-		host_proxy=(HostProxy* )new HostProxy_GadgetFS();
+		cfg->set("DeviceProxy", "DeviceProxy_TCP");
+		cfg->set("HostProxy", "HostProxy_GadgetFS");
 	} else {
-		device_proxy = (DeviceProxy *) plugin_manager->load_plugins("DeviceProxy_LibUSB", cfg);
-		host_proxy=(HostProxy* )new HostProxy_GadgetFS();
+		cfg->set("DeviceProxy", "DeviceProxy_LibUSB");
+		cfg->set("HostProxy", "HostProxy_GadgetFS");
 	}
-	manager->add_proxies(device_proxy,host_proxy);
+	manager->load_plugins(cfg);
 
 	manager->start_control_relaying();
 

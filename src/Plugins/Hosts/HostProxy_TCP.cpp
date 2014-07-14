@@ -43,7 +43,7 @@ HostProxy_TCP::HostProxy_TCP(const char* address) {
 }
 
 HostProxy_TCP::HostProxy_TCP(ConfigParser *cfg) {
-	std::string address = cfg->get("TCPAddress");
+	std::string address = cfg->get("HostProxy_TCP::TCPAddress");
 	network = new TCP_Helper(address.c_str());
 	p_is_connected = false;
 }

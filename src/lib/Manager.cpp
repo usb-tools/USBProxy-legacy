@@ -37,6 +37,9 @@
 #include "Endpoint.h"
 #include "Packet.h"
 
+#include "PluginManager.h"
+#include "ConfigParser.h"
+
 #include "DeviceProxy.h"
 #include "HostProxy.h"
 #include "PacketFilter.h"
@@ -44,37 +47,10 @@
 #include "RelayWriter.h"
 #include "Injector.h"
 
-Manager::Manager(DeviceProxy* _deviceProxy,HostProxy* _hostProxy) {
-	haltSignal=0;
-	status=USBM_IDLE;
-	deviceProxy=_deviceProxy;
-	hostProxy=_hostProxy;
-	device=NULL;
-	filters=NULL;
-	filterCount=0;
-	injectors=NULL;
-	injectorCount=0;
-	injectorThreads=NULL;
-
-	int i;
-	for(i=0;i<16;i++) {
-		in_endpoints[i]=NULL;
-		in_readers[i]=NULL;
-		in_writers[i]=NULL;
-		in_readerThreads[i]=0;
-		in_writerThreads[i]=0;
-
-		out_endpoints[i]=NULL;
-		out_readers[i]=NULL;
-		out_writers[i]=NULL;
-		out_readerThreads[i]=0;
-		out_writerThreads[i]=0;
-	}
-}
-
 Manager::Manager() {
 	haltSignal=0;
 	status=USBM_IDLE;
+	plugin_manager = new PluginManager();
 	deviceProxy=NULL;
 	hostProxy=NULL;
 	device=NULL;
@@ -165,10 +141,18 @@ Manager::~Manager() {
 
 }
 
-
-void Manager::add_proxies(DeviceProxy* _deviceProxy,HostProxy* _hostProxy) {
-	deviceProxy=_deviceProxy;
-	hostProxy=_hostProxy;
+void Manager::load_plugins(ConfigParser *cfg) {
+	plugin_manager->load_plugins(cfg);
+	deviceProxy = plugin_manager->device_proxy;
+	hostProxy = plugin_manager->host_proxy;
+	for(std::vector<PacketFilter*>::iterator it = plugin_manager->filters.begin();
+		it != plugin_manager->filters.end(); ++it) {
+		add_filter(*it);
+	}
+	for(std::vector<Injector*>::iterator it = plugin_manager->injectors.begin();
+		it != plugin_manager->injectors.end(); ++it) {
+		add_injector(*it);
+	}
 }
 
 void Manager::add_injector(Injector* _injector){

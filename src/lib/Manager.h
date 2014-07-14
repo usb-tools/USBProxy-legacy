@@ -29,6 +29,9 @@
 #include <linux/usb/ch9.h>
 #include <pthread.h>
 
+class PluginManager;
+class ConfigParser;
+
 class Injector;
 class RelayReader;
 class RelayWriter;
@@ -55,6 +58,7 @@ private:
 	Manager_status status;
 	DeviceProxy* deviceProxy;
 	HostProxy* hostProxy;
+	PluginManager *plugin_manager;
 	Device* device;
 	__u8 haltSignal;
 
@@ -81,11 +85,10 @@ private:
 	void start_data_relaying();
 
 public:
-	Manager(DeviceProxy* _deviceProxy,HostProxy* _hostProxy);
 	Manager();
 	virtual ~Manager();
 
-	void add_proxies(DeviceProxy* _deviceProxy,HostProxy* _hostProxy);
+	void load_plugins(ConfigParser *cfg);
 
 	void add_injector(Injector* _injector);
 	void remove_injector(__u8 index,bool freeMemory=true);
