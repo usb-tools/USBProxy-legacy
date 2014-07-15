@@ -3,10 +3,19 @@ USBProxy
 
 Status
 ------
-This project is in the very early stages (alpha), it should be assumesd that it
-is currently non-functional. In fact, there are many occasions on which it
-doesn't even compile.
+This project is in the very early stages (alpha), it should be assumed that it
+is currently non-functional. In fact, there are many occasions on which git
+head doesn't even compile.
 
+Build
+-----
+```
+mkdir src/build
+cd src/uild
+cmake ..
+make
+sudo make install
+```
 What?
 -----
 A USB man in the middle device using the BeagleBone Black hardware.
@@ -20,8 +29,7 @@ inspection, it would only build against a relatively old kernel version.
 
 ToDo
 ----
- * Some sort of library to make all of this easier to use
- * Support alternative chipsets - gadgetfs should take care of this
+ * Support alternative chipsets - gadgetfs should take care of this (ish)
  * Clean up code - check return values, etc
 
 License
