@@ -135,32 +135,29 @@ extern "C" int main(int argc, char **argv)
 			cfg->parse_file(optarg);
 			break;
 		case 'l':
-			cfg->add_to_vector("Filters", "PacketFilter_StreamLog");
+			cfg->add_to_vector("Plugins", "PacketFilter_StreamLog");
 			cfg->add_pointer("PacketFilter_StreamLog::file", stderr);
 			break;
 		case 'm':
-			// FIXME: handle combined filter/injector case
-			cfg->add_to_vector("Filters", "PacketFilter_MassStorage");
-			cfg->add_to_vector("Injectors", "PacketFilter_MassStorage");
+			// Will be added to both filter and injector lists
+			cfg->add_to_vector("Plugins", "PacketFilter_MassStorage");
 			break;
 		case 'i':
-			cfg->add_to_vector("Injectors", "Injector_UDP");
+			cfg->add_to_vector("Plugins", "Injector_UDP");
 			cfg->set("Injector_UDP::Port", "12345");
 			break;
 		case 'k':
-			cfg->add_to_vector("Filters", "PacketFilter_ROT13");
+			cfg->add_to_vector("Plugins", "PacketFilter_ROT13");
 			cfg->add_pointer("PacketFilter_KeyLogger::file", stderr);
 			break;
 		case 'w':
-			cfg->add_to_vector("Filters", "PacketFilter_PcapLogger");
+			cfg->add_to_vector("Plugins", "PacketFilter_PcapLogger");
 			cfg->set("PacketFilter_PcapLogger::Filename", optarg);
 			break;
 		case 'x':
-			cfg->add_to_vector("Injectors", "Injector_UDPHID");
+			cfg->add_to_vector("Plugins", "Injector_UDPHID");
 			cfg->set("Injector_UDP::port", "12345");
-			// FIXME: Need to build the injector first
-			cfg->add_to_vector("Filters", "PacketFilter_UDPHID");
-			//xboxfilter=new PacketFilter_UDPHID(xboxinjector);
+			cfg->add_to_vector("Plugins", "PacketFilter_UDPHID");
 			break;
 		case 'h':
 		default:

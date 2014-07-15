@@ -23,15 +23,11 @@
 #ifndef USBPROXY_PLUGINS_H
 #define USBPROXY_PLUGINS_H
 
-#define PLUGIN_INVALID     0
-#define PLUGIN_DEVICEPROXY 1
-#define PLUGIN_HOSTPROXY   2
-#define PLUGIN_FILTER      3
-#define PLUGIN_INJECTOR    4
+#define PLUGIN_DEVICEPROXY (1<<1)
+#define PLUGIN_HOSTPROXY   (1<<2)
+#define PLUGIN_FILTER      (1<<3)
+#define PLUGIN_INJECTOR    (1<<4)
 
-template<typename Interface>
-class Factory {
-	virtual Interface *create() = 0;
-};
+//FIXME: Generic factory to replace individual ones
 
 #endif /* USBPROXY_PLUGINS_H */

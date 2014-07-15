@@ -34,64 +34,74 @@ typedef HostProxy* (*host_plugin_getter)(ConfigParser *);
 typedef PacketFilter* (*filter_plugin_getter)(ConfigParser *);
 typedef Injector* (*injector_plugin_getter)(ConfigParser *);
 
+void *PluginManager::load_shared_lib(std::string plugin_name) {
+	std::string plugin_file = PLUGIN_PATH + plugin_name + ".so";
+	void* plugin_lib = dlopen(plugin_file.c_str(), RTLD_LAZY);
+	if(!plugin_lib)
+		fprintf(stderr, "error opening library %s\n", plugin_file.c_str());
+	
+	return plugin_lib;
+}
+
 void PluginManager::load_plugins(ConfigParser *cfg)
 {
-	std::string plugin_lib;
+	std::string plugin_file;
+	int plugin_type;
+	void *plugin_lib, *plugin_func;
+	PacketFilter *filter;
 	fprintf(stderr, "Loading plugins from %s\n", PLUGIN_PATH);
+
+	device_plugin_getter dp_ptr;
+	host_plugin_getter hp_ptr;
+	filter_plugin_getter f_ptr;
+	injector_plugin_getter i_ptr;
 	
 	// Device Proxy
-	plugin_lib = PLUGIN_PATH + cfg->get("DeviceProxy") + ".so";
-	void* DeviceProxyPlugin = dlopen(plugin_lib.c_str(), RTLD_LAZY);
-	if(!DeviceProxyPlugin)
-		fprintf(stderr, "error opening library %s\n", plugin_lib.c_str());
-	
-	device_plugin_getter dp_ptr;
-	dp_ptr = (device_plugin_getter) dlsym(DeviceProxyPlugin, "get_deviceproxy_plugin");
-	handleList.push_back((void *)dp_ptr);
+	plugin_lib = load_shared_lib(cfg->get("DeviceProxy"));
+	plugin_func = dlsym(plugin_lib, "get_deviceproxy_plugin");
+	handleList.push_back(plugin_func);
+	dp_ptr = (device_plugin_getter) plugin_func;
 	device_proxy = (*(dp_ptr))(cfg);
 	
 	// Host Proxy
-	plugin_lib = PLUGIN_PATH + cfg->get("HostProxy") + ".so";
-	void* HostProxyPlugin = dlopen(plugin_lib.c_str(), RTLD_LAZY);
-	if(!HostProxyPlugin)
-		fprintf(stderr, "error opening library %s\n", plugin_lib.c_str());
-	
-	host_plugin_getter hp_ptr;
-	hp_ptr = (host_plugin_getter) dlsym(HostProxyPlugin, "get_hostproxy_plugin");
-	handleList.push_back((void *)hp_ptr);
+	plugin_lib = load_shared_lib(cfg->get("HostProxy"));
+	plugin_func = dlsym(plugin_lib, "get_hostproxy_plugin");
+	handleList.push_back(plugin_func);
+	hp_ptr = (host_plugin_getter) plugin_func;
 	host_proxy = (*(hp_ptr))(cfg);
 	
-	// Filters
-	std::vector<std::string> filter_names = cfg->get_vector("Filters");
-	for(std::vector<std::string>::iterator it = filter_names.begin();
-		it != filter_names.end(); ++it) {
-		plugin_lib = PLUGIN_PATH + *it + ".so";
-		fprintf(stderr, "Loading plugin: %s\n", plugin_lib.c_str());
-		void* FilterPlugin = dlopen(plugin_lib.c_str(), RTLD_LAZY);
-		if(!FilterPlugin)
-			fprintf(stderr, "error opening library %s\n", plugin_lib.c_str());
+	// Plugins
+	std::vector<std::string> plugin_names = cfg->get_vector("Plugins");
+	for(std::vector<std::string>::iterator it = plugin_names.begin();
+		it != plugin_names.end(); ++it) {
+		plugin_lib = load_shared_lib(*it);
+		plugin_type = *(int *) dlsym(plugin_lib, "plugin_type");
 		
-		filter_plugin_getter f_ptr;
-		f_ptr = (filter_plugin_getter) dlsym(FilterPlugin, "get_filter_plugin");
-		handleList.push_back((void *)f_ptr);
-		filters.push_back((*(f_ptr))(cfg));
-	}
-	
-	// Injectors
-	std::vector<std::string> injector_names = cfg->get_vector("Injectors");
-	for(std::vector<std::string>::iterator it = injector_names.begin();
-		it != injector_names.end(); ++it)
-	{
-		plugin_lib = PLUGIN_PATH + *it + ".so";
-		fprintf(stderr, "Loading plugin: %s\n", plugin_lib.c_str());
-		void* InjectorPlugin = dlopen(plugin_lib.c_str(), RTLD_LAZY);
-		if(!InjectorPlugin)
-			fprintf(stderr, "error opening library %s\n", plugin_lib.c_str());
-		
-		injector_plugin_getter i_ptr;
-		i_ptr = (injector_plugin_getter) dlsym(InjectorPlugin, "get_injector_plugin");
-		handleList.push_back((void *)i_ptr);
-		injectors.push_back((*(i_ptr))(cfg));
+		switch (plugin_type) {
+			case PLUGIN_FILTER:
+				plugin_func = dlsym(plugin_lib, "get_plugin");
+				handleList.push_back(plugin_func);
+				f_ptr = (filter_plugin_getter) plugin_func;
+				filters.push_back((*(f_ptr))(cfg));
+				break;
+			case PLUGIN_INJECTOR:
+				plugin_func = dlsym(plugin_lib, "get_plugin");
+				handleList.push_back(plugin_func);
+				i_ptr = (injector_plugin_getter) plugin_func;
+				injectors.push_back((*(i_ptr))(cfg));
+				break;
+			case (PLUGIN_FILTER||PLUGIN_INJECTOR):
+				plugin_func = dlsym(plugin_lib, "get_plugin");
+				handleList.push_back(plugin_func);
+				f_ptr = (filter_plugin_getter) plugin_func;
+				filter = (*(f_ptr))(cfg);
+				filters.push_back(filter);
+				injectors.push_back((Injector *) filter);
+				break;
+			default:
+				fprintf(stderr, "Invalid plugin type (%s)\n", (*it).c_str());
+				break;
+		}
 	}
 }
 

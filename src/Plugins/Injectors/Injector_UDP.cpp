@@ -122,7 +122,9 @@ void Injector_UDP::full_pipe(Packet* p) {fprintf(stderr,"Packet returned due to 
 static Injector_UDP *injector;
 
 extern "C" {
-	Injector * get_filter_plugin(ConfigParser *cfg) {
+	int plugin_type = PLUGIN_INJECTOR;
+	
+	Injector * get_plugin(ConfigParser *cfg) {
 		injector = new Injector_UDP(cfg);
 		return (Injector *) injector;
 	}

@@ -41,7 +41,9 @@ void PacketFilter_ROT13::filter_packet(Packet* packet) {
 static PacketFilter_ROT13 *proxy;
 
 extern "C" {
-	PacketFilter * get_filter_plugin(ConfigParser *cfg) {
+	int plugin_type = PLUGIN_FILTER;
+	
+	PacketFilter * get_plugin(ConfigParser *cfg) {
 		proxy = new PacketFilter_ROT13(cfg);
 		return (PacketFilter *) proxy;
 	}

@@ -44,7 +44,9 @@ void PacketFilter_Power::filter_setup_packet(SetupPacket* packet, bool direction
 static PacketFilter_Power *proxy;
 
 extern "C" {
-	PacketFilter * get_filter_plugin(ConfigParser *cfg) {
+	int plugin_type = PLUGIN_FILTER;
+	
+	PacketFilter * get_plugin(ConfigParser *cfg) {
 		proxy = new PacketFilter_Power(cfg);
 		return (PacketFilter *) proxy;
 	}

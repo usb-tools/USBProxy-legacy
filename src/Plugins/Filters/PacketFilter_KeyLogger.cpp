@@ -241,7 +241,9 @@ void PacketFilter_KeyLogger::filter_packet(Packet* packet) {
 static PacketFilter_KeyLogger *proxy;
 
 extern "C" {
-	PacketFilter * get_filter_plugin(ConfigParser *cfg) {
+	int plugin_type = PLUGIN_FILTER;
+	
+	PacketFilter * get_plugin(ConfigParser *cfg) {
 		proxy = new PacketFilter_KeyLogger(cfg);
 		return (PacketFilter *) proxy;
 	}

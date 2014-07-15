@@ -35,6 +35,7 @@ class PluginManager
 {
 	private:
 		std::vector<void*> handleList;
+		void *load_shared_lib(std::string plugin_name);
 
 	public:
 		/* These should have getter/setters */

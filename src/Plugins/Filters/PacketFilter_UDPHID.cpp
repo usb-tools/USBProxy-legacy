@@ -56,7 +56,9 @@ void PacketFilter_UDPHID::filter_setup_packet(SetupPacket* packet,bool direction
 static PacketFilter_UDPHID *proxy;
 
 extern "C" {
-	PacketFilter * get_filter_plugin(ConfigParser *cfg) {
+	int plugin_type = PLUGIN_FILTER;
+	
+	PacketFilter * get_plugin(ConfigParser *cfg) {
 		proxy = new PacketFilter_UDPHID(cfg);
 		return (PacketFilter *) proxy;
 	}

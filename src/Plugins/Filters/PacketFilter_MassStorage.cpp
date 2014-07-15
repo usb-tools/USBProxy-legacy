@@ -187,7 +187,9 @@ void PacketFilter_MassStorage::full_pipe(Packet* p) {fprintf(stderr,"Packet retu
 static PacketFilter_MassStorage *proxy;
 
 extern "C" {
-	PacketFilter * get_filter_plugin(ConfigParser *cfg) {
+	int plugin_type = PLUGIN_FILTER | PLUGIN_INJECTOR;
+	
+	PacketFilter * get_plugin(ConfigParser *cfg) {
 		proxy = new PacketFilter_MassStorage(cfg);
 		return (PacketFilter *) proxy;
 	}

@@ -151,7 +151,9 @@ void Injector_UDPHID::full_pipe(Packet* p) {fprintf(stderr,"Packet returned due 
 static Injector_UDPHID *injector;
 
 extern "C" {
-	Injector * get_filter_plugin(ConfigParser *cfg) {
+	int plugin_type = PLUGIN_INJECTOR;
+	
+	Injector * get_plugin(ConfigParser *cfg) {
 		injector = new Injector_UDPHID(cfg);
 		return (Injector *) injector;
 	}
