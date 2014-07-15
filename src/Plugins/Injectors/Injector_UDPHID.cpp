@@ -34,8 +34,8 @@
 #include "Packet.h"
 #include "HexString.h"
 
-Injector_UDPHID::Injector_UDPHID(__u16 _port) {
-	port=_port;
+Injector_UDPHID::Injector_UDPHID(ConfigParser *cfg) {
+	port = cfg->get_as_int("Injector_UDPHID::port");
 	sck=0;
 	buf=NULL;
 	spoll.events=POLLIN;
@@ -63,6 +63,7 @@ Injector_UDPHID::Injector_UDPHID(__u16 _port) {
 	reportBuffer[17]=0;
 	reportBuffer[18]=0;
 	reportBuffer[19]=0;
+	cfg->add_pointer("PacketFilter_UDPHID::injector", this);
 }
 
 Injector_UDPHID::~Injector_UDPHID() {
@@ -146,3 +147,16 @@ void Injector_UDPHID::get_packets(Packet** packet,SetupPacket** setup,int timeou
 }
 
 void Injector_UDPHID::full_pipe(Packet* p) {fprintf(stderr,"Packet returned due to full pipe & buffer\n");}
+
+static Injector_UDPHID *injector;
+
+extern "C" {
+	Injector * get_filter_plugin(ConfigParser *cfg) {
+		injector = new Injector_UDPHID(cfg);
+		return (Injector *) injector;
+	}
+	
+	void destroy_plugin() {
+		delete injector;
+	}
+}

@@ -23,6 +23,8 @@
 project(libusbproxy C)
 set(PACKAGE libusbproxy)
 
+find_package(Threads REQUIRED)
+
 # Targets
 set(cpp_sources
 	${CMAKE_CURRENT_SOURCE_DIR}/ConfigParser.cpp
@@ -38,6 +40,8 @@ set(cpp_sources
 	${CMAKE_CURRENT_SOURCE_DIR}/Endpoint.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/HID.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/InterfaceGroup.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/Injector.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/PacketFilter.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/PluginManager.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/RelayWriter.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/USBString.cpp
@@ -84,7 +88,8 @@ set_source_files_properties(${cpp_sources} PROPERTIES COMPILE_FLAGS  "-std=c++0x
 
 set_target_properties(USBProxy PROPERTIES VERSION ${MAJOR_VERSION}.${MINOR_VERSION} SOVERSION 0)
 
-target_link_libraries(USBProxy ${LIBUSBPROXY_LIBS})
+target_link_libraries(USBProxy ${LIBUSBPROXY_LIBS} ${CMAKE_DL_LIBS}
+                               ${CMAKE_THREAD_LIBS_INIT} rt)
 
 install(TARGETS USBProxy
         LIBRARY DESTINATION lib${LIB_SUFFIX}

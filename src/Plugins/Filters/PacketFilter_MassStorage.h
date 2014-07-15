@@ -36,7 +36,7 @@ private:
 	bool packet_waiting;
 
 public:
-	PacketFilter_MassStorage();
+	PacketFilter_MassStorage(ConfigParser *cfg);
 	
 	/* Filter functions */
 	void filter_packet(Packet* packet);

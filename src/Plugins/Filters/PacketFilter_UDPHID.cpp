@@ -25,7 +25,7 @@
  */
 #include "PacketFilter_UDPHID.h"
 
-PacketFilter_UDPHID::PacketFilter_UDPHID(Injector_UDPHID* injector) {
+PacketFilter_UDPHID::PacketFilter_UDPHID(ConfigParser *cfg) {
 	this->interface.deviceClass=0xff;
 	this->interface.subClass=0x5d;
 	this->endpoint.address=0x80;
@@ -37,6 +37,7 @@ PacketFilter_UDPHID::PacketFilter_UDPHID(Injector_UDPHID* injector) {
 	this->packetHeaderMask[1]=0xff;
 	this->packetHeaderSetupIn=false;
 	this->packetHeaderSetupOut=false;
+	Injector_UDPHID* injector = (Injector_UDPHID *) cfg->get_pointer("PacketFilter_UDPHID::injector");
 	reportBuffer=injector->getReportBuffer();
 }
 
@@ -50,4 +51,17 @@ void PacketFilter_UDPHID::filter_packet(Packet* packet) {
 	}
 }
 void PacketFilter_UDPHID::filter_setup_packet(SetupPacket* packet,bool direction) {
+}
+
+static PacketFilter_UDPHID *proxy;
+
+extern "C" {
+	PacketFilter * get_filter_plugin(ConfigParser *cfg) {
+		proxy = new PacketFilter_UDPHID(cfg);
+		return (PacketFilter *) proxy;
+	}
+	
+	void destroy_plugin() {
+		delete proxy;
+	}
 }

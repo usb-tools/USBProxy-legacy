@@ -37,6 +37,7 @@
 #include "Packet.h"
 #include "HexString.h"
 #include "Criteria.h"
+#include "ConfigParser.h"
 
 class PacketFilter {
 protected:

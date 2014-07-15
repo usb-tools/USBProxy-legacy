@@ -48,7 +48,7 @@ protected:
 	void get_packets(Packet** packet,SetupPacket** setup,int timeout=500);
 
 public:
-	Injector_UDP(__u16 _port);
+	Injector_UDP(ConfigParser *cfg);
 	virtual ~Injector_UDP();
 };
 

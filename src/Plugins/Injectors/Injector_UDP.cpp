@@ -34,8 +34,8 @@
 #include "Packet.h"
 #include "HexString.h"
 
-Injector_UDP::Injector_UDP(__u16 _port) {
-	port=_port;
+Injector_UDP::Injector_UDP(ConfigParser *cfg) {
+	port = cfg->get_as_int("Injector_UDPHID::port");
 	sck=0;
 	buf=NULL;
 	spoll.events=POLLIN;
@@ -119,3 +119,15 @@ void Injector_UDP::get_packets(Packet** packet,SetupPacket** setup,int timeout) 
 
 void Injector_UDP::full_pipe(Packet* p) {fprintf(stderr,"Packet returned due to full pipe & buffer\n");}
 
+static Injector_UDP *injector;
+
+extern "C" {
+	Injector * get_filter_plugin(ConfigParser *cfg) {
+		injector = new Injector_UDP(cfg);
+		return (Injector *) injector;
+	}
+	
+	void destroy_plugin() {
+		delete injector;
+	}
+}

@@ -33,7 +33,7 @@ class PacketFilter_StreamLog : public PacketFilter {
 private:
 	FILE* file;
 public:
-	PacketFilter_StreamLog(FILE* _file) {file=_file;}
+	PacketFilter_StreamLog(ConfigParser *cfg);
 	void filter_packet(Packet* packet);
 	void filter_setup_packet(SetupPacket* packet,bool direction);
 	virtual char* toString() {return (char*)"Stream Log Filter";}

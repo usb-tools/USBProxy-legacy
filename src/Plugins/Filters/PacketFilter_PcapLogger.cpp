@@ -35,9 +35,10 @@
 #define SNAP_LEN 112
 
 
-PacketFilter_PcapLogger::PacketFilter_PcapLogger(const char* filename) {
+PacketFilter_PcapLogger::PacketFilter_PcapLogger(ConfigParser *cfg) {
+	std::string filename = cfg->get("PacketFilter_PcapLogger::filename");
 	pkt_count = 0;
-	file = fopen(filename, "w");
+	file = fopen(filename.c_str(), "w");
 	pcap_file = pcap_open_dead(DLT_USB_LINUX, SNAP_LEN);
 	if (pcap_file == NULL)
 		fprintf(stderr, "Unable to open pcap file for output\n");
@@ -187,4 +188,17 @@ void PacketFilter_PcapLogger::filter_packet(Packet* packet) {
 	pcap_dump((unsigned char *)pcap_writer, &ph, buf);
 	pcap_dump_flush(pcap_writer);
 	pthread_mutex_unlock(&pcap_writer_mutex);
+}
+
+static PacketFilter_PcapLogger *proxy;
+
+extern "C" {
+	PacketFilter * get_filter_plugin(ConfigParser *cfg) {
+		proxy = new PacketFilter_PcapLogger(cfg);
+		return (PacketFilter *) proxy;
+	}
+	
+	void destroy_plugin() {
+		delete proxy;
+	}
 }

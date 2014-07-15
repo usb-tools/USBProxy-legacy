@@ -25,12 +25,27 @@
  */
 #include "PacketFilter_Callback.h"
 
-	PacketFilter_Callback::PacketFilter_Callback(void (*_cb)(Packet*),void (*_cb_setup)(SetupPacket*,bool)) {
-		cb=_cb;cb_setup=_cb_setup;
+PacketFilter_Callback::PacketFilter_Callback(ConfigParser *cfg) {
+	cb = (f_cb) cfg->get_pointer("PacketFilter_Callback::filter_packet");
+	cb_setup = (f_cb_setup) cfg->get_pointer("PacketFilter_Callback::filter_setup_packet");
+}
+void PacketFilter_Callback::filter_packet(Packet* packet) {
+	cb(packet);
+}
+
+void PacketFilter_Callback::filter_setup_packet(SetupPacket* packet,bool direction_out) {
+	cb_setup(packet,direction_out);
+}
+
+static PacketFilter_Callback *proxy;
+
+extern "C" {
+	PacketFilter * get_filter_plugin(ConfigParser *cfg) {
+		proxy = new PacketFilter_Callback(cfg);
+		return (PacketFilter *) proxy;
 	}
-	void PacketFilter_Callback::filter_packet(Packet* packet) {
-		cb(packet);
+	
+	void destroy_plugin() {
+		delete proxy;
 	}
-	void PacketFilter_Callback::filter_setup_packet(SetupPacket* packet,bool direction_out) {
-		cb_setup(packet,direction_out);
-	}
+}

@@ -30,7 +30,7 @@
 
 class PacketFilter_ROT13: public PacketFilter {
 public:
-	PacketFilter_ROT13() {}
+	PacketFilter_ROT13(ConfigParser *cfg) {}
 	virtual ~PacketFilter_ROT13() {}
 	void filter_packet(Packet* packet);
 	virtual char* toString() {return (char*)"ROT13 Filter";}

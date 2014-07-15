@@ -34,7 +34,7 @@ class PacketFilter_UDPHID : public PacketFilter {
 private:
 	__u8* reportBuffer;
 public:
-	PacketFilter_UDPHID(Injector_UDPHID* injector);
+	PacketFilter_UDPHID(ConfigParser *cfg);
 	void filter_packet(Packet* packet);
 	void filter_setup_packet(SetupPacket* packet,bool direction);
 	virtual char* toString() {return (char*)"UDPHID Filter";}

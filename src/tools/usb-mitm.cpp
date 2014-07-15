@@ -42,19 +42,7 @@
 
 #include "TRACE.h"
 #include "Manager.h"
-
-#include "PacketFilter_PcapLogger.h"
-#include "PacketFilter_KeyLogger.h"
-#include "PacketFilter_ROT13.h"
-#include "PacketFilter_StreamLog.h"
-#include "PacketFilter_UDPHID.h"
-#include "PacketFilter_MassStorage.h"
-
-#include "Injector_UDP.h"
-#include "Injector_UDPHID.h"
-
-#include "HostProxy_GadgetFS.h"
-#include "HostProxy_TCP.h"
+#include "ConfigParser.h"
 
 static int debug=0;
 
@@ -147,30 +135,32 @@ extern "C" int main(int argc, char **argv)
 			cfg->parse_file(optarg);
 			break;
 		case 'l':
-			logfilter=new PacketFilter_StreamLog(stderr);
+			cfg->add_to_vector("Filters", "PacketFilter_StreamLog");
+			cfg->add_pointer("PacketFilter_StreamLog::file", stderr);
 			break;
 		case 'm':
-			msfilter=new PacketFilter_MassStorage();
 			// FIXME: handle combined filter/injector case
-			manager->add_filter(msfilter);
-			manager->add_injector(msfilter);
+			cfg->add_to_vector("Filters", "PacketFilter_MassStorage");
+			cfg->add_to_vector("Injectors", "PacketFilter_MassStorage");
 			break;
 		case 'i':
 			cfg->add_to_vector("Injectors", "Injector_UDP");
 			cfg->set("Injector_UDP::Port", "12345");
 			break;
 		case 'k':
-			rotfilter=new PacketFilter_ROT13();
-			keyfilter=new PacketFilter_KeyLogger(stderr);
+			cfg->add_to_vector("Filters", "PacketFilter_ROT13");
+			cfg->add_pointer("PacketFilter_KeyLogger::file", stderr);
 			break;
 		case 'w':
-			pcaplogger=new PacketFilter_PcapLogger(optarg);
-			cfg->add_to_vector("Injectors", "PacketFilter_PcapLogger");
+			cfg->add_to_vector("Filters", "PacketFilter_PcapLogger");
 			cfg->set("PacketFilter_PcapLogger::Filename", optarg);
 			break;
 		case 'x':
-			xboxinjector=new Injector_UDPHID(12345);
-			xboxfilter=new PacketFilter_UDPHID(xboxinjector);
+			cfg->add_to_vector("Injectors", "Injector_UDPHID");
+			cfg->set("Injector_UDP::port", "12345");
+			// FIXME: Need to build the injector first
+			cfg->add_to_vector("Filters", "PacketFilter_UDPHID");
+			//xboxfilter=new PacketFilter_UDPHID(xboxinjector);
 			break;
 		case 'h':
 		default:

@@ -49,7 +49,7 @@ protected:
 	void get_packets(Packet** packet,SetupPacket** setup,int timeout=500);
 
 public:
-	Injector_UDPHID(__u16 _port);
+	Injector_UDPHID(ConfigParser *cfg);
 	virtual ~Injector_UDPHID();
 	__u8* getReportBuffer() {return reportBuffer;}
 };

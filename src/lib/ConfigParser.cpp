@@ -132,23 +132,38 @@ int ConfigParser::get_as_int(std::string key, int base) {
 }
 
 void ConfigParser::add_to_vector(std::string key, std::string value) {
-	std::map<std::string, std::vector<std::string>>::iterator cmitr = vectors.find(key);
+	std::map<std::string, std::vector<std::string>>::iterator vitr = vectors.find(key);
 	// No such key
-	if (cmitr == vectors.end()) {
+	if (vitr == vectors.end()) {
 		std::vector<std::string> vec;
 		vec.push_back(value);
 		vectors[key] = vec;
 	}
 
-	cmitr->second.push_back(value);
+	vitr->second.push_back(value);
 }
 
 std::vector<std::string> ConfigParser::get_vector(std::string key) {
 	std::vector<std::string> errvec;
-	std::map<std::string, std::vector<std::string>>::iterator cmitr = vectors.find(key);
+	std::map<std::string, std::vector<std::string>>::iterator vitr = vectors.find(key);
 	// No such key
-	if (cmitr == vectors.end())
+	if (vitr == vectors.end())
 		return errvec;
 
-	return cmitr->second;
+	return vitr->second;
+}
+
+void ConfigParser::add_pointer(std::string key, void *value) {
+	if(debugLevel)
+		fprintf(stderr, "Storing %s\n", key.c_str());
+	pointers[key] = value;
+}
+
+void *ConfigParser::get_pointer(std::string key) {
+    std::map<std::string, void*>::iterator pitr = pointers.find(key);
+    // No such key
+    if (pitr == pointers.end())
+        return NULL;
+
+    return pitr->second;
 }

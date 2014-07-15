@@ -40,7 +40,7 @@ private:
 	__u64 pkt_count;
 
 public:
-	PacketFilter_PcapLogger(const char* filename);
+	PacketFilter_PcapLogger(ConfigParser *cfg);
 	~PacketFilter_PcapLogger();
 	void filter_setup_packet(SetupPacket* packet,bool direction_out);
 	void filter_packet(Packet* packet);

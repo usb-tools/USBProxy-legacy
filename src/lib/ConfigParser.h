@@ -32,16 +32,22 @@ private:
 	std::ifstream configfile;
 	std::map<std::string, std::vector<std::string>> vectors;
 	std::map<std::string, std::string> config_map;
+	std::map<std::string, void*> pointers;
 
 public:
 	static int debugLevel;
 	ConfigParser();
 	void parse_file(char* filename);
+	
 	void set(std::string key, std::string value);
 	std::string get(std::string key);
 	int get_as_int(std::string key, int base=10);
+	
 	void add_to_vector(std::string key, std::string value);
 	std::vector<std::string> get_vector(std::string key);
+	
+	void add_pointer(std::string key, void *value);
+	void * get_pointer(std::string key);
 };
 
 #endif /* USBPROXY_CONFIGPARSER_H */

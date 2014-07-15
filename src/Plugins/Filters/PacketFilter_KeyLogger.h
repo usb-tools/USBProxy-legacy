@@ -37,7 +37,7 @@ private:
 	const char* keyMap[0x66];
 	const char* shiftKeyMap[0x66];
 public:
-	PacketFilter_KeyLogger(FILE* _file);
+	PacketFilter_KeyLogger(ConfigParser *cfg);
 	void filter_packet(Packet* packet);
 	virtual char* toString() {return (char*)"Key Logger Filter";}
 };

@@ -32,7 +32,7 @@
 class PacketFilter_Power : public PacketFilter {
 
 public:
-	PacketFilter_Power();
+	PacketFilter_Power(ConfigParser *cfg);
 	void filter_setup_packet(SetupPacket* packet, bool direction_in);
 	virtual char* toString() {return (char*)"Force Self Powered Filter";}
 };

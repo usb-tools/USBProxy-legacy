@@ -32,6 +32,7 @@
 #include "Plugins.h"
 #include "Packet.h"
 #include "Criteria.h"
+#include "ConfigParser.h"
 
 class Injector {
 private:

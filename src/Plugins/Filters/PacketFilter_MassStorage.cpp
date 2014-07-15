@@ -32,7 +32,7 @@
 #define STATUS 4
 #define UNKNOWN 5
 
-PacketFilter_MassStorage::PacketFilter_MassStorage() {
+PacketFilter_MassStorage::PacketFilter_MassStorage(ConfigParser *cfg) {
 	int rs;
 	state = IDLE;
 	packet_waiting = false;
@@ -184,3 +184,15 @@ void PacketFilter_MassStorage::get_packets(Packet** packet, SetupPacket** setup,
 
 void PacketFilter_MassStorage::full_pipe(Packet* p) {fprintf(stderr,"Packet returned due to full pipe & buffer\n");}
 
+static PacketFilter_MassStorage *proxy;
+
+extern "C" {
+	PacketFilter * get_filter_plugin(ConfigParser *cfg) {
+		proxy = new PacketFilter_MassStorage(cfg);
+		return (PacketFilter *) proxy;
+	}
+	
+	void destroy_plugin() {
+		delete proxy;
+	}
+}
