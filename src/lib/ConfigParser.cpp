@@ -105,7 +105,10 @@ void ConfigParser::parse_file(char* filename) {
 void ConfigParser::set(std::string key, std::string value) {
 	if(debugLevel)
 		fprintf(stderr, "Storing %s\n", key.c_str());
+	fprintf(stderr, "Storing %s\n", value.c_str());
 	config_map[key] = value;
+	if(debugLevel)
+		fprintf(stderr, "Stored %s\n", key.c_str());
 }
 
 std::string ConfigParser::get(std::string key) {
@@ -120,16 +123,17 @@ std::string ConfigParser::get(std::string key) {
     return cmitr->second;
 }
 
-int ConfigParser::get_as_int(std::string key, int base) {
-    std::map<std::string, std::string>::iterator cmitr = config_map.find(key);
-    // No such key
-    if (cmitr == config_map.end()) {
-		fprintf(stderr, "key not found\n");
-        return 0;
-    }
-
-    return std::stoi(cmitr->second, nullptr, base);
-}
+//int ConfigParser::get_as_int(std::string key, int base) {
+//	fprintf(stderr, "key: %s\n", key.c_str());
+//    std::map<std::string, std::string>::iterator cmitr = config_map.find(key);
+//    // No such key
+//    if (cmitr == config_map.end()) {
+//		fprintf(stderr, "key not found\n");
+//        return NULL;
+//    }
+//
+//    return std::stoi(cmitr->second, nullptr, base);
+//}
 
 void ConfigParser::add_to_vector(std::string key, std::string value) {
 	std::map<std::string, std::vector<std::string>>::iterator vitr = vectors.find(key);
@@ -157,6 +161,8 @@ void ConfigParser::add_pointer(std::string key, void *value) {
 	if(debugLevel)
 		fprintf(stderr, "Storing %s\n", key.c_str());
 	pointers[key] = value;
+	if(debugLevel)
+		fprintf(stderr, "Stored %s\n", key.c_str());
 }
 
 void *ConfigParser::get_pointer(std::string key) {

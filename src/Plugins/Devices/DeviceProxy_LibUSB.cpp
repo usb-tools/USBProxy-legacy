@@ -46,11 +46,17 @@ DeviceProxy_LibUSB::DeviceProxy_LibUSB(ConfigParser *cfg)
 	int vendorId, productId;
 	
 	std::string vid_str = cfg->get("vendorId");
-	vendorId = std::stoi(vid_str, nullptr, 16);
+	if(vid_str == "")
+		vendorId = LIBUSB_HOTPLUG_MATCH_ANY;
+	else
+		vendorId = std::stoi(vid_str, nullptr, 16);
 	fprintf(stderr, "vendorId=%04x\n", vendorId);
 	
 	std::string pid_str = cfg->get("productId");
-	productId = std::stoi(pid_str, nullptr, 16);
+	if(pid_str == "")
+		productId = LIBUSB_HOTPLUG_MATCH_ANY;
+	else
+		productId = std::stoi(pid_str, nullptr, 16);
 	fprintf(stderr, "productId=%04x\n", productId);
 	
 	bool includeHubs = false;

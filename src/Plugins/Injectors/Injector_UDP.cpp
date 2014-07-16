@@ -35,7 +35,14 @@
 #include "HexString.h"
 
 Injector_UDP::Injector_UDP(ConfigParser *cfg) {
-	port = cfg->get_as_int("Injector_UDPHID::port");
+	std::string port_str = cfg->get("Injector_UDPHID::port");
+	if(port_str == "") {
+		fprintf(stderr, "Error: no port found for Injector_UDP\n");
+		return;
+	}
+	else
+		port = std::stoi(port_str, nullptr, 10);
+	
 	sck=0;
 	buf=NULL;
 	spoll.events=POLLIN;
