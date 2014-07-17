@@ -23,8 +23,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
-#include <getopt.h>
-#include <algorithm>
+#include <iostream>
 
 /* Taken from Kismet utils.cc */
 std::string StrStrip(std::string in_str) {
@@ -151,4 +150,30 @@ void *ConfigParser::get_pointer(std::string key) {
         return NULL;
 
     return pitr->second;
+}
+
+/* Iterate over strings/vectors/pointers to print config */
+void ConfigParser::print_config() {
+	std::clog << "Printing Config data\n";
+	std::clog << "\tStrings: " << strings.size() << "\n";
+	for(std::map<std::string, std::string>::iterator it = strings.begin();
+		it != strings.end(); ++it) {
+		std::clog << "\t\t" << it->first << ": " << it->second << "\n";
+	}
+	
+	std::clog << "\tVectors: " << vectors.size() << "\n";
+	for(std::map<std::string, std::vector<std::string>>::iterator it = vectors.begin();
+		it != vectors.end(); ++it) {
+		std::clog << "\t\t" << it->first << ":\n";
+		for(std::vector<std::string>::iterator itv = it->second.begin();
+			itv != it->second.end(); ++itv) {
+			std::clog << "\t\t\t" << *itv << "\n";
+		}
+	}
+	
+	std::clog << "Pointer: " << pointers.size() << "\n";
+	for(std::map<std::string, void*>::iterator it = pointers.begin();
+		it != pointers.end(); ++it) {
+		std::clog << "\t\t" << it->first << ": " << it->second << "\n";
+	}
 }

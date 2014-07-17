@@ -45,7 +45,9 @@ public:
 	std::vector<std::string> get_vector(std::string key);
 	
 	void add_pointer(std::string key, void *value);
-	void * get_pointer(std::string key);
+	void *get_pointer(std::string key);
+	
+	void print_config();
 };
 
 #endif /* USBPROXY_CONFIGPARSER_H */

@@ -179,6 +179,7 @@ extern "C" int main(int argc, char **argv)
 		cfg->set("HostProxy", "HostProxy_GadgetFS");
 	}
 	manager->load_plugins(cfg);
+	cfg->print_config();
 
 	manager->start_control_relaying();
 
