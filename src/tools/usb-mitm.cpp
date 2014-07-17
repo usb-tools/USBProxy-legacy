@@ -147,8 +147,9 @@ extern "C" int main(int argc, char **argv)
 			cfg->set("Injector_UDP::Port", "12345");
 			break;
 		case 'k':
-			cfg->add_to_vector("Plugins", "PacketFilter_ROT13");
+			cfg->add_to_vector("Plugins", "PacketFilter_KeyLogger");
 			cfg->add_pointer("PacketFilter_KeyLogger::file", stderr);
+			cfg->add_to_vector("Plugins", "PacketFilter_ROT13");
 			break;
 		case 'w':
 			cfg->add_to_vector("Plugins", "PacketFilter_PcapLogger");
