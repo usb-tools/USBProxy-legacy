@@ -31,6 +31,13 @@
 #include "PacketFilter.h"
 #include "Injector.h"
 
+/* Expand this list as needed */
+enum plugin_manager_error {
+	PLUGIN_MANAGER_SUCCESS = 0,
+	PLUGIN_MANAGER_UNKNOWN_ERROR = 1,
+	PLUGIN_MANAGER_CANNOT_FIND_FILE = 2
+};
+
 class PluginManager
 {
 	private:
@@ -45,7 +52,7 @@ class PluginManager
 		std::vector<Injector*> injectors;
 		
 		PluginManager(){};
-		void load_plugins(ConfigParser *cfg);
+		int load_plugins(ConfigParser *cfg);
 		void destroy_plugins();
 	
 };

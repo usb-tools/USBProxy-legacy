@@ -43,7 +43,7 @@ void *PluginManager::load_shared_lib(std::string plugin_name) {
 	return plugin_lib;
 }
 
-void PluginManager::load_plugins(ConfigParser *cfg)
+int PluginManager::load_plugins(ConfigParser *cfg)
 {
 	std::string plugin_file;
 	int plugin_type;
@@ -58,6 +58,8 @@ void PluginManager::load_plugins(ConfigParser *cfg)
 	
 	// Device Proxy
 	plugin_lib = load_shared_lib(cfg->get("DeviceProxy"));
+	if(plugin_lib==NULL)
+		return PLUGIN_MANAGER_CANNOT_FIND_FILE;
 	plugin_func = dlsym(plugin_lib, "get_deviceproxy_plugin");
 	handleList.push_back(plugin_func);
 	dp_ptr = (device_plugin_getter) plugin_func;
@@ -65,6 +67,8 @@ void PluginManager::load_plugins(ConfigParser *cfg)
 	
 	// Host Proxy
 	plugin_lib = load_shared_lib(cfg->get("HostProxy"));
+	if(plugin_lib==NULL)
+		return PLUGIN_MANAGER_CANNOT_FIND_FILE;
 	plugin_func = dlsym(plugin_lib, "get_hostproxy_plugin");
 	handleList.push_back(plugin_func);
 	hp_ptr = (host_plugin_getter) plugin_func;
@@ -75,6 +79,8 @@ void PluginManager::load_plugins(ConfigParser *cfg)
 	for(std::vector<std::string>::iterator it = plugin_names.begin();
 		it != plugin_names.end(); ++it) {
 		plugin_lib = load_shared_lib(*it);
+		if(plugin_lib==NULL)
+			return PLUGIN_MANAGER_CANNOT_FIND_FILE;
 		plugin_type = *(int *) dlsym(plugin_lib, "plugin_type");
 		
 		switch (plugin_type) {
@@ -103,6 +109,7 @@ void PluginManager::load_plugins(ConfigParser *cfg)
 				break;
 		}
 	}
+	return PLUGIN_MANAGER_SUCCESS;
 }
 
 void PluginManager::destroy_plugins()
