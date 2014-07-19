@@ -99,3 +99,35 @@ install(FILES ${headers}
 		DESTINATION include/USBProxy
         COMPONENT headers
         )
+
+########################################################################
+# Create Pkg Config File (experimental)
+########################################################################
+FOREACH(inc ${LIBUSB_INCLUDE_DIR})
+    LIST(APPEND USBPROXY_PC_CFLAGS "-I${inc}")
+ENDFOREACH(inc)
+
+# use space-separation format for the pc file
+STRING(REPLACE ";" " " USBPROXY_PC_CFLAGS "${USBPROXY_PC_CFLAGS}")
+STRING(REPLACE ";" " " USBPROXY_PC_LIBS "${USBPROXY_PC_LIBS}")
+
+# unset these vars to avoid hard-coded paths to cross environment
+IF(CMAKE_CROSSCOMPILING)
+    UNSET(USBPROXY_PC_CFLAGS)
+    UNSET(USBPROXY_PC_LIBS)
+ENDIF(CMAKE_CROSSCOMPILING)
+
+set(prefix ${CMAKE_INSTALL_PREFIX})
+set(exec_prefix \${prefix})
+set(libdir \${exec_prefix}/lib)
+set(includedir \${prefix}/include)
+
+CONFIGURE_FILE(
+    ${CMAKE_CURRENT_SOURCE_DIR}/usbproxy.pc.in
+    ${CMAKE_CURRENT_BINARY_DIR}/usbproxy.pc
+@ONLY)
+
+INSTALL(
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/usbproxy.pc
+    DESTINATION lib/pkgconfig
+)
