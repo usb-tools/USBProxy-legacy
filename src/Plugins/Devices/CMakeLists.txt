@@ -26,7 +26,7 @@ set(PACKAGE usbproxy_devices)
 include_directories(${libusbproxy_SOURCE_DIR})
 LIST(APPEND PLUGINS_LINK_LIBS USBProxy)
 
-LIST(APPEND PLUGINS DeviceProxy_Loopback DeviceProxy_TCP)
+LIST(APPEND PLUGINS DeviceProxy_Loopback DeviceProxy_TCP DeviceProxy_dot11)
 
 find_package(USB1)
 
