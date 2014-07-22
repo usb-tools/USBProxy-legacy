@@ -34,8 +34,6 @@
 // Find the right place to pull this in from
 #define cpu_to_le16(x) (x)
 
-#define BUF_LEN 100
-
 int DeviceProxy_dot11::debugLevel = 1;
 
 #define STRING_MANUFACTURER 1
@@ -117,9 +115,6 @@ DeviceProxy_dot11::DeviceProxy_dot11(ConfigParser *cfg) {
 	dot11_strings[STRING_DOT11]=new USBString("802.11",STRING_DOT11,0x409);
 	dot11_stringMaxIndex=STRING_DOT11;
 
-	buffer=NULL;
-	full=false;
-	head=tail=0;
 }
 
 DeviceProxy_dot11::~DeviceProxy_dot11() {
@@ -139,32 +134,15 @@ DeviceProxy_dot11::~DeviceProxy_dot11() {
 }
 
 int DeviceProxy_dot11::connect(int timeout) {
-	buffer = (struct pkt *) calloc(BUF_LEN,sizeof(struct pkt));
-	head = tail = 0;
-	full = false;
 	p_is_connected = true;
 	return 0;
 }
 
 void DeviceProxy_dot11::disconnect() {
-	if(buffer) {
-		int i;
-		for(i=0;i<BUF_LEN;i++) {
-			if (buffer[i].data) {
-				free(buffer[i].data);
-				buffer[i].data=NULL;
-			}
-		}
-		free(buffer);
-		buffer = NULL;
-	}
-	full = false;
 	p_is_connected = false;
 }
 
 void DeviceProxy_dot11::reset() {
-	head = tail = 0;
-	full = false;
 }
 
 bool DeviceProxy_dot11::is_connected() {
@@ -242,30 +220,11 @@ int DeviceProxy_dot11::control_request(const usb_ctrlrequest* setup_packet, int*
 }
 
 void DeviceProxy_dot11::send_data(__u8 endpoint,__u8 attributes, __u16 maxPacketSize, __u8* dataptr, int length) {
-	if(head==tail && full)
-		return; // Buffer is full, silently drop data
-
-	struct pkt next = buffer[tail];
-	next.length = length;
-	next.data = (__u8 *) malloc(length);
-	memcpy(next.data, dataptr, length);
-	free(buffer[tail].data);
-	buffer[tail].data=NULL;
-	tail = (tail + 1) % BUF_LEN;
-	full = (head==tail);
+	;
 }
 
 void DeviceProxy_dot11::receive_data(__u8 endpoint,__u8 attributes, __u16 maxPacketSize, __u8** dataptr, int* length, int timeout) {
-	if(head==tail && !full) {
-		// No packet data (could wait for timeout to see if data arrives)
-		*length = 0;
-	} else {
-		struct pkt next = buffer[head];
-		*dataptr = next.data;
-		*length = next.length;
-		head = (head + 1) % BUF_LEN;
-		full = !(head==tail);
-	}
+	;
 }
 
 void DeviceProxy_dot11::setConfig(Configuration* fs_cfg, Configuration* hs_cfg, bool hs) {

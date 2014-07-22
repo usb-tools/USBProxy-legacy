@@ -27,28 +27,17 @@
 
 class Configuration;
 
-struct pkt {
-	int length;
-	__u8 *data;
-
-	pkt(): length(0),data(NULL) {}
-};
-
 class DeviceProxy_dot11 : public DeviceProxy {
 private:
 	bool p_is_connected;
-	struct pkt *buffer;
-	int head, tail;
-	bool full;
 	struct usb_device_descriptor dot11_device_descriptor;
 	struct usb_config_descriptor dot11_config_descriptor;
 	struct usb_interface_descriptor dot11_interface_descriptor;
 	struct usb_endpoint_descriptor dot11_eps[2];
-	struct usb_string ;
+	struct usb_string;
 
 public:
 	static int debugLevel;
-	DeviceProxy_dot11(int vendorId, int productId);
 	DeviceProxy_dot11(ConfigParser *cfg);
 	~DeviceProxy_dot11();
 
