@@ -80,7 +80,7 @@ DeviceProxy_dot11::DeviceProxy_dot11(ConfigParser *cfg) {
 	dot11_interface_descriptor.bInterfaceNumber=0;
 	dot11_interface_descriptor.bAlternateSetting=0;
 	dot11_interface_descriptor.bNumEndpoints = 2;
-	dot11_interface_descriptor.bInterfaceClass = USB_CLASS_VENDOR_SPEC;
+	dot11_interface_descriptor.bInterfaceClass = USB_CLASS_HID;
 	dot11_interface_descriptor.bInterfaceSubClass=0;
 	dot11_interface_descriptor.bInterfaceProtocol=0;
 	dot11_interface_descriptor.iInterface = STRING_DOT11;
