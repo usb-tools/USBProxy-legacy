@@ -54,7 +54,7 @@ DeviceProxy_dot11::DeviceProxy_dot11(ConfigParser *cfg) {
 	dot11_device_descriptor.bLength = USB_DT_DEVICE_SIZE;
 	dot11_device_descriptor.bDescriptorType = USB_DT_DEVICE;
 	dot11_device_descriptor.bcdUSB = cpu_to_le16(0x0100);
-	dot11_device_descriptor.bDeviceClass = USB_CLASS_VENDOR_SPEC;
+	dot11_device_descriptor.bDeviceClass = USB_CLASS_HID;
 	dot11_device_descriptor.bDeviceSubClass = 0;
 	dot11_device_descriptor.bDeviceProtocol = 0;
 	dot11_device_descriptor.bMaxPacketSize0=64;
