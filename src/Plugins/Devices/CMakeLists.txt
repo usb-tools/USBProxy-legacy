@@ -26,7 +26,7 @@ set(PACKAGE usbproxy_devices)
 include_directories(${libusbproxy_SOURCE_DIR})
 LIST(APPEND PLUGINS_LINK_LIBS USBProxy)
 
-LIST(APPEND PLUGINS DeviceProxy_Loopback DeviceProxy_TCP DeviceProxy_dot11)
+LIST(APPEND PLUGINS DeviceProxy_Loopback DeviceProxy_TCP)
 
 find_package(USB1)
 
@@ -40,6 +40,19 @@ else( ${LIBUSB_FOUND} )
 			"Cannot find libUSB-1.0, which is required for USE_LIBUSB1")
 	endif()
 endif( ${LIBUSB_FOUND} )
+
+find_package(lorcon)
+
+if( ${LORCON_FOUND} )
+	LIST(APPEND PLUGINS DeviceProxy_dot11)
+	include_directories(${LORCON_INCLUDE_DIR})
+	LIST(APPEND PLUGINS_LINK_LIBS ${LORCON_LIBRARIES})
+else( ${LORCON_FOUND} )
+	if( USE_LORCON AND NOT ${LORCON_FOUND} )
+		message( FATAL_ERROR
+			"Cannot find lorcon, which is required for USE_LORCON")
+	endif()
+endif( ${LORCON_FOUND} )
 
 foreach(plugin ${PLUGINS})
 	add_library(${plugin} SHARED ${plugin}.cpp)

@@ -5,7 +5,8 @@
 #  USBPROXY_INCLUDE_DIR - the usbproxy include directory
 #  USBPROXY_LIBRARIES - Link these to use usbproxy
 
-# Copyright (c) 2013  Benjamin Vernoux
+# Copyright (c) 2014 Dominic Spill
+# Copyright (c) 2013 Benjamin Vernoux
 #
 
 
@@ -23,7 +24,7 @@ else (USBPROXY_INCLUDE_DIR AND USBPROXY_LIBRARIES)
   ENDIF(NOT WIN32)
 
   FIND_PATH(USBPROXY_INCLUDE_DIR
-    NAMES hackrf.h
+    NAMES DeviceProxy.h
     HINTS $ENV{USBPROXY_DIR}/include ${PC_USBPROXY_INCLUDEDIR}
     PATHS /usr/local/include /usr/include
     /usr/include ${CMAKE_SOURCE_DIR}/../lib
