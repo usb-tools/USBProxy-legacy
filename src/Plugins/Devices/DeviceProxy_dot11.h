@@ -24,6 +24,9 @@
 #define USBPROXY_DEVICEPROXY_DOT11_H
 
 #include "DeviceProxy.h"
+extern "C" {
+#include <lorcon2/lorcon.h>
+#include "Dot11_Interface.h"
 
 class Configuration;
 
@@ -35,6 +38,9 @@ private:
 	struct usb_interface_descriptor dot11_interface_descriptor;
 	struct usb_endpoint_descriptor dot11_eps[2];
 	struct usb_string;
+	std::string interface;
+	lorcon_driver_t *drvlist, *driver; // Needed to set up interface/context
+	lorcon_t *context; // LORCON context
 
 public:
 	static int debugLevel;
@@ -62,5 +68,5 @@ public:
 
 	__u8 get_address();
 };
-
+} /* extern C */
 #endif /* USBPROXY_DEVICEPROXY_DOT11_H */
