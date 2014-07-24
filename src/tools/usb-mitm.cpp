@@ -54,7 +54,9 @@ void usage(char *arg) {
 	printf("Options:\n");
 	printf("\t-v <vendorId> VendorID of target device\n");
 	printf("\t-p <productId> ProductID of target device\n");
-	printf("\t-P <PluginName> Enable PluginName (order is preserved)\n");
+	printf("\t-P <PluginName> Use PluginName (order is preserved)\n");
+	printf("\t-D <DeviceProxy> Use DeviceProxy\n");
+	printf("\t-H <HostProxy> Use HostProxy\n");
 	printf("\t-d Enable debug messages (-dd for increased verbosity)\n");
 	printf("\t-s Server mode, listen on port 10400\n");
 	printf("\t-c <hostname | address> Client mode, connect to server at hostname or address\n");
@@ -99,7 +101,7 @@ extern "C" int main(int argc, char **argv)
 {
 	int opt;
 	char *host;
-	bool client=false,server=false;
+	bool client=false, server=false, device_set=false, host_set=false;
 	fprintf(stderr,"SIGRTMIN: %d\n",SIGRTMIN);
 
 	//int vendorId=LIBUSB_HOTPLUG_MATCH_ANY, productId=LIBUSB_HOTPLUG_MATCH_ANY;
@@ -114,7 +116,7 @@ extern "C" int main(int argc, char **argv)
 	manager=new Manager();
 	ConfigParser *cfg = new ConfigParser();
 
-	while ((opt = getopt (argc, argv, "v:p:P:dsc:C:lmikw:hx")) != EOF) {
+	while ((opt = getopt (argc, argv, "v:p:P:D:H:dsc:C:lmikw:hx")) != EOF) {
 		switch (opt) {
 		case 'v':
 			cfg->set("vendorId", optarg);
@@ -124,6 +126,14 @@ extern "C" int main(int argc, char **argv)
 			break;
 		case 'P':
 			cfg->add_to_vector("Plugins", optarg);
+			break;
+		case 'D':
+			cfg->set("DeviceProxy", optarg);
+			device_set = true;
+			break;
+		case 'H':
+			cfg->set("HostProxy", optarg);
+			host_set = true;
 			break;
 		case 'd':		/* verbose */
 			debug++;
@@ -179,8 +189,10 @@ extern "C" int main(int argc, char **argv)
 		cfg->set("DeviceProxy", "DeviceProxy_TCP");
 		cfg->set("HostProxy", "HostProxy_GadgetFS");
 	} else {
-		cfg->set("DeviceProxy", "DeviceProxy_LibUSB");
-		cfg->set("HostProxy", "HostProxy_GadgetFS");
+		if(!device_set)
+			cfg->set("DeviceProxy", "DeviceProxy_LibUSB");
+		if(!host_set)
+			cfg->set("HostProxy", "HostProxy_GadgetFS");
 	}
 	manager->load_plugins(cfg);
 	cfg->print_config();
