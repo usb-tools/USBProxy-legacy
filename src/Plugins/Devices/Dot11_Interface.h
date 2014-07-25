@@ -27,63 +27,26 @@ enum dot11_usb_commands {
     DOT11_OPEN_INJECT      = 0,
     DOT11_OPEN_MONITOR     = 1,
     DOT11_OPEN_INJMON      = 2,
-    DOT11_SET_TIMEOUT      = 3,
-    DOT11_GET_TIMEOUT      = 4,
+    DOT11_GET_TIMEOUT      = 3,
+    DOT11_SET_TIMEOUT      = 4,
     DOT11_GET_CAPIFACE     = 5,
-    
+    DOT11_GET_DRIVER_NAME  = 6,
+    DOT11_CLOSE            = 7,
+    DOT11_GET_DATALINK     = 8,
+    DOT11_SET_DATALINK     = 9,
+    DOT11_GET_CHANNEL      = 10,
+    DOT11_SET_CHANNEL      = 11,
+    DOT11_GET_HWMAC        = 12,
+    DOT11_SET_HWMAC        = 13,
+    DOT11_ADD_WEPKEY       = 14,
 };
 
-
-
-
-/* Set a capture timeout (equivalent to the timeout value in pcap_open,
- * but with implications for non-pcap sources as well).  Timeout value 
- * is in ms */
-void lorcon_set_timeout(lorcon_t *context, int in_timeout);
-int lorcon_get_timeout(lorcon_t *context);
-
-/* Open an interface for inject */
-int lorcon_open_inject(lorcon_t *context);
-
-/* Open an interface in monitor mode (may also enable injection) */
-int lorcon_open_monitor(lorcon_t *context);
-
-/* Open an interface in inject+monitor mode */
-int lorcon_open_injmon(lorcon_t *context);
-
-/* Get the interface we're capturing from */
-const char *lorcon_get_capiface(lorcon_t *context);
-
-/* Get the driver */
-const char *lorcon_get_driver_name(lorcon_t *context);
-
-/* Close interface */
-void lorcon_close(lorcon_t *context);
-
-/* Datalink layer info */
-int lorcon_get_datalink(lorcon_t *context);
-int lorcon_set_datalink(lorcon_t *context, int dlt);
-
-/* Get/set channel/frequency */
-int lorcon_set_channel(lorcon_t *context, int channel);
-int lorcon_get_channel(lorcon_t *context);
-
-/* Get/set MAC address, returns length of MAC and allocates in **mac,
- * caller is responsible for freeing this memory.  Different PHY types
- * may have different MAC lengths. 
- *
- * For 802.11, MAC is always 6 bytes.
- *
- * A length of 0 indicates no set MAC on this PHY.  Negative numbers
- * indicate error fetching MAC from hardware. */
 int lorcon_get_hwmac(lorcon_t *context, uint8_t **mac);
-/* Set a MAC, if the PHY supports it.  Negative on failure.  For 802.11,
- * MAC must always be 6 bytes. */
 int lorcon_set_hwmac(lorcon_t *context, int mac_len, uint8_t *mac);
+int lorcon_add_wepkey(lorcon_t *context, u_char *bssid, u_char *key, int length);
 
 /* Get a pcap_t */
 pcap_t *lorcon_get_pcap(lorcon_t *context);
-
 /* Return pcap selectable FD */
 int lorcon_get_selectable_fd(lorcon_t *context);
 
@@ -109,8 +72,5 @@ int lorcon_inject(lorcon_t *context, lorcon_packet_t *packet);
 int lorcon_send_bytes(lorcon_t *context, int length, u_char *bytes);
 
 unsigned long int lorcon_get_version();
-
-/* Add a wep key to a context */
-int lorcon_add_wepkey(lorcon_t *context, u_char *bssid, u_char *key, int length);
 
 #endif /* USBPROXY_DOT11_INTERFACE_H */

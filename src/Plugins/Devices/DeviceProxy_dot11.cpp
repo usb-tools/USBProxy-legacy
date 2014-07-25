@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <memory.h>
+#include <string.h>
 
 #include "HexString.h"
 #include "Packet.h"
@@ -155,16 +156,8 @@ static int dot11_stringMaxIndex;
 				fprintf(stderr, "Error: 802.11:  Failed to create context");
 				return 1; 
 		}
-	
-		// Create Monitor Mode Interface
-		if (lorcon_open_injmon(context) < 0) {
-			fprintf(stderr, "Error: 802.11: Could not create Monitor Mode interface!\n");
-			return 1;
-		} else {
-			fprintf(stderr, "802.11:  Monitor Mode VAP: %s\n",
-					lorcon_get_vap(context));
-			lorcon_free_driver_list(driver);
-		}
+		lorcon_free_driver_list(driver);
+		
 		p_is_connected = true;
 		return 0;
 	}
@@ -186,6 +179,7 @@ static int dot11_stringMaxIndex;
 	
 	//return -1 to stall
 	int DeviceProxy_dot11::control_request(const usb_ctrlrequest* setup_packet, int* nbytes, __u8* dataptr, int timeout) {
+		int rv = 0;
 		if (debugLevel>1) {
 			char* hex=hex_string((void*)setup_packet,sizeof(*setup_packet));
 			fprintf(stderr, "802.11< %s\n",hex);
@@ -240,33 +234,8 @@ static int dot11_stringMaxIndex;
 			dataptr[0]=1;
 			*nbytes=1;
 		} else if (setup_packet->bRequestType & USB_TYPE_VENDOR) {
-			int tmp;
-			switch (setup_packet->bRequest) {
-				case DOT11_OPEN_INJECT:
-					dataptr[0] = lorcon_open_inject(context);
-					*nbytes = 1;
-					break;
-				case DOT11_OPEN_MONITOR:
-					dataptr[0] = lorcon_open_monitor(context);
-					*nbytes = 1;
-					break;
-				case DOT11_OPEN_INJMON:
-					dataptr[0] = lorcon_open_injmon(context);
-					*nbytes = 1;
-					break;
-				case DOT11_SET_TIMEOUT:
-					*nbytes = 0;
-					break;
-				case DOT11_GET_TIMEOUT:
-					/* I have no idea if this is right... */
-					tmp = lorcon_get_timeout(context);
-					*(int *)(dataptr) = tmp;
-					*nbytes = 4;
-					break;
-				case DOT11_GET_CAPIFACE:
-					
-					break;
-			}
+			/* These are our custom commands */
+			rv = vendor_request(setup_packet, nbytes, dataptr, timeout);
 		} else {
 			fprintf(stderr,"Unhandled control request\n");
 		}
@@ -276,6 +245,116 @@ static int dot11_stringMaxIndex;
 			free(hex);
 		}
 		return 0;
+	}
+	
+	int DeviceProxy_dot11::vendor_request(const usb_ctrlrequest* setup_packet, int* nbytes, __u8* dataptr, int timeout) {
+		int rv, value;
+		const char *chr_res;
+		uint8_t **mac;
+		switch (setup_packet->bRequest) {
+			case DOT11_OPEN_INJECT:
+				rv = lorcon_open_inject(context);
+				if (rv < 0) {
+					fprintf(stderr, "Error: 802.11: Could not create Injector interface!\n");
+					return 1;
+				} else {
+					fprintf(stderr, "802.11: Injector VAP: %s\n",
+							lorcon_get_vap(context));
+					lorcon_free_driver_list(driver);
+				}
+				*(int *)(dataptr) = rv;
+				*nbytes = 4;
+				break;
+			case DOT11_OPEN_MONITOR:
+				rv = lorcon_open_monitor(context);
+				if (rv < 0) {
+					fprintf(stderr, "Error: 802.11: Could not create Monitor Mode interface!\n");
+					return 1;
+				} else {
+					fprintf(stderr, "802.11: Monitor Mode VAP: %s\n",
+							lorcon_get_vap(context));
+					lorcon_free_driver_list(driver);
+				}
+				*(int *)(dataptr) = rv;
+				*nbytes = 4;
+				break;
+			case DOT11_OPEN_INJMON:
+				rv = lorcon_open_injmon(context);
+				if (rv < 0) {
+					fprintf(stderr, "Error: 802.11: Could not create Injector / Monitor Mode interface!\n");
+					return 1;
+				} else {
+					fprintf(stderr, "802.11: Injector / Monitor Mode VAP: %s\n",
+							lorcon_get_vap(context));
+					lorcon_free_driver_list(driver);
+				}
+				*(int *)(dataptr) = rv;
+				*nbytes = 4;
+				break;
+			case DOT11_SET_TIMEOUT:
+				value = *(int *)(dataptr);
+				lorcon_set_timeout(context, value);
+				*nbytes = 0;
+				break;
+			case DOT11_GET_TIMEOUT:
+				/* I have no idea if this is right... */
+				rv = lorcon_get_timeout(context);
+				*(int *)(dataptr) = rv;
+				*nbytes = 4;
+				break;
+			case DOT11_GET_CAPIFACE:
+				chr_res = lorcon_get_capiface(context);
+				*nbytes = strlen(chr_res);
+				memcpy(dataptr, chr_res, *nbytes);
+				break;
+			case DOT11_GET_DRIVER_NAME:
+				chr_res = lorcon_get_driver_name(context);
+				*nbytes = strlen(chr_res);
+				memcpy(dataptr, chr_res, *nbytes);
+				break;
+			case DOT11_CLOSE:
+				lorcon_close(context);
+				*nbytes = 0;
+				break;
+			case DOT11_GET_DATALINK:
+				rv = lorcon_get_datalink(context);
+				*(int *)(dataptr) = rv;
+				*nbytes = 4;
+				break;
+			case DOT11_SET_DATALINK:
+				value = *(int *)(dataptr);
+				rv = lorcon_set_datalink(context, value);
+				*(int *)(dataptr) = rv;
+				*nbytes = 4;
+				break;
+			case DOT11_GET_CHANNEL:
+				rv = lorcon_get_channel(context);
+				*(int *)(dataptr) = rv;
+				*nbytes = 4;
+				break;
+			case DOT11_SET_CHANNEL:
+				value = *(int *)(dataptr);
+				rv = lorcon_set_channel(context, value);
+				*(int *)(dataptr) = rv;
+				*nbytes = 4;
+				break;
+			case DOT11_GET_HWMAC:
+				value = *(int *)(dataptr);
+				rv = lorcon_get_hwmac(context, value);
+				*(int *)(dataptr) = rv;
+				*nbytes = 4;
+				break;
+			case DOT11_SET_HWMAC:
+				rv = lorcon_set_hwmac(context, *nbytes, dataptr);
+				*(int *)(dataptr) = rv;
+				*nbytes = 4;
+				break;
+			case DOT11_ADD_WEPKEY:
+				rv = lorcon_add_wepkey(context, dataptr, dataptr+6, *nbytes-6);
+				*(int *)(dataptr) = rv;
+				*nbytes = 4;
+				break;
+		}
 	}
 	
 	void DeviceProxy_dot11::send_data(__u8 endpoint,__u8 attributes, __u16 maxPacketSize, __u8* dataptr, int length) {
