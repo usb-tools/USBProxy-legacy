@@ -42,6 +42,9 @@ int DeviceProxy_dot11::debugLevel = 1;
 
 extern "C" {
 
+
+static lorcon_driver_t *drvlist, *driver; // Needed to set up interface/context
+static lorcon_t *context; // LORCON context
 static USBString** dot11_strings;
 static int dot11_stringMaxIndex;
 
@@ -237,10 +240,31 @@ static int dot11_stringMaxIndex;
 			dataptr[0]=1;
 			*nbytes=1;
 		} else if (setup_packet->bRequestType & USB_TYPE_VENDOR) {
+			int tmp;
 			switch (setup_packet->bRequest) {
-				case DOT11_GET_MODEL:
+				case DOT11_OPEN_INJECT:
+					dataptr[0] = lorcon_open_inject(context);
+					*nbytes = 1;
 					break;
-				case DOT11_GET_DRIVER:
+				case DOT11_OPEN_MONITOR:
+					dataptr[0] = lorcon_open_monitor(context);
+					*nbytes = 1;
+					break;
+				case DOT11_OPEN_INJMON:
+					dataptr[0] = lorcon_open_injmon(context);
+					*nbytes = 1;
+					break;
+				case DOT11_SET_TIMEOUT:
+					*nbytes = 0;
+					break;
+				case DOT11_GET_TIMEOUT:
+					/* I have no idea if this is right... */
+					tmp = lorcon_get_timeout(context);
+					*(int *)(dataptr) = tmp;
+					*nbytes = 4;
+					break;
+				case DOT11_GET_CAPIFACE:
+					
 					break;
 			}
 		} else {

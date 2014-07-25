@@ -39,8 +39,6 @@ private:
 	struct usb_endpoint_descriptor dot11_eps[2];
 	struct usb_string;
 	std::string interface;
-	lorcon_driver_t *drvlist, *driver; // Needed to set up interface/context
-	lorcon_t *context; // LORCON context
 
 public:
 	static int debugLevel;
