@@ -249,7 +249,7 @@ static int dot11_stringMaxIndex;
 	
 	int DeviceProxy_dot11::vendor_request(const usb_ctrlrequest* setup_packet, int* nbytes, __u8* dataptr, int timeout) {
 		int rv, value;
-		const char *chr_res;
+		char *chr_res;
 		uint8_t **mac;
 		switch (setup_packet->bRequest) {
 			case DOT11_OPEN_INJECT:
@@ -303,12 +303,12 @@ static int dot11_stringMaxIndex;
 				*nbytes = 4;
 				break;
 			case DOT11_GET_CAPIFACE:
-				chr_res = lorcon_get_capiface(context);
+				chr_res = (char *) lorcon_get_capiface(context);
 				*nbytes = strlen(chr_res);
 				memcpy(dataptr, chr_res, *nbytes);
 				break;
 			case DOT11_GET_DRIVER_NAME:
-				chr_res = lorcon_get_driver_name(context);
+				chr_res = (char *) lorcon_get_driver_name(context);
 				*nbytes = strlen(chr_res);
 				memcpy(dataptr, chr_res, *nbytes);
 				break;
@@ -339,10 +339,8 @@ static int dot11_stringMaxIndex;
 				*nbytes = 4;
 				break;
 			case DOT11_GET_HWMAC:
-				value = *(int *)(dataptr);
-				rv = lorcon_get_hwmac(context, value);
-				*(int *)(dataptr) = rv;
-				*nbytes = 4;
+				*nbytes = lorcon_get_hwmac(context, (uint8_t **) &chr_res);
+				memcpy(dataptr, chr_res, *nbytes);
 				break;
 			case DOT11_SET_HWMAC:
 				rv = lorcon_set_hwmac(context, *nbytes, dataptr);

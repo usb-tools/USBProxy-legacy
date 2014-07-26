@@ -41,36 +41,32 @@ enum dot11_usb_commands {
     DOT11_ADD_WEPKEY       = 14,
 };
 
-int lorcon_get_hwmac(lorcon_t *context, uint8_t **mac);
-int lorcon_set_hwmac(lorcon_t *context, int mac_len, uint8_t *mac);
-int lorcon_add_wepkey(lorcon_t *context, u_char *bssid, u_char *key, int length);
-
-/* Get a pcap_t */
-pcap_t *lorcon_get_pcap(lorcon_t *context);
-/* Return pcap selectable FD */
-int lorcon_get_selectable_fd(lorcon_t *context);
-
-/* Fetch the next packet.  This is available on all sources, including 
- * those which do not present a pcap interface */
-int lorcon_next_ex(lorcon_t *context, lorcon_packet_t **packet);
-
-/* Add a capture filter (if possible) using pcap bpf */
-int lorcon_set_filter(lorcon_t *context, const char *filter);
-
-/* Add a precompiled filter (again, using bpf) */
-int lorcon_set_compiled_filter(lorcon_t *context, struct bpf_program *filter);
-
-/* Pass through to pcap instance */
-int lorcon_loop(lorcon_t *context, int count, lorcon_handler callback, u_char *user);
-int lorcon_dispatch(lorcon_t *context, int count, lorcon_handler callback, u_char *user);
-void lorcon_breakloop(lorcon_t *context);
-
-/* Inject a packet */
-int lorcon_inject(lorcon_t *context, lorcon_packet_t *packet);
-
-/* Inject raw bytes */
-int lorcon_send_bytes(lorcon_t *context, int length, u_char *bytes);
-
-unsigned long int lorcon_get_version();
+///* Get a pcap_t */
+//pcap_t *lorcon_get_pcap(lorcon_t *context);
+///* Return pcap selectable FD */
+//int lorcon_get_selectable_fd(lorcon_t *context);
+//
+///* Fetch the next packet.  This is available on all sources, including 
+// * those which do not present a pcap interface */
+//int lorcon_next_ex(lorcon_t *context, lorcon_packet_t **packet);
+//
+///* Add a capture filter (if possible) using pcap bpf */
+//int lorcon_set_filter(lorcon_t *context, const char *filter);
+//
+///* Add a precompiled filter (again, using bpf) */
+//int lorcon_set_compiled_filter(lorcon_t *context, struct bpf_program *filter);
+//
+///* Pass through to pcap instance */
+//int lorcon_loop(lorcon_t *context, int count, lorcon_handler callback, u_char *user);
+//int lorcon_dispatch(lorcon_t *context, int count, lorcon_handler callback, u_char *user);
+//void lorcon_breakloop(lorcon_t *context);
+//
+///* Inject a packet */
+//int lorcon_inject(lorcon_t *context, lorcon_packet_t *packet);
+//
+///* Inject raw bytes */
+//int lorcon_send_bytes(lorcon_t *context, int length, u_char *bytes);
+//
+//unsigned long int lorcon_get_version();
 
 #endif /* USBPROXY_DOT11_INTERFACE_H */
