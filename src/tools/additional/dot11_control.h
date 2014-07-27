@@ -24,7 +24,10 @@
 
 struct libusb_device_handle* find_dot11_device();
 
-int cmd_set_timeout(struct libusb_device_handle* devh, int timeout);
+int cmd_open_inject(struct libusb_device_handle* devh);
+int cmd_open_monitor(struct libusb_device_handle* devh);
+int cmd_open_injmon(struct libusb_device_handle* devh);
 
+int cmd_set_timeout(struct libusb_device_handle* devh, int timeout);
 int cmd_get_timeout(struct libusb_device_handle* devh);
 

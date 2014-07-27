@@ -54,6 +54,39 @@ struct libusb_device_handle* find_dot11_device()
 	return devh;
 }
 
+int cmd_open_inject(struct libusb_device_handle* devh) {
+	int r;
+	r = libusb_control_transfer(devh, CTRL_OUT, DOT11_OPEN_INJECT, 0, 0,
+			NULL, 0, 1000);
+	if (r < 0) {
+		libusb_error_name(r);
+		return r;
+	}
+	return 0;
+}
+
+int cmd_open_monitor(struct libusb_device_handle* devh) {
+	int r;
+	r = libusb_control_transfer(devh, CTRL_OUT, DOT11_OPEN_MONITOR, 0, 0,
+			NULL, 0, 1000);
+	if (r < 0) {
+		libusb_error_name(r);
+		return r;
+	}
+	return 0;
+}
+
+int cmd_open_injmon(struct libusb_device_handle* devh) {
+	int r;
+	r = libusb_control_transfer(devh, CTRL_OUT, DOT11_OPEN_INJMON, 0, 0,
+			NULL, 0, 1000);
+	if (r < 0) {
+		libusb_error_name(r);
+		return r;
+	}
+	return 0;
+}
+
 int cmd_set_timeout(struct libusb_device_handle* devh, int timeout)
 {
 	int r;
