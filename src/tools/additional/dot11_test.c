@@ -25,7 +25,10 @@
 
 int main(int argc, char** argv) {
 	struct libusb_device_handle *devh = find_dot11_device();
+	int timeout = 10;
+	printf("Setting timeout=%d\n", timeout);
 	cmd_set_timeout(devh, 10);
-	int timeout = cmd_get_timeout(devh);
+	printf("Timeout set\n");
+	timeout = cmd_get_timeout(devh);
 	printf("Timeout=%d\n", timeout);
 }

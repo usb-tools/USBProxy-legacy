@@ -34,23 +34,26 @@ int to_int(char *dataptr) {
 }
 
 void from_int(int value, char *dataptr) {
-	dataptr[0] = value && 0xff;
+	dataptr[0] = value & 0xff;
 	value >>= 8;
-	dataptr[1] = value && 0xff;
+	dataptr[1] = value & 0xff;
 	value >>= 8;
-	dataptr[2] = value && 0xff;
+	dataptr[2] = value & 0xff;
 	value >>= 8;
-	dataptr[3] = value && 0xff;
+	dataptr[3] = value & 0xff;
 }
 
 struct libusb_device_handle* find_dot11_device()
 {
-	printf("Looking for USB device: %04x:%04x\n", DOT11_VID, DOT11_PID);
 	struct libusb_context *ctx = NULL;
 	struct libusb_device_handle *devh = NULL;
-	devh = libusb_open_device_with_vid_pid (ctx, DOT11_VID, DOT11_PID);
+	struct libusb_device **usb_list = NULL;
+	libusb_init(&ctx);
+	devh = libusb_open_device_with_vid_pid(ctx, 0xffff, 0x0005);
 	if(devh == NULL)
 		fprintf(stderr, "Could not find device: %04x:%04x\n", DOT11_VID, DOT11_PID);
+	else
+		fprintf(stderr, "Found device: %04x:%04x\n", DOT11_VID, DOT11_PID);
 	return devh;
 }
 
@@ -87,13 +90,12 @@ int cmd_open_injmon(struct libusb_device_handle* devh) {
 	return 0;
 }
 
-int cmd_set_timeout(struct libusb_device_handle* devh, int timeout)
-{
+int cmd_set_timeout(struct libusb_device_handle* devh, int timeout) {
 	int r;
 	char dataptr[4];
 	from_int(timeout, dataptr);
 	r = libusb_control_transfer(devh, CTRL_OUT, DOT11_SET_TIMEOUT, 0, 0,
-			dataptr, 0, 1000);
+			dataptr, 4, 1000);
 	if (r < 0) {
 		libusb_error_name(r);
 		return r;
@@ -101,12 +103,11 @@ int cmd_set_timeout(struct libusb_device_handle* devh, int timeout)
 	return 0;
 }
 
-int cmd_get_timeout(struct libusb_device_handle* devh)
-{
+int cmd_get_timeout(struct libusb_device_handle* devh) {
 	int r;
 	char dataptr[4];
 	r = libusb_control_transfer(devh, CTRL_IN, DOT11_GET_TIMEOUT, 0, 0,
-			dataptr, 1, 1000);
+			dataptr, 4, 1000);
 	if (r < 0) {
 		libusb_error_name(r);
 		return r;

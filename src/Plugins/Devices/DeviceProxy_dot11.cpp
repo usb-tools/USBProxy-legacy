@@ -237,7 +237,9 @@ static int dot11_stringMaxIndex;
 			/* These are our custom commands */
 			rv = vendor_request(setup_packet, nbytes, dataptr, timeout);
 		} else {
-			fprintf(stderr,"Unhandled control request\n");
+			fprintf(stderr,"Unhandled control request: 0x%02x, 0x%02x, %d, %d\n",
+					setup_packet->bRequestType, setup_packet->bRequest,
+					setup_packet->wValue, setup_packet->wIndex);
 		}
 		if (debugLevel>1 && nbytes) {
 			char* hex=hex_string(dataptr, *nbytes);
@@ -251,6 +253,7 @@ static int dot11_stringMaxIndex;
 		int rv, value;
 		char *chr_res;
 		uint8_t **mac;
+		fprintf(stderr, "802.11> Handling vendor request (%d)\n", setup_packet->bRequest);
 		switch (setup_packet->bRequest) {
 			case DOT11_OPEN_INJECT:
 				rv = lorcon_open_inject(context);
