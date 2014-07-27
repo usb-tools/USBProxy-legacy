@@ -41,6 +41,9 @@ enum dot11_usb_commands {
     DOT11_ADD_WEPKEY       = 14,
 };
 
+#define DOT11_VID 0xffff
+#define DOT11_PID 0x0005
+
 ///* Get a pcap_t */
 //pcap_t *lorcon_get_pcap(lorcon_t *context);
 ///* Return pcap selectable FD */
