@@ -49,7 +49,7 @@ struct libusb_device_handle* find_dot11_device()
 	struct libusb_device_handle *devh = NULL;
 	struct libusb_device **usb_list = NULL;
 	libusb_init(&ctx);
-	devh = libusb_open_device_with_vid_pid(ctx, 0xffff, 0x0005);
+	devh = libusb_open_device_with_vid_pid(ctx, DOT11_VID, DOT11_PID);
 	if(devh == NULL)
 		fprintf(stderr, "Could not find device: %04x:%04x\n", DOT11_VID, DOT11_PID);
 	else
