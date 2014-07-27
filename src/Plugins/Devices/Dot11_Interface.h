@@ -31,7 +31,7 @@ enum dot11_usb_commands {
     DOT11_SET_TIMEOUT      = 4,
     DOT11_GET_CAPIFACE     = 5,
     DOT11_GET_DRIVER_NAME  = 6,
-    DOT11_CLOSE            = 7,
+    DOT11_CLOSE_INTERFACE  = 7,
     DOT11_GET_DATALINK     = 8,
     DOT11_SET_DATALINK     = 9,
     DOT11_GET_CHANNEL      = 10,

@@ -163,6 +163,8 @@ static int dot11_stringMaxIndex;
 	}
 	
 	void DeviceProxy_dot11::disconnect() {
+		// Free the LORCON Context
+		lorcon_free(context);
 		p_is_connected = false;
 	}
 	
@@ -315,7 +317,7 @@ static int dot11_stringMaxIndex;
 				*nbytes = strlen(chr_res);
 				memcpy(dataptr, chr_res, *nbytes);
 				break;
-			case DOT11_CLOSE:
+			case DOT11_CLOSE_INTERFACE:
 				lorcon_close(context);
 				*nbytes = 0;
 				break;
