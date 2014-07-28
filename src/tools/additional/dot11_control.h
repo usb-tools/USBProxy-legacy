@@ -31,3 +31,16 @@ int cmd_open_injmon(struct libusb_device_handle* devh);
 int cmd_set_timeout(struct libusb_device_handle* devh, int timeout);
 int cmd_get_timeout(struct libusb_device_handle* devh);
 
+int cmd_set_datalink(struct libusb_device_handle* devh, int datalink);
+int cmd_get_datalink(struct libusb_device_handle* devh);
+
+int cmd_set_channel(struct libusb_device_handle* devh, int channel);
+int cmd_get_channel(struct libusb_device_handle* devh);
+
+int cmd_close_interface(struct libusb_device_handle* devh);
+
+char* cmd_get_capiface(struct libusb_device_handle* devh);
+
+/* To match lorcon without having to install it on the host system */
+#define MAX_IFNAME_LEN 32
+

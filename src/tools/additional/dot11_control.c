@@ -22,6 +22,7 @@
 #include "Dot11_Interface.h"
 #include "dot11_control.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 #define DATA_IN     (0x82 | LIBUSB_ENDPOINT_IN)
 #define DATA_OUT    (0x05 | LIBUSB_ENDPOINT_OUT)
@@ -103,42 +104,36 @@ int cmd_open_injmon(struct libusb_device_handle* devh) {
 }
 
 int cmd_set_timeout(struct libusb_device_handle* devh, int timeout) {
-	int r;
 	char dataptr[4];
 	from_int(timeout, dataptr);
 	return cmd_setter(devh, DOT11_SET_TIMEOUT, dataptr, 4);
 }
 
 int cmd_get_timeout(struct libusb_device_handle* devh) {
-	int r;
 	char dataptr[4];
 	cmd_getter(devh, DOT11_GET_TIMEOUT, dataptr, 4);
 	return to_int(dataptr);
 }
 
 int cmd_set_datalink(struct libusb_device_handle* devh, int datalink) {
-	int r;
 	char dataptr[4];
 	from_int(datalink, dataptr);
 	return cmd_setter(devh, DOT11_SET_DATALINK, dataptr, 4);
 }
 
 int cmd_get_datalink(struct libusb_device_handle* devh) {
-	int r;
 	char dataptr[4];
 	cmd_getter(devh, DOT11_GET_DATALINK, dataptr, 4);
 	return to_int(dataptr);
 }
 
 int cmd_set_channel(struct libusb_device_handle* devh, int channel) {
-	int r;
 	char dataptr[4];
 	from_int(channel, dataptr);
 	return cmd_setter(devh, DOT11_SET_CHANNEL, dataptr, 4);
 }
 
 int cmd_get_channel(struct libusb_device_handle* devh) {
-	int r;
 	char dataptr[4];
 	cmd_getter(devh, DOT11_GET_CHANNEL, dataptr, 4);
 	return to_int(dataptr);
@@ -146,4 +141,10 @@ int cmd_get_channel(struct libusb_device_handle* devh) {
 
 int cmd_close_interface(struct libusb_device_handle* devh) {
 	return cmd_no_data(devh, DOT11_CLOSE_INTERFACE);
+}
+
+char* cmd_get_capiface(struct libusb_device_handle* devh) {
+	char *dataptr = malloc(MAX_IFNAME_LEN);
+	cmd_getter(devh, DOT11_GET_CHANNEL, dataptr, MAX_IFNAME_LEN);
+	return dataptr;
 }
