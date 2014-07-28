@@ -96,13 +96,13 @@ int PluginManager::load_plugins(ConfigParser *cfg)
 				i_ptr = (injector_plugin_getter) plugin_func;
 				injectors.push_back((*(i_ptr))(cfg));
 				break;
-			case (PLUGIN_FILTER||PLUGIN_INJECTOR):
+			case (PLUGIN_FILTER|PLUGIN_INJECTOR):
 				plugin_func = dlsym(plugin_lib, "get_plugin");
 				handleList.push_back(plugin_func);
 				f_ptr = (filter_plugin_getter) plugin_func;
 				filter = (*(f_ptr))(cfg);
 				filters.push_back(filter);
-				injectors.push_back((Injector *) filter);
+				injectors.push_back(dynamic_cast<Injector*>(filter));
 				break;
 			default:
 				fprintf(stderr, "Invalid plugin type (%s)\n", (*it).c_str());
