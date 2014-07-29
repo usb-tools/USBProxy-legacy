@@ -24,6 +24,7 @@
 #include "PacketFilter_MassStorage.h"
 #include <linux/types.h>
 #include <unistd.h>
+#include "TRACE.h"
 
 #define IDLE 0
 #define COMMAND 1
@@ -53,6 +54,7 @@ void PacketFilter_MassStorage::queue_packet() {
 	buf[5] = tag[1];
 	buf[6] = tag[2];
 	buf[7] = tag[3];
+	fprintf(stderr, "Injecting OK status, tag: %02x %02x %02x %02x\n", tag[0], tag[1], tag[2], tag[3]);
 	
 	p = new Packet(0x82, buf, 13);
 	p->transmit=true;
@@ -86,7 +88,7 @@ void PacketFilter_MassStorage::filter_packet(Packet* packet) {
 
 	switch(type) {
 		case COMMAND:
-			switch(packet->data[0xf]) {
+			switch(packet->data[0x0f]) {
 				case 0x28:
 					state = READ;
 					length = (packet->data[0x16]<<8) | packet->data[0x17];
@@ -99,14 +101,14 @@ void PacketFilter_MassStorage::filter_packet(Packet* packet) {
 					break;
 				case 0x2a:
 					state = WRITE;
-					//packet->transmit = false;
-					packet->data[0x16] = 0;
-					packet->data[0x17] = 0;
-					tag[0] = packet->data[4];
-					tag[1] = packet->data[5];
-					tag[2] = packet->data[6];
-					tag[3] = packet->data[7];
-					fprintf(stderr, "CBW: Write, tag: %02X %02X %02X %02X\n", tag[0], tag[1], tag[2], tag[3]);
+					packet->transmit = false;
+					//packet->data[0x16] = 0;
+					//packet->data[0x17] = 0;
+					tag[0] = packet->data[0x04];
+					tag[1] = packet->data[0x05];
+					tag[2] = packet->data[0x06];
+					tag[3] = packet->data[0x07];
+					fprintf(stderr, "CBW: Write, tag: %02x %02x %02x %02x\n", tag[0], tag[1], tag[2], tag[3]);
 					length = (packet->data[0x16]<<8) | packet->data[0x17];
 					fprintf(stderr, "CBW: Write LBA: 0x%02X%02X%02X%02X, %d blocks\n",
 							packet->data[0x11],
@@ -114,17 +116,26 @@ void PacketFilter_MassStorage::filter_packet(Packet* packet) {
 							packet->data[0x13],
 							packet->data[0x14],
 							length);
+					// Need to inject a status response here
+					queue_packet();
+					break;
+				default:
+					if(packet->data[0x0f]) // Ignore status ping
+						fprintf(stderr, "CBW: (%02x), tag: %02x %02x %02x %02x\n",
+								packet->data[0x0f],
+								packet->data[0x04],
+								packet->data[0x05],
+								packet->data[0x06],
+								packet->data[0x07]);
 					break;
 			}
 			break;
 		
 		case WRITE:
 			fprintf(stderr, "WRITE:%d (EP%02x)\n", packet->wLength, packet->bEndpoint);
-			packet->wLength = 0;
+			//packet->wLength = 0;
 			//free(packet->data);
-			//packet->transmit = false;
-			// Need to inject a status response here
-			//queue_packet();
+			packet->transmit = false;
 			break;
 		
 		case READ:
@@ -133,12 +144,21 @@ void PacketFilter_MassStorage::filter_packet(Packet* packet) {
 		
 		case STATUS:
 			// A CSW (Command Status Wrapper)
+			if(state == WRITE) {
+				fprintf(stderr, "State: WRITE (dropping packets)\n");
+				packet->transmit = false;
+			}
 			switch(packet->data[12]) {
 				case 0:
-					fprintf(stderr, "CSW: Success\n");
+					fprintf(stderr, "CSW: Success, tag: %02x %02x %02x %02x\n",
+									packet->data[0x04],
+									packet->data[0x05],
+									packet->data[0x06],
+									packet->data[0x07]);
+					//fprintf(stderr, "CSW: Success\n");
 					break;
 				default:
-					fprintf(stderr, "CBW: Error(%d)\n", packet->data[12]);
+					fprintf(stderr, "CBW: Error(%d)\n", packet->data[0x0c]);
 					//if (flag) {
 					//	fprintf(stderr, "Ignoring error\n");
 					//	for(i=6; i<packet->wLength; i++)
@@ -172,11 +192,14 @@ void PacketFilter_MassStorage::get_packets(Packet** packet, SetupPacket** setup,
 	*packet=NULL;
 	*setup=NULL;
 	char buf;
+	TRACE
 	read(pipe_fd[0], &buf, 1);
 
 	// TODO Check buffer - if we have a packet, do something with it
 	if (packet_waiting) {
+		TRACE
 		*packet = p;
+		TRACE
 		packet_waiting = false;
 		return;
 	}
