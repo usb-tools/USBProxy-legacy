@@ -34,7 +34,6 @@ private:
 	int pipe_fd[2]; /* [read, write] */
 	Packet *p;
 	int blocks;
-	__u8 status_buf[13];
 
 public:
 	PacketFilter_MassStorage(ConfigParser *cfg);

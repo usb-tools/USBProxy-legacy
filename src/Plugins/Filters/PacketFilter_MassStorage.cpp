@@ -24,7 +24,6 @@
 #include "PacketFilter_MassStorage.h"
 #include <linux/types.h>
 #include <unistd.h>
-#include <memory.h>
 
 #define IDLE 0
 #define COMMAND 1
@@ -37,20 +36,6 @@ PacketFilter_MassStorage::PacketFilter_MassStorage(ConfigParser *cfg) {
 	int rs;
 	state = IDLE;
 	blocks = 0;
-	status_buf[0] = 0x55;
-	status_buf[1] = 0x53;
-	status_buf[2] = 0x42;
-	status_buf[3] = 0x53;
-	/* Replace the next four with tag */
-	status_buf[4] = 0xFF;
-	status_buf[5] = 0xFF;
-	status_buf[6] = 0xFF;
-	status_buf[7] = 0xFF;
-	status_buf[8] = 0x00;
-	status_buf[9] = 0x00;
-	status_buf[10] = 0x00;
-	status_buf[11] = 0x00;
-	status_buf[812] = 0x00;
 
 	rs = pipe(pipe_fd);
 	if (rs < 0) 
@@ -66,7 +51,7 @@ void PacketFilter_MassStorage::queue_packet() {
 }
 
 void PacketFilter_MassStorage::filter_packet(Packet* packet) {
-	int length, type = UNKNOWN;
+	int type = UNKNOWN;
 	if ((packet->wLength == 31) &&
 		(packet->data[0] == 0x55) &&
 		(packet->data[1] == 0x53) &&
@@ -93,19 +78,17 @@ void PacketFilter_MassStorage::filter_packet(Packet* packet) {
 			switch(packet->data[0x0f]) {
 				case 0x28:
 					state = READ;
-					length = (packet->data[0x16]<<8) | packet->data[0x17];
+					blocks = (packet->data[0x16]<<8) | packet->data[0x17];
 					fprintf(stderr, "CBW: Read LBA: 0x%02X%02X%02X%02X, %d blocks\n",
 							packet->data[0x11],
 							packet->data[0x12],
 							packet->data[0x13],
 							packet->data[0x14],
-							length);
+							blocks);
 					break;
 				case 0x2a:
 					state = WRITE;
 					packet->transmit = false;
-					//packet->data[0x16] = 0;
-					//packet->data[0x17] = 0;
 					tag[0] = packet->data[0x04];
 					tag[1] = packet->data[0x05];
 					tag[2] = packet->data[0x06];
@@ -140,6 +123,7 @@ void PacketFilter_MassStorage::filter_packet(Packet* packet) {
 		
 		case READ:
 			fprintf(stderr, "READ:%d\n", packet->wLength);
+			--blocks;
 			break;
 		
 		case STATUS:
@@ -154,7 +138,7 @@ void PacketFilter_MassStorage::filter_packet(Packet* packet) {
 										packet->data[0x07]);
 					break;
 				default:
-					fprintf(stderr, "CBW: Error(%d)\n", packet->data[0x0c]);
+					fprintf(stderr, "CSW: Error(%d)\n", packet->data[0x0c]);
 					break;
 			}
 				state = IDLE;
@@ -186,19 +170,28 @@ void PacketFilter_MassStorage::get_packets(Packet** packet, SetupPacket** setup,
 	int status_len = 13;
 	read(pipe_fd[0], &tag_buf, 4);
 	
+	__u8* status_buf = (__u8*)malloc(status_len);
+	
+	/* Signature */
+	status_buf[0] = 0x55;
+	status_buf[1] = 0x53;
+	status_buf[2] = 0x42;
+	status_buf[3] = 0x53;
+	/* Tag */
 	status_buf[4] = tag_buf[0];
 	status_buf[5] = tag_buf[1];
 	status_buf[6] = tag_buf[2];
 	status_buf[7] = tag_buf[3];
+	/* 0x00 - OK */
+	status_buf[8] = 0x00;
+	status_buf[9] = 0x00;
+	status_buf[10] = 0x00;
+	status_buf[11] = 0x00;
+	status_buf[12] = 0x00;
 	
 	fprintf(stderr, "Injecting false OK status, tag: %02x %02x %02x %02x\n",
 			status_buf[4], status_buf[5], status_buf[6], status_buf[7]);
-	
-	__u8* usbbuf=(__u8*)malloc(status_len);
-	memcpy(usbbuf, status_buf, status_len);
-	
-	*packet = new Packet(0x82, usbbuf, status_len);
-
+	*packet = new Packet(0x82, status_buf, status_len);
 }
 
 void PacketFilter_MassStorage::full_pipe(Packet* p) {fprintf(stderr,"Packet returned due to full pipe & buffer\n");}
