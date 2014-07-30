@@ -33,7 +33,8 @@ private:
 	char tag[4];
 	int pipe_fd[2]; /* [read, write] */
 	Packet *p;
-	bool packet_waiting;
+	int blocks;
+	__u8 status_buf[13];
 
 public:
 	PacketFilter_MassStorage(ConfigParser *cfg);
