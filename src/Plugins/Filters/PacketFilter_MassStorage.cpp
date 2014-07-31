@@ -24,6 +24,7 @@
 #include "PacketFilter_MassStorage.h"
 #include <linux/types.h>
 #include <unistd.h>
+#include <memory.h>
 
 #define IDLE 0
 #define COMMAND 1
@@ -35,7 +36,7 @@
 PacketFilter_MassStorage::PacketFilter_MassStorage(ConfigParser *cfg) {
 	int rs;
 	state = IDLE;
-	blocks = 0;
+	block_count = 0;
 
 	rs = pipe(pipe_fd);
 	if (rs < 0) 
@@ -45,9 +46,104 @@ PacketFilter_MassStorage::PacketFilter_MassStorage(ConfigParser *cfg) {
 	}
 }
 
+PacketFilter_MassStorage::~PacketFilter_MassStorage() {
+	fprintf(stderr, "Destroying mass storage filter - cache size: %d\n", (int) block_cache.size());
+}
 void PacketFilter_MassStorage::queue_packet() {
 	// Write tag to pipe
 	write(pipe_fd[1], tag, 4);
+}
+
+#define BLOCK_SIZE 512
+
+void PacketFilter_MassStorage::cache_read(__u32 address, __u8 *data) {
+	std::map<__u32, __u8*>::iterator cmitr = block_cache.find(address);
+    if (cmitr == block_cache.end()) {
+        /* New block, add to cache */
+		__u8 *block = (__u8*) malloc(BLOCK_SIZE);
+		if(block == NULL) {
+			fprintf(stderr, "Block cache full! (malloc failed)\n");
+			return;
+		}
+		memcpy(block, data, BLOCK_SIZE);
+		block_cache[address] = block;
+	} else {
+		/* A block in our cache, may have been written, use cached version */
+		memcpy(data, cmitr->second, BLOCK_SIZE);
+	}
+}
+
+
+#define COL_RED  31
+#define COL_BLUE 34
+static const char *fmt_colour = "\033[0;%dm%02x\033[0m";
+static const char *fmt_colour_chr = "\033[0;%dm%c\033[0m";
+
+char PacketFilter_MassStorage::printable(__u8 in) {
+	if(isprint(in))
+		return (char) in;
+	else
+		return '.';
+}
+void PacketFilter_MassStorage::print_block_diff(__u8 *olddata, __u8 *newdata) {
+	int i, j;
+	for(i=0;i<BLOCK_SIZE;i+=16) {
+		for(j=0;j<16;j++) {
+			if(olddata[i+j]!=newdata[i+j])
+				fprintf(stderr, fmt_colour, COL_RED, olddata[i+j]);
+			else
+				fprintf(stderr, "%02x", olddata[i+j]);
+			if(j%2==1)
+				fprintf(stderr, " ");
+		}
+		fprintf(stderr, "| ");
+		for(j=0;j<16;j++) {
+			if(olddata[i+j]!=newdata[i+j])
+				fprintf(stderr, fmt_colour, COL_BLUE, newdata[i+j]);
+			else
+				fprintf(stderr, "%02x", newdata[i+j]);
+			if(j%2==1)
+				fprintf(stderr, " ");
+		}
+		for(j=0;j<16;j++) {
+			if(olddata[i+j]!=newdata[i+j])
+				fprintf(stderr, fmt_colour_chr, COL_RED, printable(olddata[i+j]));
+			else
+				fprintf(stderr, "%c", printable(olddata[i+j]));
+			if(j%2==1)
+				fprintf(stderr, " ");
+		}
+		fprintf(stderr, "| ");
+		for(j=0;j<16;j++) {
+			if(olddata[i+j]!=newdata[i+j])
+				fprintf(stderr, fmt_colour_chr, COL_BLUE, printable(newdata[i+j]));
+			else
+				fprintf(stderr, "%c", printable(newdata[i+j]));
+			if(j%2==1)
+				fprintf(stderr, " ");
+		}
+		fprintf(stderr, "\n");
+	}
+}
+
+void PacketFilter_MassStorage::cache_write(__u32 address, __u8 *data) {
+	std::map<__u32, __u8*>::iterator cmitr = block_cache.find(address);
+    if (cmitr == block_cache.end()) {
+        /* New block, add to cache */
+		__u8 *block = (__u8*) malloc(BLOCK_SIZE);
+		if(block == NULL) {
+			fprintf(stderr, "Block cache full! (malloc failed)\n");
+			return;
+		}
+		fprintf(stderr, "Writing previously unread block to cache\n");
+		memcpy(block, data, BLOCK_SIZE);
+		block_cache[address] = block;
+	} else {
+		/* A block in our cache, print diff */
+		fprintf(stderr, "New block written to cache:\n");
+		print_block_diff(cmitr->second, data);
+		memcpy(cmitr->second, data, BLOCK_SIZE);
+	}
 }
 
 void PacketFilter_MassStorage::filter_packet(Packet* packet) {
@@ -78,13 +174,14 @@ void PacketFilter_MassStorage::filter_packet(Packet* packet) {
 			switch(packet->data[0x0f]) {
 				case 0x28:
 					state = READ;
-					blocks = (packet->data[0x16]<<8) | packet->data[0x17];
-					fprintf(stderr, "CBW: Read LBA: 0x%02X%02X%02X%02X, %d blocks\n",
-							packet->data[0x11],
-							packet->data[0x12],
-							packet->data[0x13],
-							packet->data[0x14],
-							blocks);
+					block_count = (packet->data[0x16]<<8) | packet->data[0x17];
+					base_address = packet->data[0x11]<<24 |
+								   packet->data[0x12]<<16 |
+								   packet->data[0x13]<<8 |
+								   packet->data[0x14];
+					block_offset = 0;
+					fprintf(stderr, "CBW: Read LBA: 0x%08X, %d blocks\n",
+							base_address, block_count);
 					break;
 				case 0x2a:
 					state = WRITE;
@@ -94,13 +191,14 @@ void PacketFilter_MassStorage::filter_packet(Packet* packet) {
 					tag[2] = packet->data[0x06];
 					tag[3] = packet->data[0x07];
 					fprintf(stderr, "CBW: Write, tag: %02x %02x %02x %02x\n", tag[0], tag[1], tag[2], tag[3]);
-					blocks = (packet->data[0x16]<<8) | packet->data[0x17];
-					fprintf(stderr, "CBW: Write LBA: 0x%02X%02X%02X%02X, %d blocks\n",
-							packet->data[0x11],
-							packet->data[0x12],
-							packet->data[0x13],
-							packet->data[0x14],
-							blocks);
+					block_count = (packet->data[0x16]<<8) | packet->data[0x17];
+					base_address = packet->data[0x11]<<24 |
+								   packet->data[0x12]<<16 |
+								   packet->data[0x13]<<8 |
+								   packet->data[0x14];
+					block_offset = 0;
+					fprintf(stderr, "CBW: Write LBA: 0x%08X, %d blocks\n",
+							base_address, block_count);
 					break;
 				default:
 					if(packet->data[0x0f]) // Ignore status ping
@@ -115,15 +213,17 @@ void PacketFilter_MassStorage::filter_packet(Packet* packet) {
 			break;
 		
 		case WRITE:
-			fprintf(stderr, "WRITE:%d (EP%02x)\n", packet->wLength, packet->bEndpoint);
+			fprintf(stderr, "WRITE: 0x%08X\n", block_offset + base_address);
+			cache_write(block_offset + base_address, packet->data);
 			packet->transmit = false;
-			if(--blocks == 0)
+			if(++block_offset == block_count)
 				queue_packet();
 			break;
 		
 		case READ:
-			fprintf(stderr, "READ:%d\n", packet->wLength);
-			--blocks;
+			fprintf(stderr, "READ: 0x%08X\n", block_offset + base_address);
+			cache_read(block_offset + base_address, packet->data);
+			++block_offset;
 			break;
 		
 		case STATUS:
@@ -147,12 +247,11 @@ void PacketFilter_MassStorage::filter_packet(Packet* packet) {
 }
 
 void PacketFilter_MassStorage::start_injector() {
-	fprintf(stderr,"Opening Queue Injector.\n");
-	// TODO any queue setup required
+	// any injector setup stuff goes here
 }
 
 int* PacketFilter_MassStorage::get_pollable_fds() {
-	// TODO, create pollable fd that we prod whenever we have packets ready
+	// create pollable fd that we prod whenever we have packets ready
 	int* tmp=(int*)calloc(2,sizeof(int));
 	tmp[0]=pipe_fd[0];
 	return tmp;
