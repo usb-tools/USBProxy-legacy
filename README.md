@@ -11,7 +11,7 @@ Build
 -----
 ```
 mkdir src/build
-cd src/uild
+cd src/build
 cmake ..
 make
 sudo make install
