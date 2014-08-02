@@ -17,6 +17,12 @@ make
 sudo make install
 ```
 
+If you want to try out the PCAP logger you will need to install libPCAP
+headers:
+```
+sudo apt-get install libpcap-dev
+```
+
 Running the tool
 ----------------
 The best way to get started with USBProxy is by trying it out. Connect a device
