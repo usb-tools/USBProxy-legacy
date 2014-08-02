@@ -16,6 +16,17 @@ cmake ..
 make
 sudo make install
 ```
+
+Running the tool
+----------------
+The best way to get started with USBProxy is by trying it out. Connect a device
+to the BeagleBone Black and connect the BBB to a host system. Then try running
+the following to view packets in real time as they are sent between your device
+and host.
+```
+usb-mitm -l
+```
+
 What?
 -----
 A USB man in the middle device using the BeagleBone Black hardware.
