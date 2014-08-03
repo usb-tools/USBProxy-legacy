@@ -33,6 +33,11 @@ and host.
 usb-mitm -l
 ```
 
+If you have a USB keyboard, try running the following to act as a keylogger:
+```
+usb-mitm -k
+```
+
 What?
 -----
 A USB man in the middle device using the BeagleBone Black hardware.
