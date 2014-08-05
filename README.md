@@ -17,6 +17,12 @@ make
 sudo make install
 ```
 
+If you want to try out the PCAP logger you will need to install libPCAP
+headers:
+```
+sudo apt-get install libpcap-dev
+```
+
 Running the tool
 ----------------
 The best way to get started with USBProxy is by trying it out. Connect a device
@@ -25,6 +31,11 @@ the following to view packets in real time as they are sent between your device
 and host.
 ```
 usb-mitm -l
+```
+
+If you have a USB keyboard, try running the following to act as a keylogger:
+```
+usb-mitm -k
 ```
 
 What?
