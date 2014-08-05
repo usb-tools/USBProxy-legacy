@@ -37,6 +37,9 @@ PacketFilter_MassStorage::PacketFilter_MassStorage(ConfigParser *cfg) {
 	int rs;
 	state = IDLE;
 	block_count = 0;
+	
+	block_writes = (cfg->get("MassStorage:BlockWrites")=="on");
+	cache_blocks = (cfg->get("MassStorage:CacheBlocks")=="on");
 
 	rs = pipe(pipe_fd);
 	if (rs < 0) 
@@ -185,12 +188,13 @@ void PacketFilter_MassStorage::filter_packet(Packet* packet) {
 					break;
 				case 0x2a:
 					state = WRITE;
-					packet->transmit = false;
+					if(block_writes)
+						packet->transmit = false;
 					tag[0] = packet->data[0x04];
 					tag[1] = packet->data[0x05];
 					tag[2] = packet->data[0x06];
 					tag[3] = packet->data[0x07];
-					fprintf(stderr, "CBW: Write, tag: %02x %02x %02x %02x\n", tag[0], tag[1], tag[2], tag[3]);
+					fprintf(stderr, "CBW: Write, tag: %02x%02x\n", tag[1], tag[0]);
 					block_count = (packet->data[0x16]<<8) | packet->data[0x17];
 					base_address = packet->data[0x11]<<24 |
 								   packet->data[0x12]<<16 |
@@ -214,15 +218,19 @@ void PacketFilter_MassStorage::filter_packet(Packet* packet) {
 		
 		case WRITE:
 			fprintf(stderr, "WRITE: 0x%08X\n", block_offset + base_address);
-			cache_write(block_offset + base_address, packet->data);
-			packet->transmit = false;
-			if(++block_offset == block_count)
-				queue_packet();
+			if(cache_blocks)
+				cache_write(block_offset + base_address, packet->data);
+			if(block_writes) {
+				packet->transmit = false;
+				if(++block_offset == block_count)
+					queue_packet();
+			}
 			break;
 		
 		case READ:
 			fprintf(stderr, "READ: 0x%08X\n", block_offset + base_address);
-			cache_read(block_offset + base_address, packet->data);
+			if(cache_blocks)
+				cache_read(block_offset + base_address, packet->data);
 			++block_offset;
 			break;
 		
@@ -231,11 +239,9 @@ void PacketFilter_MassStorage::filter_packet(Packet* packet) {
 			switch(packet->data[12]) {
 				case 0:
 					if(state==WRITE)
-						fprintf(stderr, "CSW: Success, tag: %02x %02x %02x %02x\n",
-										packet->data[0x04],
+						fprintf(stderr, "CSW: Success, tag: %02x%02x\n",
 										packet->data[0x05],
-										packet->data[0x06],
-										packet->data[0x07]);
+										packet->data[0x04]);
 					break;
 				default:
 					fprintf(stderr, "CSW: Error(%d)\n", packet->data[0x0c]);
@@ -288,8 +294,8 @@ void PacketFilter_MassStorage::get_packets(Packet** packet, SetupPacket** setup,
 	status_buf[11] = 0x00;
 	status_buf[12] = 0x00;
 	
-	fprintf(stderr, "Injecting false OK status, tag: %02x %02x %02x %02x\n",
-			status_buf[4], status_buf[5], status_buf[6], status_buf[7]);
+	fprintf(stderr, "Injecting false OK status, tag: %02x%02x\n",
+			status_buf[5], status_buf[4]);
 	*packet = new Packet(0x82, status_buf, status_len);
 }
 

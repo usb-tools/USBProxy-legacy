@@ -33,6 +33,10 @@ private:
 	int state;
 	char tag[4];
 	int pipe_fd[2]; /* [read, write] */
+
+	/* config flags */
+	bool block_writes;
+	bool cache_blocks;
 	
 	/* Block caching */
 	__u32 block_count;
