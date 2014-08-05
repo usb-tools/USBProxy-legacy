@@ -91,34 +91,38 @@ char PacketFilter_MassStorage::printable(__u8 in) {
 void PacketFilter_MassStorage::print_block_diff(__u8 *olddata, __u8 *newdata) {
 	int i, j;
 	for(i=0;i<BLOCK_SIZE;i+=16) {
-		for(j=0;j<16;j++) {
-			if(olddata[i+j]!=newdata[i+j])
-				fprintf(stderr, fmt_colour, COL_RED, olddata[i+j]);
-			else
-				fprintf(stderr, "%02x", olddata[i+j]);
-			if(j%2==1)
-				fprintf(stderr, " ");
+		if(olddata != NULL) {
+			for(j=0;j<16;j++) {
+				if(olddata[i+j]!=newdata[i+j])
+					fprintf(stderr, fmt_colour, COL_RED, olddata[i+j]);
+				else
+					fprintf(stderr, "%02x", olddata[i+j]);
+				if(j%2==1)
+					fprintf(stderr, " ");
+			}
+			fprintf(stderr, "| ");
 		}
-		fprintf(stderr, "| ");
 		for(j=0;j<16;j++) {
-			if(olddata[i+j]!=newdata[i+j])
+			if((olddata==NULL) || (olddata[i+j]!=newdata[i+j]))
 				fprintf(stderr, fmt_colour, COL_BLUE, newdata[i+j]);
 			else
 				fprintf(stderr, "%02x", newdata[i+j]);
 			if(j%2==1)
 				fprintf(stderr, " ");
 		}
-		for(j=0;j<16;j++) {
-			if(olddata[i+j]!=newdata[i+j])
-				fprintf(stderr, fmt_colour_chr, COL_RED, printable(olddata[i+j]));
-			else
-				fprintf(stderr, "%c", printable(olddata[i+j]));
-			if(j%2==1)
-				fprintf(stderr, " ");
+		if(olddata != NULL) {
+			for(j=0;j<16;j++) {
+				if(olddata[i+j]!=newdata[i+j])
+					fprintf(stderr, fmt_colour_chr, COL_RED, printable(olddata[i+j]));
+				else
+					fprintf(stderr, "%c", printable(olddata[i+j]));
+				if(j%2==1)
+					fprintf(stderr, " ");
+			}
+			fprintf(stderr, "| ");
 		}
-		fprintf(stderr, "| ");
 		for(j=0;j<16;j++) {
-			if(olddata[i+j]!=newdata[i+j])
+			if((olddata==NULL) || (olddata[i+j]!=newdata[i+j]))
 				fprintf(stderr, fmt_colour_chr, COL_BLUE, printable(newdata[i+j]));
 			else
 				fprintf(stderr, "%c", printable(newdata[i+j]));
@@ -139,6 +143,7 @@ void PacketFilter_MassStorage::cache_write(__u32 address, __u8 *data) {
 			return;
 		}
 		fprintf(stderr, "Writing previously unread block to cache\n");
+		print_block_diff(NULL, data);
 		memcpy(block, data, BLOCK_SIZE);
 		block_cache[address] = block;
 	} else {
