@@ -9,6 +9,11 @@ head doesn't even compile.
 
 Build
 -----
+Dependencies:
+```
+sudo apt-get install build-essential cmake
+```
+Build:
 ```
 mkdir src/build
 cd src/build
