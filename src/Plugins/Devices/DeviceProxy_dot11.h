@@ -24,9 +24,9 @@
 #define USBPROXY_DEVICEPROXY_DOT11_H
 
 #include "DeviceProxy.h"
-extern "C" {
-#include <lorcon2/lorcon.h>
 #include "Dot11_Interface.h"
+
+extern "C" {
 
 class Configuration;
 

@@ -44,6 +44,22 @@ enum dot11_usb_commands {
 #define DOT11_VID 0xffff
 #define DOT11_PID 0x0005
 
+/* This struct will be sent at the start of a bulk trasnfer
+ * followed by length bytes */
+struct dot11_packet_header {
+    int32_t tv_sec;
+    int32_t tv_usec;
+    int dlt;
+    
+    /* Channel we captured on or channel will tx on */
+    int channel;
+    
+    /* Length of components */
+    int length_capheader;
+    int length_data;
+};
+typedef struct dot11_packet_header dot11_packet_header_t;
+
 ///* Get a pcap_t */
 //pcap_t *lorcon_get_pcap(lorcon_t *context);
 ///* Return pcap selectable FD */

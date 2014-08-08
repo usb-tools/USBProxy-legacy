@@ -42,7 +42,7 @@ int DeviceProxy_dot11::debugLevel = 1;
 #define STRING_DOT11	    4
 
 extern "C" {
-
+#include <lorcon2/lorcon.h>
 
 static lorcon_driver_t *drvlist, *driver; // Needed to set up interface/context
 static lorcon_t *context; // LORCON context
@@ -360,12 +360,32 @@ static int dot11_stringMaxIndex;
 		}
 	}
 	
+	/* Send data to the device */
 	void DeviceProxy_dot11::send_data(__u8 endpoint,__u8 attributes, __u16 maxPacketSize, __u8* dataptr, int length) {
 		;
 	}
 	
+	/* Receive data from the device */
 	void DeviceProxy_dot11::receive_data(__u8 endpoint,__u8 attributes, __u16 maxPacketSize, __u8** dataptr, int* length, int timeout) {
-		;
+		lorcon_packet_t *packet;
+		char *data;
+		lorcon_next_ex(context, &packet);
+		if(packet) {
+			dot11_packet_header_t *pkthdr;
+			pkthdr = (dot11_packet_header_t *) malloc(sizeof(dot11_packet_header_t));
+			pkthdr->tv_sec = packet->ts.tv_sec;
+			pkthdr->tv_usec = packet->ts.tv_usec;
+			pkthdr->dlt = packet->dlt;
+			pkthdr->channel = packet->channel;
+			pkthdr->length_capheader = packet->length_header;
+			pkthdr->length_data = packet->length_data;
+			malloc(packet->length_header + packet->length_data);
+			memcpy(data, packet->packet_header, packet->length_header);
+			memcpy(data+packet->length_header,
+				   packet->packet_data,
+				   packet->length_data);
+			free(packet);
+		}
 	}
 	
 	void DeviceProxy_dot11::setConfig(Configuration* fs_cfg, Configuration* hs_cfg, bool hs) {
