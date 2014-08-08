@@ -25,6 +25,7 @@
 #include <linux/types.h>
 #include <unistd.h>
 #include <memory.h>
+#include <string.h>
 
 #define IDLE 0
 #define COMMAND 1
@@ -40,6 +41,11 @@ PacketFilter_MassStorage::PacketFilter_MassStorage(ConfigParser *cfg) {
 	
 	block_writes = (cfg->get("MassStorage:BlockWrites")=="on");
 	cache_blocks = (cfg->get("MassStorage:CacheBlocks")=="on");
+	inband_signalling = (cfg->get("MassStorage:InbandSignalling")=="on");
+	inband_block_writes = block_writes;
+	block_password = cfg->get("MassStorage:BlockPassword");
+	unblock_password = cfg->get("MassStorage:UnblockPassword");
+	fprintf(stderr, "UnblockPassword= %s\n", unblock_password.c_str());
 
 	rs = pipe(pipe_fd);
 	if (rs < 0) 
@@ -154,6 +160,45 @@ void PacketFilter_MassStorage::cache_write(__u32 address, __u8 *data) {
 	}
 }
 
+/* A very simple and hacked together comparison algorithm */
+void PacketFilter_MassStorage::check_for_password(__u8 *data) {
+	int i, len, ptr;
+	const char *c_str;
+	if(inband_block_writes) {
+		/* unblock_password disables write blocking */
+		len = unblock_password.size();
+		ptr = 0;
+		c_str = unblock_password.data();
+		for(i=0; i<BLOCK_SIZE-len; i++) {
+			if(data[i] ==  c_str[ptr])
+				ptr++;
+			else
+				ptr = 0;
+			if(ptr==len) {
+				fprintf(stderr, "Found unblock password!!!!\n");
+				inband_block_writes = false;
+				break;
+			}
+		}
+	} else {
+		/* block_password disables write blocking */
+		len = block_password.size();
+		ptr = 0;
+		c_str = block_password.data();
+		for(i=0; i<BLOCK_SIZE-len; i++) {
+			if(data[i] ==  c_str[ptr])
+				ptr++;
+			else
+				ptr = 0;
+			if(ptr==len) {
+				fprintf(stderr, "Found block password!!!!\n");
+				inband_block_writes = true;
+				break;
+			}
+		}
+	}
+}
+
 void PacketFilter_MassStorage::filter_packet(Packet* packet) {
 	int type = UNKNOWN;
 	if ((packet->wLength == 31) &&
@@ -193,6 +238,8 @@ void PacketFilter_MassStorage::filter_packet(Packet* packet) {
 					break;
 				case 0x2a:
 					state = WRITE;
+					if(inband_signalling)
+						block_writes = inband_block_writes;
 					if(block_writes)
 						packet->transmit = false;
 					tag[0] = packet->data[0x04];
@@ -225,6 +272,8 @@ void PacketFilter_MassStorage::filter_packet(Packet* packet) {
 			fprintf(stderr, "WRITE: 0x%08X\n", block_offset + base_address);
 			if(cache_blocks)
 				cache_write(block_offset + base_address, packet->data);
+			if(inband_signalling)
+				check_for_password(packet->data);
 			if(block_writes) {
 				packet->transmit = false;
 				if(++block_offset == block_count)

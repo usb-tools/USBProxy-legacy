@@ -26,6 +26,7 @@
 #include "PacketFilter.h"
 #include "Injector.h"
 #include <map>
+#include <string>
 
 //writes all traffic to a stream
 class PacketFilter_MassStorage : public PacketFilter, public Injector {
@@ -37,7 +38,11 @@ private:
 	/* config flags */
 	bool block_writes;
 	bool cache_blocks;
-	
+	bool inband_signalling;
+	bool inband_block_writes;
+	std::string unblock_password;
+	std::string block_password;
+
 	/* Block caching */
 	__u32 block_count;
 	__u32 block_offset;
@@ -47,6 +52,9 @@ private:
 	void cache_write(__u32 address, __u8 *data);
 	void print_block_diff(__u8 *olddata, __u8 *newdata);
 	char printable(__u8 in);
+
+	/* In-Band Signalling */
+	void check_for_password(__u8 *data);
 
 public:
 	PacketFilter_MassStorage(ConfigParser *cfg);
