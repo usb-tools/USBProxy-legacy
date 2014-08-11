@@ -23,6 +23,8 @@
 #ifndef USBPROXY_DOT11_INTERFACE_H
 #define USBPROXY_DOT11_INTERFACE_H
 
+#include <stdint.h>
+
 enum dot11_usb_commands {
     DOT11_OPEN_INJECT      = 0,
     DOT11_OPEN_MONITOR     = 1,

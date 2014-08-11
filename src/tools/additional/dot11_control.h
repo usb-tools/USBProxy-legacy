@@ -41,6 +41,7 @@ int cmd_close_interface(struct libusb_device_handle* devh);
 
 char* cmd_get_capiface(struct libusb_device_handle* devh);
 
+int cmd_rx_data(struct libusb_device_handle* devh);
 /* To match lorcon without having to install it on the host system */
 #define MAX_IFNAME_LEN 32
 

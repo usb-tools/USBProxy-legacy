@@ -24,6 +24,7 @@
 #include <stdio.h>
 
 int main(int argc, char** argv) {
+	char *x;
 	struct libusb_device_handle *devh = find_dot11_device();
 	int timeout = 10;
 	printf("Setting timeout=%d\n", timeout);
@@ -31,4 +32,8 @@ int main(int argc, char** argv) {
 	printf("Timeout set\n");
 	timeout = cmd_get_timeout(devh);
 	printf("Timeout=%d\n", timeout);
+	x = cmd_get_capiface(devh);
+	printf("Opened capture inteface (%s)\n", x);
+	cmd_rx_data(devh);
+	
 }

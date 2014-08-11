@@ -96,15 +96,15 @@ static int dot11_stringMaxIndex;
 		ep->bLength = USB_DT_ENDPOINT_SIZE;
 		ep->bDescriptorType = USB_DT_ENDPOINT;
 		ep->bEndpointAddress = USB_ENDPOINT_DIR_MASK | 1;
-		ep->bmAttributes = USB_ENDPOINT_XFER_INT;
+		ep->bmAttributes = USB_ENDPOINT_XFER_BULK;
 		ep->wMaxPacketSize = 64;
 		ep->bInterval = 10;
 		
 		ep = &dot11_eps[1];
 		ep->bLength = USB_DT_ENDPOINT_SIZE;
 		ep->bDescriptorType = USB_DT_ENDPOINT;
-		ep->bEndpointAddress = 1;
-		ep->bmAttributes = USB_ENDPOINT_XFER_INT;
+		ep->bEndpointAddress = 2;
+		ep->bmAttributes = USB_ENDPOINT_XFER_BULK;
 		ep->wMaxPacketSize = 64;
 		ep->bInterval = 10;
 	
@@ -120,22 +120,14 @@ static int dot11_stringMaxIndex;
 		dot11_strings[STRING_SERIAL]=new USBString("0001",STRING_SERIAL,0x409);
 		dot11_strings[STRING_DOT11]=new USBString("802.11",STRING_DOT11,0x409);
 		dot11_stringMaxIndex=STRING_DOT11;
+		
+		monitor = false;
 	}
 	
 	DeviceProxy_dot11::~DeviceProxy_dot11() {
 		disconnect();
-	
-		int i;
-		if (dot11_strings) {
-		for (i=0;i<dot11_stringMaxIndex;i++) {
-			if (dot11_strings[i]) {
-				delete(dot11_strings[i]);
-				dot11_strings[i]=NULL;
-			}
-		}
+		delete[] dot11_strings;
 		free(dot11_strings);
-		dot11_strings=NULL;
-		}
 	}
 	
 	int DeviceProxy_dot11::connect(int timeout) {
@@ -155,6 +147,15 @@ static int dot11_stringMaxIndex;
 		if ((context = lorcon_create(interface.c_str(), driver)) == nullptr) {
 				fprintf(stderr, "Error: 802.11:  Failed to create context");
 				return 1; 
+		}
+		int rv = lorcon_open_monitor(context);
+		if (rv < 0) {
+			fprintf(stderr, "Error: 802.11: Could not create Monitor Mode interface!\n");
+			return 1;
+		} else {
+			fprintf(stderr, "802.11: Monitor Mode VAP: %s, (%d)\n",
+					lorcon_get_vap(context), rv);
+			monitor = true;
 		}
 		lorcon_free_driver_list(driver);
 		
@@ -229,10 +230,13 @@ static int dot11_stringMaxIndex;
 					return -1;
 					break;
 			}
-		} else if ((setup_packet->bRequestType & USB_DIR_IN) && setup_packet->bRequest == USB_REQ_GET_CONFIGURATION){
+		} else if (setup_packet->bRequest==USB_REQ_GET_CONFIGURATION){
 			dataptr[0]=1;
 			*nbytes=1;
-		} else if ((setup_packet->bRequestType & USB_DIR_IN) && setup_packet->bRequest == USB_REQ_GET_INTERFACE){
+		} else if (setup_packet->bRequest==USB_REQ_SET_CONFIGURATION){
+			fprintf(stderr, "Setting config %d (As if that does anything)\n",
+					setup_packet->wValue);
+		} else if (setup_packet->bRequest==USB_REQ_GET_INTERFACE){
 			dataptr[0]=1;
 			*nbytes=1;
 		} else if (setup_packet->bRequestType & USB_TYPE_VENDOR) {
@@ -276,9 +280,10 @@ static int dot11_stringMaxIndex;
 					fprintf(stderr, "Error: 802.11: Could not create Monitor Mode interface!\n");
 					return 1;
 				} else {
-					fprintf(stderr, "802.11: Monitor Mode VAP: %s\n",
-							lorcon_get_vap(context));
+					fprintf(stderr, "802.11: Monitor Mode VAP: %s, (%d)\n",
+							lorcon_get_vap(context), rv);
 					lorcon_free_driver_list(driver);
+					monitor = true;
 				}
 				*(int *)(dataptr) = rv;
 				*nbytes = 4;
@@ -292,6 +297,7 @@ static int dot11_stringMaxIndex;
 					fprintf(stderr, "802.11: Injector / Monitor Mode VAP: %s\n",
 							lorcon_get_vap(context));
 					lorcon_free_driver_list(driver);
+					monitor = true;
 				}
 				*(int *)(dataptr) = rv;
 				*nbytes = 4;
@@ -309,7 +315,8 @@ static int dot11_stringMaxIndex;
 				break;
 			case DOT11_GET_CAPIFACE:
 				chr_res = (char *) lorcon_get_capiface(context);
-				*nbytes = strlen(chr_res);
+				*nbytes = strlen(chr_res) + 1;
+				fprintf(stderr, "CapIface: %s\n", chr_res);
 				memcpy(dataptr, chr_res, *nbytes);
 				break;
 			case DOT11_GET_DRIVER_NAME:
@@ -362,29 +369,40 @@ static int dot11_stringMaxIndex;
 	
 	/* Send data to the device */
 	void DeviceProxy_dot11::send_data(__u8 endpoint,__u8 attributes, __u16 maxPacketSize, __u8* dataptr, int length) {
-		;
+		//fprintf(stderr, "send_data\n");
 	}
 	
 	/* Receive data from the device */
 	void DeviceProxy_dot11::receive_data(__u8 endpoint,__u8 attributes, __u16 maxPacketSize, __u8** dataptr, int* length, int timeout) {
+		//fprintf(stderr, "receive_data\n");
+		int rv;
 		lorcon_packet_t *packet;
-		char *data;
-		lorcon_next_ex(context, &packet);
-		if(packet) {
-			dot11_packet_header_t *pkthdr;
-			pkthdr = (dot11_packet_header_t *) malloc(sizeof(dot11_packet_header_t));
-			pkthdr->tv_sec = packet->ts.tv_sec;
-			pkthdr->tv_usec = packet->ts.tv_usec;
-			pkthdr->dlt = packet->dlt;
-			pkthdr->channel = packet->channel;
-			pkthdr->length_capheader = packet->length_header;
-			pkthdr->length_data = packet->length_data;
-			malloc(packet->length_header + packet->length_data);
-			memcpy(data, packet->packet_header, packet->length_header);
-			memcpy(data+packet->length_header,
-				   packet->packet_data,
-				   packet->length_data);
-			free(packet);
+		if(monitor) {
+			rv = lorcon_next_ex(context, &packet);
+			if(rv > 0) {
+				dot11_packet_header_t *pkthdr;
+//				pkthdr = (dot11_packet_header_t *) malloc(sizeof(dot11_packet_header_t));
+				*dataptr = (__u8 *) malloc(sizeof(dot11_packet_header_t) + packet->length_header + packet->length_data);
+				if(*dataptr==NULL)
+					fprintf(stderr, "Uh oh, malloc failed\n");
+				pkthdr  = (dot11_packet_header_t *) dataptr;
+				pkthdr->tv_sec = packet->ts.tv_sec;
+				pkthdr->tv_usec = packet->ts.tv_usec;
+				pkthdr->dlt = packet->dlt;
+				pkthdr->channel = packet->channel;
+				pkthdr->length_capheader = packet->length_header;
+				pkthdr->length_data = packet->length_data;
+				fprintf(stderr, "Allocating %d + %d bytes (length=%d)\n",
+						packet->length_header,
+						packet->length_data,
+						packet->length);
+				//memcpy(*dataptr+sizeof(dot11_packet_header_t), packet->packet_header, packet->length_header);
+				//memcpy(*dataptr+sizeof(dot11_packet_header_t)+packet->length_header,
+				//	packet->packet_data,
+				//	packet->length_data);
+				*length = sizeof(dot11_packet_header_t) + packet->length_header + packet->length_data;
+				free(packet);
+			}
 		}
 	}
 	

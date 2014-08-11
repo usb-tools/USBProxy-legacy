@@ -39,6 +39,8 @@ private:
 	struct usb_endpoint_descriptor dot11_eps[2];
 	struct usb_string;
 	std::string interface;
+	/* Are we in monitor mode? */
+	bool monitor;
 
 public:
 	static int debugLevel;

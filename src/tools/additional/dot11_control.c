@@ -145,6 +145,42 @@ int cmd_close_interface(struct libusb_device_handle* devh) {
 
 char* cmd_get_capiface(struct libusb_device_handle* devh) {
 	char *dataptr = malloc(MAX_IFNAME_LEN);
-	cmd_getter(devh, DOT11_GET_CHANNEL, dataptr, MAX_IFNAME_LEN);
+	cmd_getter(devh, DOT11_GET_CAPIFACE, dataptr, MAX_IFNAME_LEN);
 	return dataptr;
+}
+
+#define BUFFER_SIZE 512
+typedef void (*rx_callback)(void* args);
+static u8 *empty_usb_buf = NULL;
+static struct libusb_transfer *rx_xfer = NULL;
+
+int cmd_rx_data(struct libusb_device_handle* devh) {
+	empty_usb_buf =(u8 *) malloc(BUFFER_SIZE);
+	rx_xfer = libusb_alloc_transfer(0);
+	libusb_fill_bulk_transfer(rx_xfer, devh, DATA_IN, empty_usb_buf,
+			BUFFER_SIZE, cb_xfer, NULL, TIMEOUT);
+
+	cmd_rx_syms(devh, num_blocks);
+
+	r = libusb_submit_transfer(rx_xfer);
+	if (r < 0) {
+		fprintf(stderr, "rx_xfer submission: %d\n", r);
+		return -1;
+	}
+
+	while (1) {
+		while (!usb_really_full) {
+			handle_events_wrapper();
+		}
+
+		/* process each received block */
+		for (i = 0; i < xfer_blocks; i++) {
+			rx = (usb_pkt_rx *)(full_usb_buf + PKT_LEN * i);
+			if(rx->pkt_type != KEEP_ALIVE) 
+				(*cb)(cb_args, rx, bank);
+			bank = (bank + 1) % NUM_BANKS;
+
+		}
+		usb_really_full = 0;
+	}
 }
