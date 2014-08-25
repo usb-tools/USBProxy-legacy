@@ -20,6 +20,7 @@ cd src/build
 cmake ..
 make
 sudo make install
+sudo ldconfig
 ```
 
 If you want to try out the PCAP logger you will need to install libPCAP
