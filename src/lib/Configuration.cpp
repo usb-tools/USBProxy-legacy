@@ -40,6 +40,8 @@
 #include "DeviceProxy.h"
 #include "USBString.h"
 
+#include "myDebug.h"
+
 Configuration::Configuration(Device* _device,DeviceProxy* proxy, int idx,bool otherSpeed)
 {
 	device=_device;
@@ -124,7 +126,10 @@ size_t Configuration::get_full_descriptor_length() {
 	size_t total=descriptor.bLength;
 	int i;
 	for(i=0;i<descriptor.bNumInterfaces;i++) {
-		total+=interfaceGroups[i]->get_full_descriptor_length();
+		// modified 20140903 atsumi@aizulab.com
+		if ( interfaceGroups[i]) {
+			total+=interfaceGroups[i]->get_full_descriptor_length();
+		}
 	}
 	return total;
 }
@@ -136,7 +141,10 @@ __u8* Configuration::get_full_descriptor() {
 	p=p+descriptor.bLength;
 	int i;
 	for(i=0;i<descriptor.bNumInterfaces;i++) {
-		interfaceGroups[i]->get_full_descriptor(&p);
+		// modified 20140903 atsumi@aizulab.com
+		if ( interfaceGroups[i]) {
+			interfaceGroups[i]->get_full_descriptor(&p);
+		}
 	}
 	return buf;
 }

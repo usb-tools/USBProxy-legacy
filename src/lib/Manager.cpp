@@ -47,6 +47,8 @@
 #include "RelayWriter.h"
 #include "Injector.h"
 
+#include "myDebug.h"
+
 Manager::Manager() {
 	haltSignal=0;
 	status=USBM_IDLE;
@@ -336,7 +338,11 @@ void Manager::start_control_relaying(){
 		spinner(1);
 		rc=hostProxy->connect(device);
 	}
-	if (rc!=0) {status=USBM_SETUP_ABORT;stop_relaying();return;}
+	if (rc!=0) {
+		status=USBM_SETUP_ABORT;
+		stop_relaying();
+		return;
+	}
 
 	if (out_readers[0]) {
 		out_readers[0]->set_haltsignal(haltSignal);

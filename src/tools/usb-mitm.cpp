@@ -43,6 +43,7 @@
 #include "TRACE.h"
 #include "Manager.h"
 #include "ConfigParser.h"
+#include "myDebug.h"
 
 static int debug=0;
 
@@ -104,7 +105,7 @@ extern "C" int main(int argc, char **argv)
 	bool client=false, server=false, device_set=false, host_set=false;
 	fprintf(stderr,"SIGRTMIN: %d\n",SIGRTMIN);
 
-	//int vendorId=LIBUSB_HOTPLUG_MATCH_ANY, productId=LIBUSB_HOTPLUG_MATCH_ANY;
+	// int vendorId=LIBUSB_HOTPLUG_MATCH_ANY, productId=LIBUSB_HOTPLUG_MATCH_ANY;
 	
 	struct sigaction action;
 	memset(&action, 0, sizeof(struct sigaction));
@@ -198,7 +199,6 @@ extern "C" int main(int argc, char **argv)
 	cfg->print_config();
 
 	manager->start_control_relaying();
-
 	while (manager->get_status()==USBM_RELAYING) {usleep(10000);}
 
 	// Tidy up

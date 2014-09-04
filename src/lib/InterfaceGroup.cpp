@@ -35,6 +35,7 @@
 #include "Device.h"
 #include "Interface.h"
 
+#include "myDebug.h"
 
 InterfaceGroup::InterfaceGroup(__u8 _number) {
 	number=_number;
@@ -59,13 +60,24 @@ InterfaceGroup::~InterfaceGroup() {
 size_t InterfaceGroup::get_full_descriptor_length() {
 	size_t total=0;
 	int i;
-	for(i=0;i<alternateCount;i++) {total+=interfaces[i]->get_full_descriptor_length();}
+	for(i=0;i<alternateCount;i++) {
+		// modified 20140903 atsumi@aizulab.com
+		if ( interfaces[i]) {
+			total+=interfaces[i]->get_full_descriptor_length();
+		}
+	}
 	return total;
 }
 
 void InterfaceGroup::get_full_descriptor(__u8** p) {
 	int i;
-	for(i=0;i<alternateCount;i++) {interfaces[i]->get_full_descriptor(p);}
+	
+	for(i=0;i<alternateCount;i++) {
+		// modified 20140903 atsumi@aizulab.com
+		if ( interfaces[i]) {
+			interfaces[i]->get_full_descriptor(p);
+		}
+	}
 }
 
 void InterfaceGroup::add_interface(Interface* interface) {
@@ -94,7 +106,10 @@ void InterfaceGroup::print(__u8 tabs) {
 	int i;
 	printf("%.*sInterface(%d):\n",tabs,TABPADDING,number);
 	for(i=0;i<alternateCount;i++) {
-		interfaces[i]->print(tabs+1,i==activeAlternateIndex?true:false);
+		// modified 20140903 atsumi@aizulab.com
+		if ( interfaces[i]) {
+			interfaces[i]->print(tabs+1,i==activeAlternateIndex?true:false);
+		}
 	}
 }
 

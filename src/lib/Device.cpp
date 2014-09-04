@@ -35,6 +35,8 @@
 #include "USBString.h"
 #include "DeviceProxy.h"
 
+#include "myDebug.h"
+
 //CLEANUP what happends if device is HS but host is not, in terms of correct config to use,etc.
 
 Device::Device(DeviceProxy* _proxy) {
@@ -76,13 +78,24 @@ Device::Device(DeviceProxy* _proxy) {
 		for (j=0;j<configurations[i]->get_descriptor()->bNumInterfaces;j++) {
 			int k;
 			for (k=0;k<configurations[i]->get_interface_alernate_count(j);k++) {
-				__u8 iInterface=configurations[i]->get_interface_alternate(j,k)->get_descriptor()->iInterface;
-				if (iInterface) {add_string(iInterface);}
+				
+				// modified 20140903 atsumi@aizulab.com
+				// begin
+				if ( configurations[i]->get_interface_alternate(j,k)) {
+					if ( configurations[i]->get_interface_alternate(j,k)->get_descriptor()) {
+						__u8 iInterface=configurations[i]->get_interface_alternate(j,k)->get_descriptor()->iInterface;
+						if (iInterface) {
+							add_string(iInterface);
+						}
+					}
+				}
+				// End
 			}
 		}
 	}
 
 	qualifier=new DeviceQualifier(this,proxy);
+
 	//not a high speed device
 	if (!(qualifier->get_descriptor()->bLength)) {
 		delete(qualifier);
@@ -247,9 +260,13 @@ void Device::print(__u8 tabs) {
 		}
 	}
 	for(i=0;i<descriptor.bNumConfigurations;i++) {
-		if (configurations[i]) {configurations[i]->print(tabs+1,configurations[i]==get_active_configuration()?true:false);}
+		if (configurations[i]) {
+			configurations[i]->print(tabs+1,configurations[i]==get_active_configuration()?true:false);
+		}
 	}
-	if (qualifier) {qualifier->print(tabs);}
+	if (qualifier) {
+		qualifier->print(tabs);
+	}
 }
 
 void Device::add_string(USBString* string) {
@@ -271,7 +288,9 @@ void Device::add_string(USBString* string) {
 		while (true) {
 			if (strings[index][i]) {
 				if (strings[index][i]->get_languageId()==languageId) {
-					delete(strings[index][i]);
+					// modified 20140902 atsumi@aizulab.com
+          // There is a possibility of memory leaks
+          // delete(strings[index][i]); 
 					/* not needed strings[index][i]=NULL; */
 					strings[index][i]=string;
 				}

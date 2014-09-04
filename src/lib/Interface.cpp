@@ -39,6 +39,7 @@
 
 #include "Configuration.h"
 
+#include "myDebug.h"
 
 //CLEANUP update active interface in interfacegroup upon set interface request
 //CLEANUP update active endpoints in proxied device upon set interface request
@@ -50,8 +51,10 @@ Interface::Interface(Configuration* _configuration,__u8** p,const __u8* e) {
 	generic_descriptors=NULL;
 	generic_descriptor_count=0;
 
-	memcpy(&descriptor,*p,9);
-	*p=*p+9;
+	// modified 20140903 atsumi@aizulab.com
+	// memcpy(&descriptor,*p,9);
+	memcpy(&descriptor,*p,**p);
+	*p=*p+**p;
 	endpoints=(Endpoint**)calloc(descriptor.bNumEndpoints,sizeof(*endpoints));
 	Endpoint** ep=endpoints;
 	while (*p<e && (*(*p+1))!=4) {
@@ -138,10 +141,22 @@ const usb_interface_descriptor* Interface::get_descriptor() {
 
 size_t Interface::get_full_descriptor_length() {
 	size_t total=descriptor.bLength;
-	if (hid_descriptor) {total+=hid_descriptor->get_full_descriptor_length();}
+	if (hid_descriptor) {
+		total+=hid_descriptor->get_full_descriptor_length();
+	}
 	int i=0;
-	for (i=0;i<generic_descriptor_count;i++) {total+=generic_descriptors[i]->bLength;}
-	for(i=0;i<descriptor.bNumEndpoints;i++) {total+=endpoints[i]->get_full_descriptor_length();}
+	for (i=0;i<generic_descriptor_count;i++) {
+		// modified 20140903 atsumi@aizulab.com
+		if ( generic_descriptors[i]) {
+			total+=generic_descriptors[i]->bLength;
+		}
+	}
+	for(i=0;i<descriptor.bNumEndpoints;i++) {
+		// modified 20140903 atsumi@aizulab.com
+		if ( endpoints[i]) {
+			total+=endpoints[i]->get_full_descriptor_length();
+		}
+	}
 	return total;
 }
 
@@ -151,10 +166,18 @@ void Interface::get_full_descriptor(__u8** p) {
 	if (hid_descriptor) {hid_descriptor->get_full_descriptor(p);}
 	int i=0;
 	for (i=0;i<generic_descriptor_count;i++) {
-		memcpy(*p,generic_descriptors[i],generic_descriptors[i]->bLength);
-		*p=*p+generic_descriptors[i]->bLength;
+		// modified 20140903 atsumi@aizulab.com
+		if ( generic_descriptors[i]) {
+			memcpy(*p,generic_descriptors[i],generic_descriptors[i]->bLength);
+			*p=*p+generic_descriptors[i]->bLength;
+		}
 	}
-	for(i=0;i<descriptor.bNumEndpoints;i++) {endpoints[i]->get_full_descriptor(p);}
+	for(i=0;i<descriptor.bNumEndpoints;i++) {
+		// modified 20140903 atsumi@aizulab.com
+		if ( endpoints[i]) {
+			endpoints[i]->get_full_descriptor(p);
+		}
+	}
 }
 
 void Interface::add_endpoint(Endpoint* endpoint) {
