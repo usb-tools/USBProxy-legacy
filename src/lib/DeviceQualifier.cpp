@@ -64,8 +64,18 @@ DeviceQualifier::DeviceQualifier(Device* _device,DeviceProxy* proxy) {
 		for (j=0;j<configurations[i]->get_descriptor()->bNumInterfaces;j++) {
 			int k;
 			for (k=0;k<configurations[i]->get_interface_alernate_count(j);k++) {
-				__u8 iInterface=configurations[i]->get_interface_alternate(j,k)->get_descriptor()->iInterface;
-				if (iInterface) {device->add_string(iInterface);}
+
+				// modified 20140903 atsumi@aizulab.com
+				// begin
+				if ( configurations[i]->get_interface_alternate(j,k)) {
+					if ( configurations[i]->get_interface_alternate(j,k)->get_descriptor()) {
+						__u8 iInterface=configurations[i]->get_interface_alternate(j,k)->get_descriptor()->iInterface;
+						if (iInterface) {
+							device->add_string(iInterface);
+						}
+					}
+				}
+				// End
 			}
 		}
 	}

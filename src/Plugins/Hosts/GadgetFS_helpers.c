@@ -65,13 +65,13 @@ void clean_tmp() {
 		if (readdir_r(dir, entry, &result) < 0) break;
 		if (!result) {break;}
 		if (strlen(entry->d_name)==13 && strncmp(entry->d_name,"gadget-",7)==0) {
-	    	rmCount++;
-	    	if (rmDirs) {
-	    		rmDirs=realloc(rmDirs,sizeof(char*)*rmCount);
-	    	} else {
-	    		rmDirs=malloc(sizeof(char*));
-	    	}
-	    	rmDirs[rmCount-1]=strdup(entry->d_name);
+			rmCount++;
+			if (rmDirs) {
+				rmDirs=realloc(rmDirs,sizeof(char*)*rmCount);
+			} else {
+				rmDirs=malloc(sizeof(char*));
+			}
+			rmDirs[rmCount-1]=strdup(entry->d_name);
 		}
 	}
 	free(entry);
@@ -218,9 +218,12 @@ int open_gadget() {
 	}
 	
 	char path[256];
+	int ret, status;
 	sprintf(path, "%s/%s", gadgetfs_path, filename);
 	
-	return open(path, O_CLOEXEC | O_RDWR);
+	ret = open(path, O_CLOEXEC | O_RDWR);
+	
+	return ret;
 }
 
 int open_endpoint(__u8 epAddress) {
