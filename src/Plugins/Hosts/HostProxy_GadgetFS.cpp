@@ -39,8 +39,6 @@
 #include "Interface.h"
 #include "Endpoint.h"
 
-#include "myDebug.h"
-
 int HostProxy_GadgetFS::debugLevel=0;
 
 HostProxy_GadgetFS::HostProxy_GadgetFS(ConfigParser *cfg) {

@@ -47,8 +47,6 @@
 #include "RelayWriter.h"
 #include "Injector.h"
 
-#include "myDebug.h"
-
 Manager::Manager() {
 	haltSignal=0;
 	status=USBM_IDLE;

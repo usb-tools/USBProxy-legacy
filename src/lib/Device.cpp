@@ -35,8 +35,6 @@
 #include "USBString.h"
 #include "DeviceProxy.h"
 
-#include "myDebug.h"
-
 //CLEANUP what happends if device is HS but host is not, in terms of correct config to use,etc.
 
 Device::Device(DeviceProxy* _proxy) {

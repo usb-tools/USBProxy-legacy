@@ -39,8 +39,6 @@
 
 #include "Configuration.h"
 
-#include "myDebug.h"
-
 //CLEANUP update active interface in interfacegroup upon set interface request
 //CLEANUP update active endpoints in proxied device upon set interface request
 //CLEANUP handle any endpoints that become inactive upon set interface request

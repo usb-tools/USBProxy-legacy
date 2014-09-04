@@ -38,8 +38,6 @@
 
 #include "DeviceProxy.h"
 
-#include "myDebug.h"
-
 DeviceQualifier::DeviceQualifier(Device* _device,DeviceProxy* proxy) {
 	device=_device;
 
