@@ -164,7 +164,6 @@ int HostProxy_GadgetFS::connect(Device* device,int timeout) {
 	}
 
 	status = write(p_device_file, descriptor, descriptorLength);
-	dbgMessage(""); fprintf( stderr, "%d = write(%x, %x, %d);\n", status, p_device_file, descriptor, descriptorLength); myDump( descriptor, descriptorLength);
 	if (status < 0) {
 		fprintf(stderr,"Fail on write %d %s\n",errno,strerror(errno));
 		close(p_device_file);
@@ -195,7 +194,6 @@ int HostProxy_GadgetFS::reconnect() {
 	}
 
 	status = write(p_device_file, descriptor, descriptorLength);
-	dbgMessage(""); fprintf( stderr, "%d = write(%x, %x, %d);\n", status, p_device_file, descriptor, descriptorLength); myDump( descriptor, descriptorLength);
 	if (status < 0) {
 		fprintf(stderr,"Fail on write %d %s\n",errno,strerror(errno));
 		close(p_device_file);
@@ -263,7 +261,6 @@ int HostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *nbyt
 	}
 
 	ret = read (p_device_file, &events, sizeof(events));
-	dbgMessage( ""); fprintf( stderr, "%d = read ( %x, %x, %d);\n", ret, p_device_file, &events, sizeof(events)); myDump( events, ret);
 	if (ret < 0) {
 		setup_packet->bRequest=0;
 		fprintf(stderr,"Read error %d\n",ret);
@@ -286,7 +283,6 @@ int HostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *nbyt
 			if (!(lastControl.bRequestType&0x80) && lastControl.wLength) {
 				*dataptr=(__u8*)malloc(lastControl.wLength);
 				*nbytes=read(p_device_file,*dataptr,lastControl.wLength);
-				dbgMessage( ""); fprintf( stderr, "%d=read(%x,%x,%d)\n", *nbytes, p_device_file, *dataptr, lastControl.wLength); myDump( *dataptr, *nbytes);
 			} else {
 				*dataptr=NULL;
 				*nbytes=0;
@@ -336,7 +332,6 @@ int HostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *nbyt
 void HostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length) {
 	if (!endpoint) {
 		int rc=write(p_device_file,dataptr,length);
-		dbgMessage(""); fprintf( stderr, "%d = write(%x, %x, %d);\n", rc, p_device_file, descriptor, length); myDump( descriptor, length);
 		if (rc<0) {
 			fprintf(stderr,"Fail on EP00 write %d %s\n",errno,strerror(errno));
 		} else {
@@ -446,7 +441,6 @@ void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 		rc=aio_return(aio);
 		*dataptr=(__u8*)malloc(rc);
 		memcpy(*dataptr,(void*)(aio->aio_buf),rc);
-		dbgMessage(""); fprintf( stderr, "memcpy(%x,%x,%d);", *dataptr, (void*)(aio->aio_buf),rc); myDump( *dataptr, rc);
 		*length=rc;
 		//fprintf(stderr,"Read %d bytes on EP%02x\n",rc,number);
 		int rc=aio_read(aio);
@@ -462,10 +456,8 @@ void HostProxy_GadgetFS::control_ack() {
 	if (debugLevel) fprintf(stderr,"Sending ACK\n");
 	if (lastControl.bRequestType&0x80) {
 		write(p_device_file,0,0);
-		dbgMessage( "write(p_device_file,0,0);");
 	} else {
 		read(p_device_file,0,0);
-		dbgMessage( "read(p_device_file,0,0);");
 	}
 }
 
@@ -476,10 +468,8 @@ void HostProxy_GadgetFS::stall_ep(__u8 endpoint) {
 	} else {
 		if (lastControl.bRequestType&0x80) {
 			read(p_device_file,0,0);
-			dbgMessage( "read(p_device_file,0,0);");
 		} else {
 			write(p_device_file,0,0);
-			dbgMessage( "write(p_device_file,0,0);");
 		}
 	}
 }
@@ -538,7 +528,6 @@ void HostProxy_GadgetFS::setConfig(Configuration* fs_cfg,Configuration* hs_cfg,b
 			}
 
 			write(fd,buf,bufSize);
-			dbgMessage(""); fprintf( stderr, "write(%x, %x, %d);\n", fd,buf,bufSize); myDump( buf, bufSize);
 			free(buf);
 			fprintf(stderr,"Opened EP%02x\n",epAddress);
 		}
