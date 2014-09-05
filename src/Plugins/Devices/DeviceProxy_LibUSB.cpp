@@ -341,7 +341,9 @@ void DeviceProxy_LibUSB::claim_interface(__u8 interface) {
 	dbgMessage("");
 	if (is_connected()) {
 		int rc=libusb_claim_interface(dev_handle,interface);
-		if (rc) {fprintf(stderr,"Error (%d) claiming interface %d\n",rc,interface);}
+		// modified 20140905 atsumi@aizulab.ocm
+		// if (rc) {fprintf(stderr,"Error (%d) claiming interface %d\n",rc,interface);}
+		if (rc) {fprintf(stderr,"Error (%d:%s) claiming interface %d\n",rc,libusb_error_name(rc),interface);}
 	}
 }
 
