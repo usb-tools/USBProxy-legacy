@@ -26,6 +26,7 @@
 #include "TRACE.h"
 #include "HexString.h"
 
+
 int DeviceProxy_LibUSB::debugLevel=0;
 
 //CLEANUP hotplug support
@@ -71,8 +72,8 @@ DeviceProxy_LibUSB::DeviceProxy_LibUSB(ConfigParser *cfg)
 }
 
 DeviceProxy_LibUSB::~DeviceProxy_LibUSB() {
-	 if (privateDevice && dev_handle) {libusb_close(dev_handle);}
-	 if (privateContext && context) {libusb_exit(context);}
+	if (privateDevice && dev_handle) {libusb_close(dev_handle);}
+	if (privateContext && context) {libusb_exit(context);}
 }
 
 int DeviceProxy_LibUSB::connect(int timeout) {
@@ -173,10 +174,10 @@ int DeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) {
 }
 
 void DeviceProxy_LibUSB::disconnect() {
-	 if (privateDevice && dev_handle) {libusb_close(dev_handle);}
-	 dev_handle=NULL;
-	 if (privateContext && context) {libusb_exit(context);}
-	 context=NULL;
+	if (privateDevice && dev_handle) {libusb_close(dev_handle);}
+	dev_handle=NULL;
+	if (privateContext && context) {libusb_exit(context);}
+	context=NULL;
 }
 
 void DeviceProxy_LibUSB::reset() {
@@ -316,7 +317,9 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 void DeviceProxy_LibUSB::claim_interface(__u8 interface) {
 	if (is_connected()) {
 		int rc=libusb_claim_interface(dev_handle,interface);
-		if (rc) {fprintf(stderr,"Error (%d) claiming interface %d\n",rc,interface);}
+		// modified 20140905 atsumi@aizulab.ocm
+		// if (rc) {fprintf(stderr,"Error (%d) claiming interface %d\n",rc,interface);}
+		if (rc) {fprintf(stderr,"Error (%d:%s) claiming interface %d\n",rc,libusb_error_name(rc),interface);}
 	}
 }
 

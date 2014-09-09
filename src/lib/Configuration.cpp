@@ -72,7 +72,9 @@ Configuration::Configuration(Device* _device,DeviceProxy* proxy, int idx,bool ot
 		if (interfaceGroups[i]->get_alternate_count()==1) {
 			interfaceGroups[i]->activeAlternateIndex=0;
 		} else {
-			setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
+			// modified 20140905 atsumi@aizulab.com
+			// setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
+			setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_INTERFACE;
 			setup_packet.bRequest=USB_REQ_GET_INTERFACE;
 			setup_packet.wValue=0;
 			setup_packet.wIndex=i;
@@ -124,7 +126,10 @@ size_t Configuration::get_full_descriptor_length() {
 	size_t total=descriptor.bLength;
 	int i;
 	for(i=0;i<descriptor.bNumInterfaces;i++) {
-		total+=interfaceGroups[i]->get_full_descriptor_length();
+		// modified 20140903 atsumi@aizulab.com
+		if ( interfaceGroups[i]) {
+			total+=interfaceGroups[i]->get_full_descriptor_length();
+		}
 	}
 	return total;
 }
@@ -136,7 +141,10 @@ __u8* Configuration::get_full_descriptor() {
 	p=p+descriptor.bLength;
 	int i;
 	for(i=0;i<descriptor.bNumInterfaces;i++) {
-		interfaceGroups[i]->get_full_descriptor(&p);
+		// modified 20140903 atsumi@aizulab.com
+		if ( interfaceGroups[i]) {
+			interfaceGroups[i]->get_full_descriptor(&p);
+		}
 	}
 	return buf;
 }
