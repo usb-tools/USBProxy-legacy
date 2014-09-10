@@ -51,13 +51,35 @@ Interface::Interface(Configuration* _configuration,__u8** p,const __u8* e) {
 	generic_descriptors=NULL;
 	generic_descriptor_count=0;
 
+	// modified 20140910 atsumi@aizulab.com
+	// Sometimes first descriptor is not an interface descripotor.
+  // Follow code handles its descriptors as a generic descriptora.
+	// begin
+	while ( *(*p+1) != 4 && *p < e) {
+		dbgMessage( "Descriptor:"); myDump( *p, **p);
+		GenericDescriptor* d=(GenericDescriptor*)malloc((*p)[0]);
+		memcpy(d,*p,(*p)[0]);
+		generic_descriptor_count++;
+		if (generic_descriptors) {
+			generic_descriptors=(GenericDescriptor**)realloc(generic_descriptors,sizeof(*generic_descriptors)*generic_descriptor_count);
+		} else {
+			generic_descriptors=(GenericDescriptor**)malloc(sizeof(*generic_descriptors));
+		}
+		generic_descriptors[generic_descriptor_count-1]=d;
+		
+		*p += **p;
+	}
+	// end
+	
 	// modified 20140903 atsumi@aizulab.com
 	// memcpy(&descriptor,*p,9);
 	memcpy(&descriptor,*p,**p);
+	dbgMessage( "Descriptor:"); myDump( *p, **p);
 	*p=*p+**p;
 	endpoints=(Endpoint**)calloc(descriptor.bNumEndpoints,sizeof(*endpoints));
 	Endpoint** ep=endpoints;
 	while (*p<e && (*(*p+1))!=4) {
+		dbgMessage( "Descriptor:"); myDump( *p, **p);
 		switch (*(*p+1)) {
 			case 5:
 				*(ep++)=new Endpoint(this,*p);
