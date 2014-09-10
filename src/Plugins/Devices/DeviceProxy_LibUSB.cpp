@@ -295,10 +295,6 @@ int DeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, int
 	}
 	*nbytes=rc;
 	
-  // modified 20140909 atsumi@aizulab.com for mirrorlink
-	dbgMessage(""); fprintf( stderr, "%02x %02x\n", setup_packet->bRequestType,setup_packet->bRequest);
-  // if ( setup_packet->bRequestType == 0x40 && setup_packet->bRequest == 0xf0)
-	//	reset();
 	return 0;
 }
 
@@ -376,7 +372,19 @@ void DeviceProxy_LibUSB::claim_interface(__u8 interface) {
 	if (is_connected()) {
 		int rc=libusb_claim_interface(dev_handle,interface);
 		dbgMessage(""); fprintf( stderr, "%d=libusb_claim_interface(%x,%d);\n", rc,dev_handle,interface);
-		if (rc) {fprintf(stderr,"Error %s(%d) claiming interface %d\n",libusb_error_name( rc), rc,interface);}
+		if (rc) {
+			fprintf(stderr,"Error %s(%d) claiming interface %d\n",libusb_error_name( rc), rc,interface);
+			// modified 20140910 atsumi@aizulab.com
+			// for retrying to claim interface if fail libusb_claim_interface()
+			// begin
+			rc = libusb_release_interface( dev_handle,interface);
+			fprintf( stderr, "Error %s(%d) release interface %d\n", libusb_error_name( rc), rc, interface);
+			rc = libusb_detach_kernel_driver( dev_handle, interface);
+			fprintf( stderr, "Error %s(%d) rdetach_kernel_driver %d\n", libusb_error_name( rc), rc, interface);
+			int rc=libusb_claim_interface(dev_handle,interface);
+			dbgMessage(""); fprintf( stderr, "%d=libusb_claim_interface(%x,%d);\n", rc,dev_handle,interface);
+			// end
+		}
 	}
 }
 
