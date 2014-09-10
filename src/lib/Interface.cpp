@@ -51,7 +51,7 @@ Interface::Interface(Configuration* _configuration,__u8** p,const __u8* e) {
 
 	// modified 20140910 atsumi@aizulab.com
 	// Sometimes first descriptor is not an interface descripotor.
-  // Follow code handles its descriptors as a generic descriptora.
+	// Follow code handles its descriptors as a generic descriptora.
 	// begin
 	while ( *(*p+1) != 4 && *p < e) {
 		GenericDescriptor* d=(GenericDescriptor*)malloc((*p)[0]);

@@ -112,7 +112,7 @@ int DeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) {
 	libusb_init(&context);
 
 	// modified 20140908 atsumi@aizulab.com
-  libusb_set_debug( context, 3);
+	// libusb_set_debug( context, 3);
 	
 	libusb_device **list=NULL;
 	libusb_device *found=NULL;
@@ -263,8 +263,8 @@ int DeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, int
 	}
 	*nbytes=rc;
 	
-  // modified 20140909 atsumi@aizulab.com for mirrorlink
-  // if ( setup_packet->bRequestType == 0x40 && setup_packet->bRequest == 0xf0)
+	// modified 20140909 atsumi@aizulab.com for mirrorlink
+	// if ( setup_packet->bRequestType == 0x40 && setup_packet->bRequest == 0xf0)
 	//	reset();
 	return 0;
 }
