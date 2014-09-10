@@ -48,17 +48,17 @@ private:
 	int deviceConfigurationIndex;
 
 	usb_device_descriptor descriptor;
-    Configuration** configurations;
-    //this is set up like strings[stringID][array of all languages]
-    USBString ***strings;
-    int maxStringIdx;
-    DeviceProxy* proxy;
-    void add_language(__u16);
-    DeviceQualifier* qualifier;
-    const definition_error is_string_defined(__u8 index);
+	Configuration** configurations;
+	//this is set up like strings[stringID][array of all languages]
+	USBString ***strings;
+	int maxStringIdx;
+	DeviceProxy* proxy;
+	void add_language(__u16);
+	DeviceQualifier* qualifier;
+	const definition_error is_string_defined(__u8 index);
 
 public:
-    Device(DeviceProxy* _proxy);
+	Device(DeviceProxy* _proxy);
 	Device(const usb_device_descriptor* _descriptor);
 	Device(__le16 bcdUSB,	__u8  bDeviceClass,	__u8  bDeviceSubClass,	__u8  bDeviceProtocol,	__u8  bMaxPacketSize0,	__le16 idVendor,	__le16 idProduct,	__le16 bcdDevice,	__u8  iManufacturer,	__u8  iProduct,	__u8  iSerialNumber,	__u8  bNumConfigurations);
 	~Device();

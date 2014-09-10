@@ -42,6 +42,7 @@
 int HostProxy_GadgetFS::debugLevel=0;
 
 HostProxy_GadgetFS::HostProxy_GadgetFS(ConfigParser *cfg) {
+	dbgMessage("");
 	mount_gadget();
 	p_is_connected = false;
 	p_device_file=0;
@@ -57,6 +58,7 @@ HostProxy_GadgetFS::HostProxy_GadgetFS(ConfigParser *cfg) {
 }
 
 HostProxy_GadgetFS::~HostProxy_GadgetFS() {
+	dbgMessage("");
 	if (p_device_file) {
 		close(p_device_file);
 		p_device_file=0;
@@ -91,6 +93,7 @@ HostProxy_GadgetFS::~HostProxy_GadgetFS() {
 int HostProxy_GadgetFS::generate_descriptor(Device* device) {
 	char *ptr;
 	int i;
+	dbgMessage("");
 	descriptor=(char*)malloc(USB_BUFSIZE);
 
 	ptr = descriptor;
@@ -147,6 +150,7 @@ int HostProxy_GadgetFS::generate_descriptor(Device* device) {
 int HostProxy_GadgetFS::connect(Device* device,int timeout) {
 	int status;
 
+	dbgMessage("");
 	if (p_is_connected) {fprintf(stderr,"GadgetFS already connected.\n"); return 0;}
 
 	if (generate_descriptor(device)!=0) {return 1;}
@@ -178,6 +182,7 @@ int HostProxy_GadgetFS::connect(Device* device,int timeout) {
 int HostProxy_GadgetFS::reconnect() {
 	int status;
 
+	dbgMessage("");
 	if (p_is_connected) {fprintf(stderr,"GadgetFS already connected.\n"); return 0;}
 	if (!descriptor) {return 1;}
 
@@ -206,6 +211,7 @@ int HostProxy_GadgetFS::reconnect() {
 }
 
 void HostProxy_GadgetFS::disconnect() {
+	dbgMessage("");
 	if (!p_is_connected) {fprintf(stderr,"GadgetFS not connected.\n"); return;}
 
 	if (p_device_file) {
@@ -238,11 +244,13 @@ void HostProxy_GadgetFS::disconnect() {
 }
 
 void HostProxy_GadgetFS::reset() {
+	dbgMessage("");
 	disconnect();
 	reconnect();
 }
 
 bool HostProxy_GadgetFS::is_connected() {
+	dbgMessage("");
 	return p_is_connected;
 }
 
@@ -253,6 +261,8 @@ int HostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *nbyt
 	struct usb_gadgetfs_event events[NEVENT];
 	int ret, nevent, i;
 	struct pollfd fds;
+
+	dbgMessage("");
 	fds.fd = p_device_file;
 	fds.events = POLLIN;
 	if (!poll(&fds, 1, timeout) || !(fds.revents&POLLIN)) {
@@ -330,6 +340,7 @@ int HostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *nbyt
 
 
 void HostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length) {
+	dbgMessage("");
 	if (!endpoint) {
 		int rc=write(p_device_file,dataptr,length);
 		if (rc<0) {
@@ -363,6 +374,7 @@ void HostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacket
 }
 
 bool HostProxy_GadgetFS::send_wait_complete(__u8 endpoint,int timeout) {
+	dbgMessage("");
 	if (!endpoint) return true;
 	if (!(endpoint & 0x80)) {
 		fprintf(stderr,"trying to check send on an out EP%02x\n",endpoint);
@@ -407,6 +419,7 @@ bool HostProxy_GadgetFS::send_wait_complete(__u8 endpoint,int timeout) {
 }
 
 void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length, int timeout) {
+	dbgMessage("");
 	if (!endpoint) {
 		fprintf(stderr,"trying to receive %d bytes on EP00\n",*length);
 		return;
@@ -453,6 +466,7 @@ void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 }
 
 void HostProxy_GadgetFS::control_ack() {
+	dbgMessage("");
 	if (debugLevel) fprintf(stderr,"Sending ACK\n");
 	if (lastControl.bRequestType&0x80) {
 		write(p_device_file,0,0);
@@ -462,6 +476,7 @@ void HostProxy_GadgetFS::control_ack() {
 }
 
 void HostProxy_GadgetFS::stall_ep(__u8 endpoint) {
+	dbgMessage("");
 	if (debugLevel) fprintf(stderr,"Stalling EP%02x\n",endpoint);
 	if (endpoint) {
 		//FINISH for nonzero endpoint
@@ -475,6 +490,7 @@ void HostProxy_GadgetFS::stall_ep(__u8 endpoint) {
 }
 
 void HostProxy_GadgetFS::setConfig(Configuration* fs_cfg,Configuration* hs_cfg,bool hs) {
+	dbgMessage("");
 	int ifc_idx;
 	__u8 ifc_count=fs_cfg->get_descriptor()->bNumInterfaces;
 	for (ifc_idx=0;ifc_idx<ifc_count;ifc_idx++) {
@@ -538,11 +554,13 @@ static HostProxy_GadgetFS *proxy;
 
 extern "C" {
 	HostProxy * get_hostproxy_plugin(ConfigParser *cfg) {
+		dbgMessage("");
 		proxy = new HostProxy_GadgetFS(cfg);
 		return (HostProxy *) proxy;
 	}
 	
 	void destroy_plugin() {
+		dbgMessage("");
 		delete proxy;
 	}
 }

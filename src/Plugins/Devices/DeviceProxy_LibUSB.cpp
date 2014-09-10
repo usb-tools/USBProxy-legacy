@@ -22,6 +22,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "DeviceProxy_LibUSB.h"
 #include "TRACE.h"
 #include "HexString.h"
@@ -84,6 +85,7 @@ int DeviceProxy_LibUSB::connect(libusb_device* dvc, libusb_context* _context) {
 	if (dev_handle) {fprintf(stderr,"LibUSB already connected.\n"); return 0;}
 	privateContext=false;
 	context=_context;
+	dbgMessage("");
 	int rc=libusb_open(dvc,&dev_handle);
 	if (rc) {
 		if (debugLevel) {fprintf(stderr,"Error %d opening device handle.\n",rc);}
@@ -108,10 +110,16 @@ int DeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) {
 	if (dev_handle) {fprintf(stderr,"LibUSB already connected.\n"); return 0;}
 	privateContext=true;
 	privateDevice=true;
+	dbgMessage("");
 	libusb_init(&context);
+
+	// modified 20140908 atsumi@aizulab.com
+  libusb_set_debug( context, 3);
+	
 	libusb_device **list=NULL;
 	libusb_device *found=NULL;
 
+	dbgMessage("");
 	ssize_t cnt=libusb_get_device_list(context,&list);
 	if (cnt<0) {
 		if (debugLevel) {fprintf(stderr,"Error %d retrieving device list.\n", (int)cnt);}
@@ -123,28 +131,36 @@ int DeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) {
 	struct libusb_device_descriptor desc;
 	int rc=0;
 
+	dbgMessage("");
 	for(i = 0; i < cnt; i++){
+		dbgMessage("");
 		libusb_device *dvc = list[i];
+		dbgMessage("");
 		rc = libusb_get_device_descriptor(dvc,&desc);
 		if (rc) {
 			if (debugLevel) {fprintf(stderr,"Error %d retrieving device descriptor.\n",rc);}
 		} else {
+			dbgMessage("");
 			if (
 					(includeHubs || desc.bDeviceClass!=LIBUSB_CLASS_HUB) &&
 					(vendorId==desc.idVendor || vendorId==LIBUSB_HOTPLUG_MATCH_ANY) &&
 					(productId==desc.idProduct || productId==LIBUSB_HOTPLUG_MATCH_ANY)
 				) {
+				dbgMessage("");
 				found=dvc;
 				break;
 			}
 		}
 	}
 
+	dbgMessage("");
 	if (found==NULL) {
+		dbgMessage("");
 		if (debugLevel) {fprintf(stderr,"No devices found.\n");}
 		libusb_free_device_list(list,1);
 		return -1;
 	} else {
+		dbgMessage("");
 		rc=libusb_open(found,&dev_handle);
 		if (rc) {
 			if (debugLevel) {fprintf(stderr,"Error %d opening device handle.\n",rc);}
@@ -155,16 +171,29 @@ int DeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) {
 
 	}
 
+	dbgMessage("");
 	libusb_free_device_list(list,1);
-	libusb_set_auto_detach_kernel_driver(dev_handle,1);
-
+	// modfied 20140905 atsumi@aizulab.ocm
+	// libusb_set_auto_detach_kernel_driver(dev_handle,1);
+	// begin
+	dbgMessage("");
+	rc = libusb_set_auto_detach_kernel_driver(dev_handle,1);
+	dbgMessage("");
+	if ( rc < 0) {
+		fprintf( stderr, "failed libusb_set_auto_detach_kernel_driver(): (%d,%s)\n", rc, libusb_error_name(rc));
+		return rc;
+	}
+	//end
+	
 	//check that device is responsive
+	dbgMessage("");
 	rc=libusb_get_string_descriptor(dev_handle,0,0,(unsigned char*)&rc,4);
 	if (rc<0) {
 		fprintf(stderr,"Device unresponsive.\n");
 		return rc;
 	}
 
+	dbgMessage("");
 	if (debugLevel) {
 		char *device_desc=toString();
 		fprintf(stdout,"Connected to device: %s\n",device_desc);
@@ -183,7 +212,7 @@ void DeviceProxy_LibUSB::disconnect() {
 void DeviceProxy_LibUSB::reset() {
 	int rc=libusb_reset_device(dev_handle);
 	if (rc==LIBUSB_ERROR_NOT_FOUND) {disconnect();}
-	if (rc) {fprintf(stderr,"Error %d resetting device.\n",rc);}
+	if (rc) {fprintf(stderr,"Error %s(%d) resetting device.\n",libusb_error_name(rc), rc);}
 }
 
 bool DeviceProxy_LibUSB::is_connected() {
@@ -249,6 +278,11 @@ int DeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, int
 		free(hex);
 	}
 	*nbytes=rc;
+	
+  // modified 20140909 atsumi@aizulab.com for mirrorlink
+	dbgMessage(""); fprintf( stderr, "%02x %02x\n", setup_packet->bRequestType,setup_packet->bRequest);
+  // if ( setup_packet->bRequestType == 0x40 && setup_packet->bRequest == 0xf0)
+	//	reset();
 	return 0;
 }
 
@@ -317,9 +351,8 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 void DeviceProxy_LibUSB::claim_interface(__u8 interface) {
 	if (is_connected()) {
 		int rc=libusb_claim_interface(dev_handle,interface);
-		// modified 20140905 atsumi@aizulab.ocm
-		// if (rc) {fprintf(stderr,"Error (%d) claiming interface %d\n",rc,interface);}
-		if (rc) {fprintf(stderr,"Error (%d:%s) claiming interface %d\n",rc,libusb_error_name(rc),interface);}
+		dbgMessage(""); fprintf( stderr, "%d=libusb_claim_interface(%x,%d);\n", rc,dev_handle,interface);
+		if (rc) {fprintf(stderr,"Error %s(%d) claiming interface %d\n",libusb_error_name( rc), rc,interface);}
 	}
 }
 
