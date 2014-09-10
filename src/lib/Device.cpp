@@ -54,6 +54,7 @@ Device::Device(DeviceProxy* _proxy) {
 	setup_packet.wIndex=0;
 	setup_packet.wLength=18;
 	int len=0;
+	dbgMessage("");
 	proxy->control_request(&setup_packet,&len,buf);
 	memcpy(&descriptor,buf,len);
 	int i;
@@ -72,6 +73,7 @@ Device::Device(DeviceProxy* _proxy) {
 
 	for(i=0;i<descriptor.bNumConfigurations;i++) {
 		configurations[i]=new Configuration(this,proxy,i);
+		dbgMessage("");
 		__u8 iConfiguration=configurations[i]->get_descriptor()->iConfiguration;
 		if (iConfiguration) {add_string(iConfiguration);}
 		int j;

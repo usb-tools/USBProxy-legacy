@@ -44,6 +44,7 @@
 
 Configuration::Configuration(Device* _device,DeviceProxy* proxy, int idx,bool otherSpeed)
 {
+	dbgMessage("");
 	device=_device;
 	__u8* buf=(__u8 *)malloc(8);
 	usb_ctrlrequest setup_packet;
@@ -53,6 +54,7 @@ Configuration::Configuration(Device* _device,DeviceProxy* proxy, int idx,bool ot
 	setup_packet.wIndex=0;
 	setup_packet.wLength=8;
 	int len=0;
+	dbgMessage("");
 	proxy->control_request(&setup_packet,&len,buf);
 	len=buf[2];
 	buf=(__u8*)realloc(buf,len);
@@ -89,12 +91,14 @@ Configuration::Configuration(Device* _device,DeviceProxy* proxy, int idx,bool ot
 }
 
 Configuration::Configuration(Device* _device,const usb_config_descriptor* _descriptor) {
+	dbgMessage("");
 	device=_device;
 	descriptor=*_descriptor;
 	interfaceGroups=(InterfaceGroup **)calloc(descriptor.bNumInterfaces,sizeof(*interfaceGroups));
 }
 
 Configuration::Configuration(Device* _device,__u16 wTotalLength,__u8 bNumInterfaces,__u8 bConfigurationValue,__u8 iConfiguration,__u8 bmAttributes,__u8 bMaxPower,bool highSpeed) {
+	dbgMessage("");
 	device=_device;
 	descriptor.bLength=9;
 	descriptor.bDescriptorType=highSpeed?USB_DT_OTHER_SPEED_CONFIG:USB_DT_CONFIG;
