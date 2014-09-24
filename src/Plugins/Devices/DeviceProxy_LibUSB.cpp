@@ -294,7 +294,7 @@ int DeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, int
 		free(hex);
 	}
 	*nbytes=rc;
-	
+
 	return 0;
 }
 
@@ -368,22 +368,42 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 }
 
 void DeviceProxy_LibUSB::claim_interface(__u8 interface) {
-	dbgMessage("");
+	int rc;
+
+	// for test code 20140912 atsumi@aizulab.com
+	__u8 buf[256];
+	usb_ctrlrequest setup_packet;
+	int len=0;
+
+	setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
+	setup_packet.bRequest=USB_REQ_GET_CONFIGURATION;
+	setup_packet.wValue= 0;
+	setup_packet.wIndex=0;
+	setup_packet.wLength=1;
+	dbgMessage("USB_REQ_GET_CONFIGURATION");
+	len = 0;
+	control_request(&setup_packet,&len,buf);
+	dbgMessage(""); myDump( buf, len);
+
+	/*
+	for ( int i = 0; i < 3; i++) {
+		setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
+		setup_packet.bRequest=USB_REQ_GET_DESCRIPTOR;
+		setup_packet.wValue= ((USB_DT_CONFIG)<<8) | i;
+		setup_packet.wIndex=0;
+		setup_packet.wLength=256;
+		len=0;
+		dbgMessage("USB_REQ_GET_DESCRIPTOR(CONFIG)");
+		control_request(&setup_packet,&len,buf);
+		dbgMessage(""); myDump( buf, len);
+	}
+	*/
+	
 	if (is_connected()) {
 		int rc=libusb_claim_interface(dev_handle,interface);
 		dbgMessage(""); fprintf( stderr, "%d=libusb_claim_interface(%x,%d);\n", rc,dev_handle,interface);
 		if (rc) {
 			fprintf(stderr,"Error %s(%d) claiming interface %d\n",libusb_error_name( rc), rc,interface);
-			// modified 20140910 atsumi@aizulab.com
-			// for retrying to claim interface if fail libusb_claim_interface()
-			// begin
-			rc = libusb_release_interface( dev_handle,interface);
-			fprintf( stderr, "Error %s(%d) release interface %d\n", libusb_error_name( rc), rc, interface);
-			rc = libusb_detach_kernel_driver( dev_handle, interface);
-			fprintf( stderr, "Error %s(%d) rdetach_kernel_driver %d\n", libusb_error_name( rc), rc, interface);
-			int rc=libusb_claim_interface(dev_handle,interface);
-			dbgMessage(""); fprintf( stderr, "%d=libusb_claim_interface(%x,%d);\n", rc,dev_handle,interface);
-			// end
 		}
 	}
 }
@@ -395,6 +415,36 @@ void DeviceProxy_LibUSB::release_interface(__u8 interface) {
 		if (rc && rc!=-5) {fprintf(stderr,"Error (%d) releasing interface %d\n",rc,interface);}
 	}
 }
+
+int DeviceProxy_LibUSB::hotplug_callback(
+	struct libusb_context *ctx,
+	struct libusb_device *dev,
+	libusb_hotplug_event envet,
+	void *user_data)
+{
+	static libusb_device_handle *handle = NULL;
+	static libusb_device_descriptor desc;
+	int rc;
+	(void)libusb_get_device_descriptor(dev, &desc);
+	unsigned char *string;
+	int data;
+
+	if ( LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED == event) {
+		rc = libusb_open(dev, &handle);
+		if ( LIBUSB_SUCCESS != rc) {
+			printf( "Could not open USB device\n");
+		}
+	} else if ( LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT == event) {
+		if ( handle) {
+			data = libusb_get_string_descriptor_ascii( handle, desc, iManufacturer,string,128);
+			libusb_close(handle);
+			handle = NULL;
+		}
+	} else {
+		printf( "Unhandled event %d\n", event);
+	}
+}
+
 
 static DeviceProxy_LibUSB *proxy;
 

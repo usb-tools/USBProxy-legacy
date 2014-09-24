@@ -140,7 +140,6 @@ Manager::~Manager() {
 		free(injectors);
 		injectors=NULL;
 	}
-
 }
 
 void Manager::load_plugins(ConfigParser *cfg) {

@@ -67,6 +67,8 @@ public:
 
 	__u8 get_address();
 	char* toString();
+
+	int hotplug_callback(	libusb_hotplug_event envet, void *user_data);
 };
 
 #endif /* USBPROXY_DEVICEPROXY_LIBUSB_H */
