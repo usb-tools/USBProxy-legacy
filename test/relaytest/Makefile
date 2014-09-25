@@ -40,7 +40,7 @@ else
 endif
 
 LDFLAGS += -Wl,--gc-sections
-LDFLAGS += -l$(LIBUSB) -ludev -lstdc++ -lboost_atomic -lpthread
+LDFLAGS += -l$(LIBUSB) -ludev -lstdc++ -lboost_atomic -lpthread -lrt
 
 C_FILES := $(wildcard *.c)
 CPP_FILES := $(wildcard *.cpp)
