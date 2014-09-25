@@ -64,6 +64,7 @@ void usage(char *arg) {
 	printf("\t-i Enable UDP injector\n");
 	printf("\t-x Enable Xbox360 UDPHID injector & filter\n");
 	printf("\t-k Keylogger with ROT13 filter (for demo)\n");
+	printf("\t-K <filename> Same as 'k' but now with argument filename for output to (can be a fifo, it must already exist, it is not created!)\n");
 	printf("\t-w <filename> Write to pcap file for viewing in Wireshark\n");
 	printf("\t-h Display this message\n");
 }
@@ -102,6 +103,7 @@ extern "C" int main(int argc, char **argv)
 	int opt;
 	char *host;
 	bool client=false, server=false, device_set=false, host_set=false;
+	FILE *keylog_output_file = NULL;
 	fprintf(stderr,"SIGRTMIN: %d\n",SIGRTMIN);
 
 	// int vendorId=LIBUSB_HOTPLUG_MATCH_ANY, productId=LIBUSB_HOTPLUG_MATCH_ANY;
@@ -116,7 +118,7 @@ extern "C" int main(int argc, char **argv)
 	manager=new Manager();
 	ConfigParser *cfg = new ConfigParser();
 
-	while ((opt = getopt (argc, argv, "v:p:P:D:H:dsc:C:lmikw:hx")) != EOF) {
+	while ((opt = getopt (argc, argv, "v:p:P:D:H:dsc:C:lmikK:w:hx")) != EOF) {
 		switch (opt) {
 		case 'v':
 			cfg->set("vendorId", optarg);
@@ -165,6 +167,16 @@ extern "C" int main(int argc, char **argv)
 			cfg->add_pointer("PacketFilter_KeyLogger::file", stderr);
 			cfg->add_to_vector("Plugins", "PacketFilter_ROT13");
 			break;
+		case 'K':
+			keylog_output_file = fopen(optarg, "r+");
+			if (keylog_output_file == NULL) {
+				fprintf(stderr, "Output file %s failed to open for writing, exiting\n", optarg);
+				return 1;
+			}
+			cfg->add_to_vector("Plugins", "PacketFilter_KeyLogger");
+			cfg->add_pointer("PacketFilter_KeyLogger::file", keylog_output_file);
+			cfg->add_to_vector("Plugins", "PacketFilter_ROT13");
+			break;
 		case 'w':
 			cfg->add_to_vector("Plugins", "PacketFilter_PcapLogger");
 			cfg->set("PacketFilter_PcapLogger::Filename", optarg);
@@ -204,6 +216,10 @@ extern "C" int main(int argc, char **argv)
 	manager->stop_relaying();
 	manager->cleanup();
 	delete(manager);
+
+	if (keylog_output_file) {
+		fclose(keylog_output_file);
+	}
 
 	printf("done\n");
 	return 0;

