@@ -169,6 +169,7 @@ extern "C" int main(int argc, char **argv)
 					fprintf(stderr, "Output file %s failed to open for writing, exiting\n", optarg);
 					return 1;
 				}
+				fprintf(stderr, "Output file %s opened.\n", optarg);
 				cfg->add_pointer("PacketFilter_KeyLogger::file", keylog_output_file);
 			} else {
 				cfg->add_pointer("PacketFilter_KeyLogger::file", stderr);
