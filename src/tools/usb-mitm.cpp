@@ -201,9 +201,8 @@ extern "C" int main(int argc, char **argv)
 			cfg->set("HostProxy", "HostProxy_GadgetFS");
 	}
 
+	int status;
 	do {
-		int status;
-		
 		manager=new Manager();
 		manager->load_plugins(cfg);
 		cfg->print_config();

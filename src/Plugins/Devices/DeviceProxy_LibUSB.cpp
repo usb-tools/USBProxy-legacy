@@ -23,6 +23,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <signal.h>
 #include "DeviceProxy_LibUSB.h"
 #include "TRACE.h"
 #include "HexString.h"
@@ -31,13 +33,36 @@
 
 int DeviceProxy_LibUSB::debugLevel=0;
 
-//CLEANUP hotplug support
+static DeviceProxy_LibUSB *proxy;
+
+extern "C" {
+	// modified 20140926 atsumi@aizulab.com
+	// for handling events of hotploug.
+	int hotplug_callback( struct libusb_context *ctx, struct libusb_device *dev, libusb_hotplug_event envet, void *user_data)
+	{
+		kill( 0, SIGHUP);
+	}
+
+	DeviceProxy * get_deviceproxy_plugin(ConfigParser *cfg) {
+		dbgMessage("");
+		proxy = new DeviceProxy_LibUSB(cfg);
+		return (DeviceProxy *) proxy;
+	}
+	
+	void destroy_plugin() {
+		dbgMessage("");
+		delete proxy;
+	}
+}
 
 DeviceProxy_LibUSB::DeviceProxy_LibUSB(int vendorId,int productId,bool includeHubs)
 {
 	dbgMessage("");
 	context=NULL;
 	dev_handle=NULL;
+	// modified 20140926 atsumi@aizulab.com
+	// for handling events of hotploug.
+	callback_handle = -1;
 	privateContext=true;
 	privateDevice=true;
 	desired_vid=vendorId;
@@ -68,6 +93,9 @@ DeviceProxy_LibUSB::DeviceProxy_LibUSB(ConfigParser *cfg)
 	
 	context=NULL;
 	dev_handle=NULL;
+	// modified 20140926 atsumi@aizulab.com
+	// for handling events of hotploug.
+	callback_handle = -1;
 	privateContext=true;
 	privateDevice=true;
 	desired_vid=vendorId;
@@ -77,6 +105,11 @@ DeviceProxy_LibUSB::DeviceProxy_LibUSB(ConfigParser *cfg)
 
 DeviceProxy_LibUSB::~DeviceProxy_LibUSB() {
 	dbgMessage("");
+	// modified 20140926 atsumi@aizulab.com
+	// for handling events of hotploug.
+	if (context && callback_handle != -1) {
+		libusb_hotplug_deregister_callback( context, callback_handle);
+	}
 	if (privateDevice && dev_handle) {libusb_close(dev_handle);}
 	if (privateContext && context) {libusb_exit(context);}
 }
@@ -123,7 +156,7 @@ int DeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) {
 
 	// modified 20140908 atsumi@aizulab.com
   libusb_set_debug( context, 3);
-	
+
 	libusb_device **list=NULL;
 	libusb_device *found=NULL;
 
@@ -176,7 +209,6 @@ int DeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) {
 			libusb_free_device_list(list,1);
 			return rc;
 		}
-
 	}
 
 	dbgMessage("");
@@ -207,10 +239,32 @@ int DeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) {
 		fprintf(stdout,"Connected to device: %s\n",device_desc);
 		free(device_desc);
 	}
+
+	// modified 20140926 atsumi@aizulab.com
+	// for handling events of hotploug.
+	// begin
+	if ( callback_handle == -1) {
+		//rc = libusb_hotplug_register_callback( context, LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED | LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT, 0, desc.idVendor, desc.idProduct, LIBUSB_HOTPLUG_MATCH_ANY, hotplug_callback, NULL, &callback_handle);
+		rc = libusb_hotplug_register_callback( context, LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT, (libusb_hotplug_flag)0, desc.idVendor, desc.idProduct, LIBUSB_HOTPLUG_MATCH_ANY, hotplug_callback, NULL, &callback_handle);
+
+		if ( LIBUSB_SUCCESS != 0) {
+			fprintf( stderr, "Error registering callback\n");
+			libusb_exit( context);
+			return rc;
+		}
+	}
+	// end
+	
 	return 0;
 }
 
 void DeviceProxy_LibUSB::disconnect() {
+	// modified 20140926 atsumi@aizulab.com
+	// for handling events of hotploug.
+	if (context && callback_handle != -1) {
+		libusb_hotplug_deregister_callback( context, callback_handle);
+	}
+	callback_handle = -1;
 	dbgMessage("");
 	if (privateDevice && dev_handle) {libusb_close(dev_handle);}
 	dev_handle=NULL;
@@ -416,47 +470,3 @@ void DeviceProxy_LibUSB::release_interface(__u8 interface) {
 	}
 }
 
-int DeviceProxy_LibUSB::hotplug_callback(
-	struct libusb_context *ctx,
-	struct libusb_device *dev,
-	libusb_hotplug_event envet,
-	void *user_data)
-{
-	static libusb_device_handle *handle = NULL;
-	static libusb_device_descriptor desc;
-	int rc;
-	(void)libusb_get_device_descriptor(dev, &desc);
-	unsigned char *string;
-	int data;
-
-	if ( LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED == event) {
-		rc = libusb_open(dev, &handle);
-		if ( LIBUSB_SUCCESS != rc) {
-			printf( "Could not open USB device\n");
-		}
-	} else if ( LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT == event) {
-		if ( handle) {
-			data = libusb_get_string_descriptor_ascii( handle, desc, iManufacturer,string,128);
-			libusb_close(handle);
-			handle = NULL;
-		}
-	} else {
-		printf( "Unhandled event %d\n", event);
-	}
-}
-
-
-static DeviceProxy_LibUSB *proxy;
-
-extern "C" {
-	DeviceProxy * get_deviceproxy_plugin(ConfigParser *cfg) {
-		dbgMessage("");
-		proxy = new DeviceProxy_LibUSB(cfg);
-		return (DeviceProxy *) proxy;
-	}
-	
-	void destroy_plugin() {
-		dbgMessage("");
-		delete proxy;
-	}
-}

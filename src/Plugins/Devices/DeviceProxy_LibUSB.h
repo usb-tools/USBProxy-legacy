@@ -33,7 +33,10 @@
 class DeviceProxy_LibUSB:public DeviceProxy {
 private:
 	libusb_context* context;
+	// modified 20140926 atsumi@aizulab.com
+	// for handling events of hotploug.
 	libusb_device_handle* dev_handle;
+	libusb_hotplug_callback_handle callback_handle;
 	bool privateContext;
 	bool privateDevice;
 	int desired_vid;
@@ -67,8 +70,6 @@ public:
 
 	__u8 get_address();
 	char* toString();
-
-	int hotplug_callback(	libusb_hotplug_event envet, void *user_data);
 };
 
 #endif /* USBPROXY_DEVICEPROXY_LIBUSB_H */
