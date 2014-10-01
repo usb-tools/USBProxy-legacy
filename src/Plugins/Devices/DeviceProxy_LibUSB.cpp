@@ -40,6 +40,7 @@ extern "C" {
 	// for handling events of hotploug.
 	int hotplug_callback( struct libusb_context *ctx, struct libusb_device *dev, libusb_hotplug_event envet, void *user_data)
 	{
+		dbgMessage("");
 		kill( 0, SIGHUP);
 	}
 
@@ -243,9 +244,11 @@ int DeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) {
 	// modified 20140926 atsumi@aizulab.com
 	// for handling events of hotploug.
 	// begin
+	dbgMessage("Hotplug callback1");
 	if ( callback_handle == -1) {
-		//rc = libusb_hotplug_register_callback( context, LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED | LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT, 0, desc.idVendor, desc.idProduct, LIBUSB_HOTPLUG_MATCH_ANY, hotplug_callback, NULL, &callback_handle);
-		rc = libusb_hotplug_register_callback( context, LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT, (libusb_hotplug_flag)0, desc.idVendor, desc.idProduct, LIBUSB_HOTPLUG_MATCH_ANY, hotplug_callback, NULL, &callback_handle);
+			dbgMessage("Hotplug callback2");
+			//rc = libusb_hotplug_register_callback( context, LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED | LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT, 0, desc.idVendor, desc.idProduct, LIBUSB_HOTPLUG_MATCH_ANY, hotplug_callback, NULL, &callback_handle);
+		rc = libusb_hotplug_register_callback( context, LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED, (libusb_hotplug_flag)0, desc.idVendor, desc.idProduct, LIBUSB_HOTPLUG_MATCH_ANY, hotplug_callback, NULL, &callback_handle);
 
 		if ( LIBUSB_SUCCESS != 0) {
 			fprintf( stderr, "Error registering callback\n");

@@ -203,19 +203,28 @@ extern "C" int main(int argc, char **argv)
 
 	int status;
 	do {
+		dbgMessage("");
 		manager=new Manager();
+		dbgMessage("");
 		manager->load_plugins(cfg);
+		dbgMessage("");
 		cfg->print_config();
 
+		dbgMessage("");
 		manager->start_control_relaying();
+		dbgMessage("");
 		while ( ( status = manager->get_status()) == USBM_RELAYING) {
 			usleep(10000);
 		}
 
 		// Tidy up
+		dbgMessage("");
 		manager->stop_relaying();
+		dbgMessage("");
 		manager->cleanup();
+		dbgMessage("");
 		delete(manager);
+		dbgMessage("");
 	} while ( status == USBM_RESET);
 	
 	printf("done\n");
