@@ -186,7 +186,7 @@ int open_gadget() {
 	};
 
 	// modified 20141001 atsumi@aizulab.com
-	// gadgetfs_path is NULL when device is reset.
+	// gadgetfs_path is NULL when device reset.
 	if ( gadgetfs_path == NULL) mount_gadget();
 
 	dbgMessage(gadgetfs_path);
