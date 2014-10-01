@@ -168,7 +168,7 @@ void Manager::add_injector(Injector* _injector){
 }
 
 void Manager::remove_injector(__u8 index,bool freeMemory){
-	if (status!=USBM_IDLE) {fprintf(stderr,"Can't remove injectors unless manager is idle.\n");}
+	if (status!=USBM_IDLE && status != USBM_RESET) {fprintf(stderr,"Can't remove injectors unless manager is idle or reset.\n");}
 	if (!injectors || index>=injectorCount) {fprintf(stderr,"Injector index out of bounds.\n");}
 	if (freeMemory && injectors[index]) {delete(injectors[index]);/* not needed injectors[index]=NULL;*/}
 	if (injectorCount==1) {
@@ -194,7 +194,7 @@ __u8 Manager::get_injector_count(){
 }
 
 void Manager::add_filter(PacketFilter* _filter){
-	if (status!=USBM_IDLE) {fprintf(stderr,"Can't add filters unless manager is idle.\n");}
+	if (status!=USBM_IDLE  && status != USBM_RESET) {fprintf(stderr,"Can't add filters unless manager is idle or reset.\n");}
 	if (filters) {
 		filters=(PacketFilter**)realloc(filters,++filterCount*sizeof(PacketFilter*));
 	} else {
@@ -205,7 +205,8 @@ void Manager::add_filter(PacketFilter* _filter){
 }
 
 void Manager::remove_filter(__u8 index,bool freeMemory){
-	if (status!=USBM_IDLE) {fprintf(stderr,"Can't remove filters unless manager is idle.\n");}
+	dbgMessage(""); fprintf( stderr, "status=%d\n", status);
+	if (status!=USBM_IDLE && status != USBM_RESET) {fprintf(stderr,"Can't remove filters unless manager is idle or reset.\n");}
 	if (!filters || index>=filterCount) {fprintf(stderr,"Filter index out of bounds.\n");}
 	if (freeMemory && filters[index]) {delete(filters[index]);/* not needed filters[index]=NULL;*/}
 	if (filterCount==1) {
@@ -250,7 +251,7 @@ void Manager::start_control_relaying(){
 	status=USBM_SETUP;
 
 	//connect device proxy
-	dbgMessage("");
+	dbgMessage(""); fprintf( stderr, "deviceProxy: %x\n", deviceProxy);
 	int rc=deviceProxy->connect();
 	spinner(0);
 	while (rc==ETIMEDOUT && status==USBM_SETUP) {
@@ -260,9 +261,12 @@ void Manager::start_control_relaying(){
 	if (rc!=0) {fprintf(stderr,"Unable to connect to device proxy.\n");status=USBM_IDLE;return;}
 
 	//populate device model
+	dbgMessage("");
 	device=new Device(deviceProxy);
+	dbgMessage("");
 	device->print(0);
 
+	dbgMessage("");
 	if (status!=USBM_SETUP) {stop_relaying();return;}
 
 	//create EP0 endpoint object
@@ -332,7 +336,10 @@ void Manager::start_control_relaying(){
 		}
 	}
 
+
+	dbgMessage("");
 	rc=hostProxy->connect(device);
+	dbgMessage("");
 	spinner(0);
 	while (rc==ETIMEDOUT && status==USBM_SETUP) {
 		spinner(1);
@@ -613,7 +620,7 @@ void Manager::stop_relaying(){
 
 	//Release interfaces
 	int ifc_idx;
-		if (device) {
+	if (device) {
 		Configuration* cfg=device->get_active_configuration();
 		int ifc_cnt=cfg->get_descriptor()->bNumInterfaces;
 		for (ifc_idx=0;ifc_idx<ifc_cnt;ifc_idx++) {
@@ -622,19 +629,28 @@ void Manager::stop_relaying(){
 	}
 
 	//disconnect from host
+	dbgMessage("");
 	hostProxy->disconnect();
 
 	//disconnect device proxy
+	dbgMessage("");
 	deviceProxy->disconnect();
 
 	//clean up device model & endpoints
+	dbgMessage("");
 	if (device) {
-		delete(device);
+		dbgMessage("");
+		// modified 20141001 atsumi@aizulab.com
+		// temporary debug because it's invalid pointer for free()
+		// delete(device);
+		dbgMessage("");
 		device=NULL;
 	}
 
+	dbgMessage("");
 	clean_mqueue();
 
+	dbgMessage("");
 	status=USBM_IDLE;
 }
 

@@ -41,6 +41,7 @@ extern "C" {
 	int hotplug_callback( struct libusb_context *ctx, struct libusb_device *dev, libusb_hotplug_event envet, void *user_data)
 	{
 		dbgMessage("");
+		sleep(1);
 		kill( 0, SIGHUP);
 	}
 
@@ -270,9 +271,13 @@ void DeviceProxy_LibUSB::disconnect() {
 	callback_handle = -1;
 	dbgMessage("");
 	if (privateDevice && dev_handle) {libusb_close(dev_handle);}
+	dbgMessage("");
 	dev_handle=NULL;
+	dbgMessage("");
 	if (privateContext && context) {libusb_exit(context);}
+	dbgMessage("");
 	context=NULL;
+	dbgMessage("");
 }
 
 void DeviceProxy_LibUSB::reset() {
@@ -351,6 +356,13 @@ int DeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, int
 		free(hex);
 	}
 	*nbytes=rc;
+
+	// modified 20141001 atsumi@aizulab.com
+	// to reset after recieving mirrorlink magic packet.
+	if ( setup_packet->bRequestType == 0x40 && setup_packet->bRequest == 0xf0) {
+		sleep(1);
+		kill( 0, SIGHUP);
+	}
 
 	return 0;
 }

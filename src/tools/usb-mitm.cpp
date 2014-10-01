@@ -94,11 +94,11 @@ void handle_signal(int signum)
 			// modified 20140924 atsumi@aizulab.com
 			// restart manager for handling reset bus.
 			// begin
-			// fprintf(stderr, "Received SIGHUP, restarting relaying...\n");
-			// if (manager) {manager->stop_relaying();}
-			// if (manager) {manager->start_control_relaying();}
-			fprintf(stderr, "Received SIGHUP, restarting manager..\n");
-			if ( manager) {manager->set_status( USBM_RESET);}
+			fprintf(stderr, "Received SIGHUP, restarting relaying...\n");
+			if (manager) {manager->stop_relaying();}
+			if (manager) {manager->start_control_relaying();}
+			// fprintf(stderr, "Received SIGHUP, restarting manager..\n");
+			// if ( manager) {manager->set_status( USBM_RESET);}
 			// end
 			break;
 	}

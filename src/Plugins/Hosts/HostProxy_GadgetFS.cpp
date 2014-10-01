@@ -66,29 +66,49 @@ HostProxy_GadgetFS::~HostProxy_GadgetFS() {
 		p_device_file=0;
 	}
 	int i;
+	dbgMessage("");
 	for (i=0;i<16;i++) {
+		dbgMessage("");
 		if (p_epin_async[i]) {
+			dbgMessage("");
 			aiocb* aio=p_epin_async[i];
+			dbgMessage("");
 			if (p_epin_active[i]) {aio_cancel(aio->aio_fildes,aio);}
+			dbgMessage("");
 			if (aio->aio_fildes) {close(aio->aio_fildes);aio->aio_fildes=0;}
+			dbgMessage("");
 			if (aio->aio_buf) {free((void*)(aio->aio_buf));aio->aio_buf=NULL;}
+			dbgMessage("");
 			delete(aio);
+			dbgMessage("");
 			p_epin_async[i]=NULL;
 		}
+		dbgMessage("");
 		if (p_epout_async[i]) {
+			dbgMessage("");
 			aiocb* aio=p_epout_async[i];
+			dbgMessage("");
 			aio_cancel(aio->aio_fildes,aio);
+			dbgMessage("");
 			if (aio->aio_fildes) {close(aio->aio_fildes);aio->aio_fildes=0;}
+			dbgMessage("");
 			if (aio->aio_buf) {free((void*)(aio->aio_buf));aio->aio_buf=NULL;}
+			dbgMessage("");
 			delete(aio);
+			dbgMessage("");
 			p_epout_async[i]=NULL;
 		}
 	}
+	dbgMessage("");
 	if (descriptor) {
+		dbgMessage("");
 		free(descriptor);
+		dbgMessage("");
 		descriptor=NULL;
+		dbgMessage("");
 		descriptorLength=0;
 	}
+	dbgMessage("");
 	unmount_gadget();
 }
 
@@ -100,51 +120,85 @@ int HostProxy_GadgetFS::generate_descriptor(Device* device) {
 
 	ptr = descriptor;
 	/* tag for device descriptor format */
+	dbgMessage("");
 	ptr[0] = ptr[1] = ptr[2] = ptr[3] = 0;
+	dbgMessage("");
 	ptr += 4;
 
 
+	dbgMessage("");
 	Configuration* cfg;
+	dbgMessage("");
 	for (i=1;i<=device->get_descriptor()->bNumConfigurations;i++) {
+		dbgMessage("");
 		if (device->is_highspeed() && device->get_device_qualifier()) {
+			dbgMessage("");
 			cfg=device->get_device_qualifier()->get_configuration(i);
 		} else {
+			dbgMessage("");
 			cfg=device->get_configuration(i);
 		}
+		dbgMessage("");
 		if (cfg) {
+			dbgMessage("");
 			int length=cfg->get_full_descriptor_length();
+			dbgMessage("");
 			usb_config_descriptor* buf=(usb_config_descriptor*)(cfg->get_full_descriptor());
+			dbgMessage("");
 			buf->bDescriptorType=USB_DT_CONFIG;
+			dbgMessage("");
 			buf->bmAttributes&=(~USB_CONFIG_ATT_WAKEUP);
+			dbgMessage("");
 			buf->wTotalLength=length;
+			dbgMessage("");
 			memcpy(ptr,buf,length);
+			dbgMessage("");
 			free(buf);
+			dbgMessage("");
 			ptr+=length;
 		}
 	}
 
+	dbgMessage("");
 	for (i=1;i<=device->get_descriptor()->bNumConfigurations;i++) {
+		dbgMessage("");
 		if (!device->is_highspeed() && device->get_device_qualifier()) {
+			dbgMessage("");
 			cfg=device->get_device_qualifier()->get_configuration(i);
 		} else {
+			dbgMessage("");
 			cfg=device->get_configuration(i);
 		}
+		dbgMessage("");
 		if (cfg) {
+			dbgMessage("");
 			int length=cfg->get_full_descriptor_length();
+			dbgMessage("");
 			usb_config_descriptor* buf=(usb_config_descriptor*)(cfg->get_full_descriptor());
+			dbgMessage("");
 			buf->bDescriptorType=USB_DT_CONFIG;
+			dbgMessage("");
 			buf->bmAttributes&=(~USB_CONFIG_ATT_WAKEUP);
+			dbgMessage("");
 			buf->wTotalLength=length;
+			dbgMessage("");
 			memcpy(ptr,buf,length);
+			dbgMessage("");
 			free(buf);
+			dbgMessage("");
 			ptr+=length;
 		}
 	}
 
+	dbgMessage("");
 	memcpy(ptr, (char *)device->get_descriptor(), sizeof(usb_device_descriptor));
+	dbgMessage("");
 	ptr += sizeof(struct usb_device_descriptor);
+	dbgMessage("");
 	descriptorLength=ptr-descriptor;
+	dbgMessage("");
 	descriptor=(char*)realloc(descriptor,descriptorLength);
+	dbgMessage("");
 	return 0;
 }
 
@@ -155,20 +209,25 @@ int HostProxy_GadgetFS::connect(Device* device,int timeout) {
 	dbgMessage("");
 	if (p_is_connected) {fprintf(stderr,"GadgetFS already connected.\n"); return 0;}
 
+	dbgMessage("");
 	if (generate_descriptor(device)!=0) {return 1;}
 
+	dbgMessage("");
 	if (debugLevel>0) {
 		char* hex=hex_string((void*)descriptor,descriptorLength);
 		fprintf(stderr,"%s\n",hex);
 		free(hex);
 	}
 
+	dbgMessage("");
 	p_device_file = open_gadget();
+	dbgMessage("");
 	if (p_device_file < 0) {
 		fprintf(stderr,"Fail on open %d %s\n",errno,strerror(errno));
 		return 1;
 	}
 
+	dbgMessage("");
 	status = write(p_device_file, descriptor, descriptorLength);
 	dbgMessage(""); fprintf( stderr, "%d = write(%x, %x, %d);\n", status, p_device_file, descriptor, descriptorLength); myDump( descriptor, descriptorLength);
 	if (status < 0) {

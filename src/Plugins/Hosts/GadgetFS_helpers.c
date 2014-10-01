@@ -185,46 +185,65 @@ int open_gadget() {
 		NULL
 	};
 
+	// modified 20141001 atsumi@aizulab.com
+	// gadgetfs_path is NULL when device is reset.
+	if ( gadgetfs_path == NULL) mount_gadget();
+
+	dbgMessage(gadgetfs_path);
 	dir = opendir(gadgetfs_path);
 	if (!dir)
 		return -1;
 
+	dbgMessage("");
 	entry = malloc(offsetof(struct dirent, d_name)
 				   + pathconf(gadgetfs_path, _PC_NAME_MAX)
 				   + 1);
 
+	dbgMessage("");
 	fprintf(stderr,"searching in [%s]\n",gadgetfs_path);
 
+	dbgMessage("");
 	if (!entry) {
 		closedir (dir);
 		return -1;
 	}
 
+	dbgMessage("");
 	while(1) {
+		dbgMessage("");
 		if (readdir_r(dir, entry, &result) < 0) break;
+		dbgMessage("");
 		if (!result) {
 			fprintf(stderr,"%s device file not found.\n", gadgetfs_path);
 			break;
 		}
+		dbgMessage("");
 		for (i = 0; devices[i] && strcmp (devices[i], entry->d_name); i++)
 			;
+		dbgMessage("");
 		if (devices[i]) {filename = devices[i] ;break;}
 	}
 
+	dbgMessage("");
 	free(entry);
+	dbgMessage("");
 	closedir(dir);
 	
+	dbgMessage("");
 	if (filename == NULL) {
 		fprintf(stderr, "Error, unable to find gadget file.\n");
 		return -1;
 	}
 	
+	dbgMessage("");
 	char path[256];
 	int ret, status;
 	sprintf(path, "%s/%s", gadgetfs_path, filename);
 	
+	dbgMessage("");
 	ret = open(path, O_CLOEXEC | O_RDWR);
 	
+	dbgMessage("");
 	return ret;
 }
 
