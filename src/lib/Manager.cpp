@@ -500,11 +500,13 @@ void Manager::start_data_relaying() {
 	}
 
 	//Claim interfaces
-	dbgMessage("");
-	for (ifc_idx=0;ifc_idx<ifc_cnt;ifc_idx++) {
-		dbgMessage("");
-		deviceProxy->claim_interface(ifc_idx);
-	}
+	// deleted 20141002 atsumi@aizulab.com
+	// claim_interface should be called when an endpoint in each interface.
+	// dbgMessage("");
+	// for (ifc_idx=0;ifc_idx<ifc_cnt;ifc_idx++) {
+	//	dbgMessage("");
+	//	deviceProxy->claim_interface(ifc_idx);
+	// }
 
 	dbgMessage("");
 	for(i=1;i<16;i++) {

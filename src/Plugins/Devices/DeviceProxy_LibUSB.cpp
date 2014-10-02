@@ -32,6 +32,7 @@
 #include "myDebug.h"
 
 int DeviceProxy_LibUSB::debugLevel=0;
+int resetCount = 1;
 
 static DeviceProxy_LibUSB *proxy;
 
@@ -336,14 +337,17 @@ char* DeviceProxy_LibUSB::toString() {
 }
 
 int DeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr,int timeout) {
+	int rc;
 	dbgMessage("");
 	if (debugLevel>1) {
 		char* hex=hex_string((void*)setup_packet,sizeof(*setup_packet));
 		printf("LibUSB> %s\n",hex);
 		free(hex);
 	}
+	
 	dbgMessage("");
-	int rc=libusb_control_transfer(dev_handle,setup_packet->bRequestType,setup_packet->bRequest,setup_packet->wValue,setup_packet->wIndex,dataptr,setup_packet->wLength,timeout);
+	rc=libusb_control_transfer(dev_handle,setup_packet->bRequestType,setup_packet->bRequest,setup_packet->wValue,setup_packet->wIndex,dataptr,setup_packet->wLength,timeout);
+
 	dbgMessage(""); fprintf( stderr, "%d=libusb_control_transfer(%x, %02x, %02x, %04x, %04x, %04x, %d)\n", rc,dev_handle,setup_packet->bRequestType,setup_packet->bRequest,setup_packet->wValue,setup_packet->wIndex,dataptr,setup_packet->wLength,timeout); myDump( dataptr, rc);
 	if (rc<0) {
 		if (debugLevel) {fprintf(stderr,"Error %d[%s] sending setup packet.\n",rc,libusb_error_name(rc));}
@@ -359,7 +363,8 @@ int DeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, int
 
 	// modified 20141001 atsumi@aizulab.com
 	// to reset after recieving mirrorlink magic packet.
-	if ( setup_packet->bRequestType == 0x40 && setup_packet->bRequest == 0xf0) {
+	if ( resetCount > 0 && setup_packet->bRequestType == 0x40 && setup_packet->bRequest == 0xf0) {
+		resetCount--;
 		sleep(1);
 		kill( 0, SIGHUP);
 	}
@@ -372,6 +377,8 @@ __u8 DeviceProxy_LibUSB::get_address() {
 	return libusb_get_device_address(dvc);
 }
 
+// modified 20141002 atsumi@aizulab.com
+// It should claim interface right before beginning data transmission.
 void DeviceProxy_LibUSB::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length) {
 	dbgMessage("");
 	int transferred;
@@ -439,11 +446,20 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 void DeviceProxy_LibUSB::claim_interface(__u8 interface) {
 	int rc;
 
+	dbgMessage("");
 	// for test code 20140912 atsumi@aizulab.com
 	__u8 buf[256];
 	usb_ctrlrequest setup_packet;
 	int len=0;
 
+	// modified 20141002 atsumi@aizulab.com
+	// casual hack for nokia701 because it will be setting wrong altinterface.
+	// for mirrorLink
+	//if ( interface == 3) {
+	//	libusb_set_interface_alt_setting( dev_handle, 3, 1);
+	//}
+
+	/*
 	setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
 	setup_packet.bRequest=USB_REQ_GET_CONFIGURATION;
 	setup_packet.wValue= 0;
@@ -453,19 +469,6 @@ void DeviceProxy_LibUSB::claim_interface(__u8 interface) {
 	len = 0;
 	control_request(&setup_packet,&len,buf);
 	dbgMessage(""); myDump( buf, len);
-
-	/*
-	for ( int i = 0; i < 3; i++) {
-		setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
-		setup_packet.bRequest=USB_REQ_GET_DESCRIPTOR;
-		setup_packet.wValue= ((USB_DT_CONFIG)<<8) | i;
-		setup_packet.wIndex=0;
-		setup_packet.wLength=256;
-		len=0;
-		dbgMessage("USB_REQ_GET_DESCRIPTOR(CONFIG)");
-		control_request(&setup_packet,&len,buf);
-		dbgMessage(""); myDump( buf, len);
-	}
 	*/
 	
 	if (is_connected()) {
