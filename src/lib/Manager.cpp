@@ -365,6 +365,16 @@ void Manager::start_control_relaying(){
 }
 
 void Manager::start_data_relaying() {
+	// modified 20141003 atsumi@aizulab.com
+	// to know interface number from an endpoint.
+	// This way is no good because it indicates wrong interface if set alternate interface perhaps.
+	// clear EP2Inf (0xff means it belongs nowhere.)
+	// EP81 becomes 0x11
+	for ( int i = 0; i < 32; i++) {
+		ep2inf[i] = (__u8)0xff;
+	}
+	claimedInterface = (__u8)0xff;
+	
 	dbgMessage("");
 	//enumerate endpoints
 	Configuration* cfg;
@@ -394,9 +404,16 @@ void Manager::start_data_relaying() {
 				out_endpoints[epd->bEndpointAddress&0x0f]=ep;
 			}
 			dbgMessage("");
+			// modified 20141003 atsumi@aizulab.com
+			// to know interface number from an endpoint.
+			ep2inf[ ( ( epd->bEndpointAddress >> 3 ) & 0x10)
+							| ( epd->bEndpointAddress & 0x0f)] = ifc_idx;
 		}
 	}
-
+	// modified 20141003 atsumi@aizulab.com
+	// to know interface number from an endpoint.
+	deviceProxy->setEp2inf( ep2inf, &claimedInterface);
+	
 	int i,j;
 	dbgMessage("");
 	for (i=1;i<16;i++) {

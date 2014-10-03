@@ -83,6 +83,10 @@ private:
 	pthread_t out_readerThreads[16];
 	pthread_t out_writerThreads[16];
 
+	// modified 20141003 atsumi@aizulab.com
+	// to know interface number from an endpoint.
+	__u8 ep2inf[32];
+	__u8 claimedInterface;
 	void start_data_relaying();
 
 public:

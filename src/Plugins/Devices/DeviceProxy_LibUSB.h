@@ -42,7 +42,9 @@ private:
 	int desired_vid;
 	int desired_pid;
 	bool desired_hubs;
-
+	__u8 *ep2inf;
+	__u8 *claimedInterface;
+	
 public:
 	static int debugLevel;
 	DeviceProxy_LibUSB(int vendorId=LIBUSB_HOTPLUG_MATCH_ANY,int productId=LIBUSB_HOTPLUG_MATCH_ANY,bool includeHubs=false);
@@ -69,6 +71,11 @@ public:
 	void release_interface(__u8 interface);
 
 	__u8 get_address();
+
+	// modified 20141003 atsumi@aizulab.com
+	// to know interface number from an endpoint.
+	void setEp2inf( __u8 *ep2inf_, __u8 *claimedInterface_);
+
 	char* toString();
 };
 

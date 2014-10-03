@@ -383,15 +383,24 @@ void DeviceProxy_LibUSB::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacket
 	dbgMessage("");
 	int transferred;
 	int rc;
+
+	// modified 20141003 atsumi@aizulab.com
+	// claim interface for this endpoint
+	while ( *claimedInterface != (__u8)0xff) ;
+	*claimedInterface = ep2inf[ ( ( endpoint >> 3 ) & 0x10) | ( endpoint & 0x0f)];
+	claim_interface( *claimedInterface);
+	
 	switch (attributes & USB_ENDPOINT_XFERTYPE_MASK) {
 		case USB_ENDPOINT_XFER_CONTROL:
 			fprintf(stderr,"Can't send on a control endpoint.");
-			return;
+			// modified 20141002 atsumi@aizulab.com
+			// return; 
 			break;
 		case USB_ENDPOINT_XFER_ISOC:
 			//TODO handle isochronous
 			fprintf(stderr,"Isochronous endpoints unhandled.");
-			return;
+			// modified 20141002 atsumi@aizulab.com
+			// return;
 			break;
 		case USB_ENDPOINT_XFER_BULK:
 			rc=libusb_bulk_transfer(dev_handle,endpoint,dataptr,length,&transferred,0);
@@ -408,39 +417,72 @@ void DeviceProxy_LibUSB::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacket
 			if (transferred!=length) {fprintf(stderr,"Incomplete Interrupt transfer on EP%02x\n",endpoint);}
 			break;
 	}
+
+	// modified 20141003 atsumi@aizulab.com
+	// release interface for this endpoint
+	release_interface( *claimedInterface);
+	*claimedInterface = (__u8)0xff;
 }
 
 void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length,int timeout) {
 	dbgMessage("");
 	int rc;
+
+	// modified 20141003 atsumi@aizulab.com
+	// claim interface for this endpoint
+	while ( *claimedInterface != (__u8)0xff) ;
+	*claimedInterface = ep2inf[ ( ( endpoint >> 3 ) & 0x10) | ( endpoint & 0x0f)];
+	claim_interface( *claimedInterface);
+
 	if (timeout<10) timeout=10;
 	switch (attributes & USB_ENDPOINT_XFERTYPE_MASK) {
 		case USB_ENDPOINT_XFER_CONTROL:
 			fprintf(stderr,"Can't send on a control endpoint.");
-			return;
+			// modified 20141002 atsumi@aizulab.com
+			// return;
 			break;
 		case USB_ENDPOINT_XFER_ISOC:
 			//TODO handle isochronous
 			fprintf(stderr,"Isochronous endpoints unhandled.");
-			return;
+			// modified 20141002 atsumi@aizulab.com
+			// return;
 			break;
 		case USB_ENDPOINT_XFER_BULK:
 			timeout=100;
 			*dataptr=(__u8*)malloc(maxPacketSize*8);
 			rc=libusb_bulk_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,timeout);
 			dbgMessage(""); fprintf( stderr, "%d=libusb_bulk_transfer(%x,%02x,%x,%x,%x,%d);\n",rc,dev_handle,endpoint,*dataptr,maxPacketSize,length,timeout); myDump( *dataptr, *length);
-			if (rc==LIBUSB_ERROR_TIMEOUT){free(*dataptr);*dataptr=NULL;*length=0;return;}
+			if (rc==LIBUSB_ERROR_TIMEOUT){
+				free(*dataptr);
+				*dataptr=NULL;
+				*length=0;
+				// modified 20141002 atsumi@aizulab.com
+				//return;
+				break;
+			}
 			if (rc) {free(*dataptr);*dataptr=NULL;*length=0;fprintf(stderr,"Transfer error (%d) on Device EP%02x\n",rc,endpoint);}
 			dbgMessage(""); fprintf( stderr, "%d = libusb_bulk_transfer( %x, %x, %x, %d, %x, %d);\n", rc, dev_handle, endpoint, *dataptr, maxPacketSize, length, timeout); myDump( *dataptr, *length);
 			break;
-		case USB_ENDPOINT_XFER_INT:
+	  case USB_ENDPOINT_XFER_INT:
 			*dataptr=(__u8*)malloc(maxPacketSize);
 			rc=libusb_interrupt_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,timeout);
 			dbgMessage(""); fprintf( stderr, "%d=libusb_interrupt_transfer(%x,%02x,%x,%d,%x,%d);\n",rc,dev_handle,endpoint,*dataptr,maxPacketSize,length,timeout); myDump( *dataptr, *length);
-			if (rc==LIBUSB_ERROR_TIMEOUT){free(*dataptr);*dataptr=NULL;*length=0;return;}
+			if (rc==LIBUSB_ERROR_TIMEOUT){
+				free(*dataptr);
+				*dataptr=NULL;
+				*length=0;
+				// modified 20141002 atsumi@aizulab.com
+				// return;
+				break;
+			}
 			if (rc) {free(*dataptr);*dataptr=NULL;*length=0;fprintf(stderr,"Transfer error (%d) on Device EP%02x\n",rc,endpoint);}
 			break;
 	}
+
+	// modified 20141003 atsumi@aizulab.com
+	// release interface for this endpoint
+	release_interface( *claimedInterface);
+	*claimedInterface = (__u8)0xff;
 }
 
 void DeviceProxy_LibUSB::claim_interface(__u8 interface) {
@@ -451,13 +493,6 @@ void DeviceProxy_LibUSB::claim_interface(__u8 interface) {
 	__u8 buf[256];
 	usb_ctrlrequest setup_packet;
 	int len=0;
-
-	// modified 20141002 atsumi@aizulab.com
-	// casual hack for nokia701 because it will be setting wrong altinterface.
-	// for mirrorLink
-	//if ( interface == 3) {
-	//	libusb_set_interface_alt_setting( dev_handle, 3, 1);
-	//}
 
 	/*
 	setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
@@ -484,7 +519,15 @@ void DeviceProxy_LibUSB::release_interface(__u8 interface) {
 	dbgMessage("");
 	if (is_connected()) {
 		int rc=libusb_release_interface(dev_handle,interface);
+		dbgMessage(""); fprintf( stderr, "%d=libusb_release_interface(%x,%d);\n", rc,dev_handle,interface);
 		if (rc && rc!=-5) {fprintf(stderr,"Error (%d) releasing interface %d\n",rc,interface);}
 	}
 }
 
+// modified 20141003 atsumi@aizulab.com
+// to know interface number from an endpoint.
+void DeviceProxy_LibUSB::setEp2inf( __u8 *ep2inf_, __u8 *claimedInterface_)
+{
+	ep2inf = ep2inf_;
+	claimedInterface = claimedInterface_;
+}
