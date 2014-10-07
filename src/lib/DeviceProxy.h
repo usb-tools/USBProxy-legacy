@@ -54,10 +54,6 @@ public:
 	virtual void release_interface(__u8 interface)=0;
 
 	virtual __u8 get_address()=0;
-
-	// modified 20141003 atsumi@aizulab.com
-	// to know interface number from an endpoint.
-	virtual void setEp2inf( __u8 *ep2inf_, __u8 *claimedInterface_)=0;
 };
 
 extern "C" {

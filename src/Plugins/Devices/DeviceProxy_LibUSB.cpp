@@ -362,7 +362,7 @@ int DeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, int
 	*nbytes=rc;
 
 	// modified 20141001 atsumi@aizulab.com
-	// to reset after recieving mirrorlink magic packet.
+	// to reset after recieving mirrorlink magic
 	if ( resetCount > 0 && setup_packet->bRequestType == 0x40 && setup_packet->bRequest == 0xf0) {
 		resetCount--;
 		sleep(1);
@@ -377,19 +377,11 @@ __u8 DeviceProxy_LibUSB::get_address() {
 	return libusb_get_device_address(dvc);
 }
 
-// modified 20141002 atsumi@aizulab.com
-// It should claim interface right before beginning data transmission.
 void DeviceProxy_LibUSB::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length) {
 	dbgMessage("");
 	int transferred;
 	int rc;
 
-	// modified 20141003 atsumi@aizulab.com
-	// claim interface for this endpoint
-	while ( *claimedInterface != (__u8)0xff) ;
-	*claimedInterface = ep2inf[ ( ( endpoint >> 3 ) & 0x10) | ( endpoint & 0x0f)];
-	claim_interface( *claimedInterface);
-	
 	switch (attributes & USB_ENDPOINT_XFERTYPE_MASK) {
 		case USB_ENDPOINT_XFER_CONTROL:
 			fprintf(stderr,"Can't send on a control endpoint.");
@@ -418,21 +410,11 @@ void DeviceProxy_LibUSB::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacket
 			break;
 	}
 
-	// modified 20141003 atsumi@aizulab.com
-	// release interface for this endpoint
-	release_interface( *claimedInterface);
-	*claimedInterface = (__u8)0xff;
 }
 
 void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length,int timeout) {
 	dbgMessage("");
 	int rc;
-
-	// modified 20141003 atsumi@aizulab.com
-	// claim interface for this endpoint
-	while ( *claimedInterface != (__u8)0xff) ;
-	*claimedInterface = ep2inf[ ( ( endpoint >> 3 ) & 0x10) | ( endpoint & 0x0f)];
-	claim_interface( *claimedInterface);
 
 	if (timeout<10) timeout=10;
 	switch (attributes & USB_ENDPOINT_XFERTYPE_MASK) {
@@ -478,11 +460,6 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 			if (rc) {free(*dataptr);*dataptr=NULL;*length=0;fprintf(stderr,"Transfer error (%d) on Device EP%02x\n",rc,endpoint);}
 			break;
 	}
-
-	// modified 20141003 atsumi@aizulab.com
-	// release interface for this endpoint
-	release_interface( *claimedInterface);
-	*claimedInterface = (__u8)0xff;
 }
 
 void DeviceProxy_LibUSB::claim_interface(__u8 interface) {
@@ -522,12 +499,4 @@ void DeviceProxy_LibUSB::release_interface(__u8 interface) {
 		dbgMessage(""); fprintf( stderr, "%d=libusb_release_interface(%x,%d);\n", rc,dev_handle,interface);
 		if (rc && rc!=-5) {fprintf(stderr,"Error (%d) releasing interface %d\n",rc,interface);}
 	}
-}
-
-// modified 20141003 atsumi@aizulab.com
-// to know interface number from an endpoint.
-void DeviceProxy_LibUSB::setEp2inf( __u8 *ep2inf_, __u8 *claimedInterface_)
-{
-	ep2inf = ep2inf_;
-	claimedInterface = claimedInterface_;
 }

@@ -260,6 +260,13 @@ void Manager::start_control_relaying(){
 	}
 	if (rc!=0) {fprintf(stderr,"Unable to connect to device proxy.\n");status=USBM_IDLE;return;}
 
+	//Claim interfaces
+	dbgMessage("");
+	for (int i=0;i<2;i++) {
+		dbgMessage("");
+		deviceProxy->claim_interface(i);
+	}
+
 	//populate device model
 	dbgMessage("");
 	device=new Device(deviceProxy);
@@ -365,16 +372,6 @@ void Manager::start_control_relaying(){
 }
 
 void Manager::start_data_relaying() {
-	// modified 20141003 atsumi@aizulab.com
-	// to know interface number from an endpoint.
-	// This way is no good because it indicates wrong interface if set alternate interface perhaps.
-	// clear EP2Inf (0xff means it belongs nowhere.)
-	// EP81 becomes 0x11
-	for ( int i = 0; i < 32; i++) {
-		ep2inf[i] = (__u8)0xff;
-	}
-	claimedInterface = (__u8)0xff;
-	
 	dbgMessage("");
 	//enumerate endpoints
 	Configuration* cfg;
@@ -404,15 +401,8 @@ void Manager::start_data_relaying() {
 				out_endpoints[epd->bEndpointAddress&0x0f]=ep;
 			}
 			dbgMessage("");
-			// modified 20141003 atsumi@aizulab.com
-			// to know interface number from an endpoint.
-			ep2inf[ ( ( epd->bEndpointAddress >> 3 ) & 0x10)
-							| ( epd->bEndpointAddress & 0x0f)] = ifc_idx;
 		}
 	}
-	// modified 20141003 atsumi@aizulab.com
-	// to know interface number from an endpoint.
-	deviceProxy->setEp2inf( ep2inf, &claimedInterface);
 	
 	int i,j;
 	dbgMessage("");
@@ -515,15 +505,6 @@ void Manager::start_data_relaying() {
 			}
 		}
 	}
-
-	//Claim interfaces
-	// deleted 20141002 atsumi@aizulab.com
-	// claim_interface should be called when an endpoint in each interface.
-	// dbgMessage("");
-	// for (ifc_idx=0;ifc_idx<ifc_cnt;ifc_idx++) {
-	//	dbgMessage("");
-	//	deviceProxy->claim_interface(ifc_idx);
-	// }
 
 	dbgMessage("");
 	for(i=1;i<16;i++) {
