@@ -38,13 +38,11 @@
 #include "Configuration.h"
 #include "Interface.h"
 #include "Endpoint.h"
-
 #include "myDebug.h"
 
 int HostProxy_GadgetFS::debugLevel=0;
 
 HostProxy_GadgetFS::HostProxy_GadgetFS(ConfigParser *cfg) {
-	dbgMessage("");
 	mount_gadget();
 	p_is_connected = false;
 	p_device_file=0;
@@ -60,145 +58,89 @@ HostProxy_GadgetFS::HostProxy_GadgetFS(ConfigParser *cfg) {
 }
 
 HostProxy_GadgetFS::~HostProxy_GadgetFS() {
-	dbgMessage("");
 	if (p_device_file) {
 		close(p_device_file);
 		p_device_file=0;
 	}
 	int i;
-	dbgMessage("");
 	for (i=0;i<16;i++) {
-		dbgMessage("");
 		if (p_epin_async[i]) {
-			dbgMessage("");
 			aiocb* aio=p_epin_async[i];
-			dbgMessage("");
 			if (p_epin_active[i]) {aio_cancel(aio->aio_fildes,aio);}
-			dbgMessage("");
 			if (aio->aio_fildes) {close(aio->aio_fildes);aio->aio_fildes=0;}
-			dbgMessage("");
 			if (aio->aio_buf) {free((void*)(aio->aio_buf));aio->aio_buf=NULL;}
-			dbgMessage("");
 			delete(aio);
-			dbgMessage("");
 			p_epin_async[i]=NULL;
 		}
-		dbgMessage("");
 		if (p_epout_async[i]) {
-			dbgMessage("");
 			aiocb* aio=p_epout_async[i];
-			dbgMessage("");
 			aio_cancel(aio->aio_fildes,aio);
-			dbgMessage("");
 			if (aio->aio_fildes) {close(aio->aio_fildes);aio->aio_fildes=0;}
-			dbgMessage("");
 			if (aio->aio_buf) {free((void*)(aio->aio_buf));aio->aio_buf=NULL;}
-			dbgMessage("");
 			delete(aio);
-			dbgMessage("");
 			p_epout_async[i]=NULL;
 		}
 	}
-	dbgMessage("");
 	if (descriptor) {
-		dbgMessage("");
 		free(descriptor);
-		dbgMessage("");
 		descriptor=NULL;
-		dbgMessage("");
 		descriptorLength=0;
 	}
-	dbgMessage("");
 	unmount_gadget();
 }
 
 int HostProxy_GadgetFS::generate_descriptor(Device* device) {
 	char *ptr;
 	int i;
-	dbgMessage("");
 	descriptor=(char*)malloc(USB_BUFSIZE);
 
 	ptr = descriptor;
 	/* tag for device descriptor format */
-	dbgMessage("");
 	ptr[0] = ptr[1] = ptr[2] = ptr[3] = 0;
-	dbgMessage("");
 	ptr += 4;
 
 
-	dbgMessage("");
 	Configuration* cfg;
-	dbgMessage("");
 	for (i=1;i<=device->get_descriptor()->bNumConfigurations;i++) {
-		dbgMessage("");
 		if (device->is_highspeed() && device->get_device_qualifier()) {
-			dbgMessage("");
 			cfg=device->get_device_qualifier()->get_configuration(i);
 		} else {
-			dbgMessage("");
 			cfg=device->get_configuration(i);
 		}
-		dbgMessage("");
 		if (cfg) {
-			dbgMessage("");
 			int length=cfg->get_full_descriptor_length();
-			dbgMessage("");
 			usb_config_descriptor* buf=(usb_config_descriptor*)(cfg->get_full_descriptor());
-			dbgMessage("");
 			buf->bDescriptorType=USB_DT_CONFIG;
-			dbgMessage("");
 			buf->bmAttributes&=(~USB_CONFIG_ATT_WAKEUP);
-			dbgMessage("");
 			buf->wTotalLength=length;
-			dbgMessage("");
 			memcpy(ptr,buf,length);
-			dbgMessage("");
 			free(buf);
-			dbgMessage("");
 			ptr+=length;
 		}
 	}
 
-	dbgMessage("");
 	for (i=1;i<=device->get_descriptor()->bNumConfigurations;i++) {
-		dbgMessage("");
 		if (!device->is_highspeed() && device->get_device_qualifier()) {
-			dbgMessage("");
 			cfg=device->get_device_qualifier()->get_configuration(i);
 		} else {
-			dbgMessage("");
 			cfg=device->get_configuration(i);
 		}
-		dbgMessage("");
 		if (cfg) {
-			dbgMessage("");
 			int length=cfg->get_full_descriptor_length();
-			dbgMessage("");
 			usb_config_descriptor* buf=(usb_config_descriptor*)(cfg->get_full_descriptor());
-			dbgMessage("");
 			buf->bDescriptorType=USB_DT_CONFIG;
-			dbgMessage("");
 			buf->bmAttributes&=(~USB_CONFIG_ATT_WAKEUP);
-			dbgMessage("");
 			buf->wTotalLength=length;
-			dbgMessage("");
 			memcpy(ptr,buf,length);
-			dbgMessage("");
 			free(buf);
-			dbgMessage("");
 			ptr+=length;
 		}
 	}
 
-	dbgMessage("");
 	memcpy(ptr, (char *)device->get_descriptor(), sizeof(usb_device_descriptor));
-	dbgMessage("");
 	ptr += sizeof(struct usb_device_descriptor);
-	dbgMessage("");
 	descriptorLength=ptr-descriptor;
-	dbgMessage("");
 	descriptor=(char*)realloc(descriptor,descriptorLength);
-	dbgMessage("");
 	return 0;
 }
 
@@ -206,30 +148,23 @@ int HostProxy_GadgetFS::generate_descriptor(Device* device) {
 int HostProxy_GadgetFS::connect(Device* device,int timeout) {
 	int status;
 
-	dbgMessage("");
 	if (p_is_connected) {fprintf(stderr,"GadgetFS already connected.\n"); return 0;}
 
-	dbgMessage("");
 	if (generate_descriptor(device)!=0) {return 1;}
 
-	dbgMessage("");
 	if (debugLevel>0) {
 		char* hex=hex_string((void*)descriptor,descriptorLength);
 		fprintf(stderr,"%s\n",hex);
 		free(hex);
 	}
 
-	dbgMessage("");
 	p_device_file = open_gadget();
-	dbgMessage("");
 	if (p_device_file < 0) {
 		fprintf(stderr,"Fail on open %d %s\n",errno,strerror(errno));
 		return 1;
 	}
 
-	dbgMessage("");
 	status = write(p_device_file, descriptor, descriptorLength);
-	dbgMessage(""); fprintf( stderr, "%d = write(%x, %x, %d);\n", status, p_device_file, descriptor, descriptorLength); myDump( descriptor, descriptorLength);
 	if (status < 0) {
 		fprintf(stderr,"Fail on write %d %s\n",errno,strerror(errno));
 		close(p_device_file);
@@ -244,7 +179,6 @@ int HostProxy_GadgetFS::connect(Device* device,int timeout) {
 int HostProxy_GadgetFS::reconnect() {
 	int status;
 
-	dbgMessage("");
 	if (p_is_connected) {fprintf(stderr,"GadgetFS already connected.\n"); return 0;}
 	if (!descriptor) {return 1;}
 
@@ -261,7 +195,6 @@ int HostProxy_GadgetFS::reconnect() {
 	}
 
 	status = write(p_device_file, descriptor, descriptorLength);
-	dbgMessage(""); fprintf( stderr, "%d = write(%x, %x, %d);\n", status, p_device_file, descriptor, descriptorLength); myDump( descriptor, descriptorLength);
 	if (status < 0) {
 		fprintf(stderr,"Fail on write %d %s\n",errno,strerror(errno));
 		close(p_device_file);
@@ -274,7 +207,6 @@ int HostProxy_GadgetFS::reconnect() {
 }
 
 void HostProxy_GadgetFS::disconnect() {
-	dbgMessage("");
 	if (!p_is_connected) {fprintf(stderr,"GadgetFS not connected.\n"); return;}
 
 	if (p_device_file) {
@@ -307,13 +239,11 @@ void HostProxy_GadgetFS::disconnect() {
 }
 
 void HostProxy_GadgetFS::reset() {
-	dbgMessage("");
 	disconnect();
 	reconnect();
 }
 
 bool HostProxy_GadgetFS::is_connected() {
-	dbgMessage("");
 	return p_is_connected;
 }
 
@@ -325,7 +255,6 @@ int HostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *nbyt
 	int ret, nevent, i;
 	struct pollfd fds;
 
-	dbgMessage("");
 	fds.fd = p_device_file;
 	fds.events = POLLIN;
 	if (!poll(&fds, 1, timeout) || !(fds.revents&POLLIN)) {
@@ -334,7 +263,6 @@ int HostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *nbyt
 	}
 
 	ret = read (p_device_file, &events, sizeof(events));
-	dbgMessage( ""); fprintf( stderr, "%d = read ( %x, %x, %d);\n", ret, p_device_file, &events, sizeof(events)); myDump( events, ret);
 	if (ret < 0) {
 		setup_packet->bRequest=0;
 		fprintf(stderr,"Read error %d\n",ret);
@@ -357,7 +285,6 @@ int HostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *nbyt
 			if (!(lastControl.bRequestType&0x80) && lastControl.wLength) {
 				*dataptr=(__u8*)malloc(lastControl.wLength);
 				*nbytes=read(p_device_file,*dataptr,lastControl.wLength);
-				dbgMessage( ""); fprintf( stderr, "%d=read(%x,%x,%d)\n", *nbytes, p_device_file, *dataptr, lastControl.wLength); myDump( *dataptr, *nbytes);
 			} else {
 				*dataptr=NULL;
 				*nbytes=0;
@@ -405,14 +332,17 @@ int HostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *nbyt
 
 
 void HostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length) {
+	int rc;
+	
 	dbgMessage("");
+
 	if (!endpoint) {
-		int rc=write(p_device_file,dataptr,length);
-		dbgMessage(""); fprintf( stderr, "%d = write(%x, %x, %d);\n", rc, p_device_file, descriptor, length); myDump( descriptor, length);
+		rc=write(p_device_file,dataptr,length);
+		dbgMessage(""); fprintf( stderr, "%d=write(%x,%x,%d)\n", rc, p_device_file,dataptr,length); myDump( dataptr, length);
 		if (rc<0) {
 			fprintf(stderr,"Fail on EP00 write %d %s\n",errno,strerror(errno));
 		} else {
-			//fprintf(stderr,"Sent %d bytes on EP00\n",rc);
+			fprintf(stderr,"Sent %d bytes on EP00\n",rc);
 		}
 		return;
 	}
@@ -431,7 +361,8 @@ void HostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacket
 	memcpy((void*)(aio->aio_buf),dataptr,length);
 	aio->aio_nbytes=length;
 
-	int rc=aio_write(aio);
+	rc=aio_write(aio);
+	dbgMessage(""); fprintf( stderr, "%d=write(%x,%d)\n", rc, dataptr,length); myDump( dataptr, length);
 	if (rc) {
 		fprintf(stderr,"Error submitting aio for EP%02x %d %s\n",endpoint,errno,strerror(errno));
 	} else {
@@ -478,6 +409,7 @@ bool HostProxy_GadgetFS::send_wait_complete(__u8 endpoint,int timeout) {
 	} else {
 		rc=aio_return(aio);
 		if (!rc) return true;
+		dbgMessage(""); fprintf(stderr,"Sent %d bytes on EP%02x\n",rc,endpoint);
 		//fprintf(stderr,"Sent %d bytes on EP%02x\n",rc,endpoint);
 		p_epin_active[number]=false;
 		return true;
@@ -486,6 +418,7 @@ bool HostProxy_GadgetFS::send_wait_complete(__u8 endpoint,int timeout) {
 
 void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length, int timeout) {
 	dbgMessage("");
+
 	if (!endpoint) {
 		fprintf(stderr,"trying to receive %d bytes on EP00\n",*length);
 		return;
@@ -520,8 +453,9 @@ void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 		rc=aio_return(aio);
 		*dataptr=(__u8*)malloc(rc);
 		memcpy(*dataptr,(void*)(aio->aio_buf),rc);
-		dbgMessage(""); fprintf( stderr, "memcpy(%x,%x,%d);", *dataptr, (void*)(aio->aio_buf),rc); myDump( *dataptr, rc);
 		*length=rc;
+		dbgMessage(""); fprintf( stderr, "%d=read(%x,%x,%d)\n", rc, p_device_file,dataptr,length); myDump( *dataptr, *length);
+		
 		//fprintf(stderr,"Read %d bytes on EP%02x\n",rc,number);
 		int rc=aio_read(aio);
 		if (rc) {
@@ -533,35 +467,28 @@ void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 }
 
 void HostProxy_GadgetFS::control_ack() {
-	dbgMessage("");
 	if (debugLevel) fprintf(stderr,"Sending ACK\n");
 	if (lastControl.bRequestType&0x80) {
 		write(p_device_file,0,0);
-		dbgMessage( "write(p_device_file,0,0);");
 	} else {
 		read(p_device_file,0,0);
-		dbgMessage( "read(p_device_file,0,0);");
 	}
 }
 
 void HostProxy_GadgetFS::stall_ep(__u8 endpoint) {
-	dbgMessage("");
 	if (debugLevel) fprintf(stderr,"Stalling EP%02x\n",endpoint);
 	if (endpoint) {
 		//FINISH for nonzero endpoint
 	} else {
 		if (lastControl.bRequestType&0x80) {
 			read(p_device_file,0,0);
-			dbgMessage( "read(p_device_file,0,0);");
 		} else {
 			write(p_device_file,0,0);
-			dbgMessage( "write(p_device_file,0,0);");
 		}
 	}
 }
 
 void HostProxy_GadgetFS::setConfig(Configuration* fs_cfg,Configuration* hs_cfg,bool hs) {
-	dbgMessage("");
 	int ifc_idx;
 	__u8 ifc_count=fs_cfg->get_descriptor()->bNumInterfaces;
 	for (ifc_idx=0;ifc_idx<ifc_count;ifc_idx++) {
@@ -615,7 +542,6 @@ void HostProxy_GadgetFS::setConfig(Configuration* fs_cfg,Configuration* hs_cfg,b
 			}
 
 			write(fd,buf,bufSize);
-			dbgMessage(""); fprintf( stderr, "write(%x, %x, %d);\n", fd,buf,bufSize); myDump( buf, bufSize);
 			free(buf);
 			fprintf(stderr,"Opened EP%02x\n",epAddress);
 		}
@@ -626,13 +552,11 @@ static HostProxy_GadgetFS *proxy;
 
 extern "C" {
 	HostProxy * get_hostproxy_plugin(ConfigParser *cfg) {
-		dbgMessage("");
 		proxy = new HostProxy_GadgetFS(cfg);
 		return (HostProxy *) proxy;
 	}
 	
 	void destroy_plugin() {
-		dbgMessage("");
 		delete proxy;
 	}
 }

@@ -35,7 +35,6 @@
 #include "Device.h"
 #include "Interface.h"
 
-#include "myDebug.h"
 
 InterfaceGroup::InterfaceGroup(__u8 _number) {
 	number=_number;

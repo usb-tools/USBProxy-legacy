@@ -35,12 +35,10 @@
 #include "USBString.h"
 #include "DeviceProxy.h"
 
-#include "myDebug.h"
 
 //CLEANUP what happends if device is HS but host is not, in terms of correct config to use,etc.
 
 Device::Device(DeviceProxy* _proxy) {
-	dbgMessage("");
 	hostConfigurationIndex=-1;
 	hostAddress=-1;
 	hostState=USB_STATE_NOTATTACHED;
@@ -55,61 +53,39 @@ Device::Device(DeviceProxy* _proxy) {
 	setup_packet.wIndex=0;
 	setup_packet.wLength=18;
 	int len=0;
-	dbgMessage("");
 	proxy->control_request(&setup_packet,&len,buf);
 	memcpy(&descriptor,buf,len);
-	dbgMessage("Device Descriptor"); myDump( &descriptor, len);
 	int i;
 	configurations=(Configuration **)calloc(descriptor.bNumConfigurations,sizeof(*configurations));
 
-	dbgMessage("");
 	maxStringIdx=(descriptor.iManufacturer>maxStringIdx)?descriptor.iManufacturer:maxStringIdx;
-	dbgMessage("");
 	maxStringIdx=(descriptor.iProduct>maxStringIdx)?descriptor.iProduct:maxStringIdx;
-	dbgMessage("");
 	maxStringIdx=(descriptor.iSerialNumber>maxStringIdx)?descriptor.iSerialNumber:maxStringIdx;
-	dbgMessage("");
 	strings=(USBString ***)calloc(maxStringIdx+1,sizeof(*strings));
 
-	dbgMessage("");
 	add_string(0,0);
 
-	dbgMessage("");
 	if (descriptor.iManufacturer) {add_string(descriptor.iManufacturer);}
-	dbgMessage("");
 	if (descriptor.iProduct) {add_string(descriptor.iProduct);}
-	dbgMessage("");
 	if (descriptor.iSerialNumber) {add_string(descriptor.iSerialNumber);}
 
-	dbgMessage("");
 	for(i=0;i<descriptor.bNumConfigurations;i++) {
-		dbgMessage("");
 		configurations[i]=new Configuration(this,proxy,i);
-		dbgMessage("");
 		__u8 iConfiguration=configurations[i]->get_descriptor()->iConfiguration;
-		dbgMessage("");
 		if (iConfiguration) {add_string(iConfiguration);}
-		dbgMessage("");
 		int j;
 		for (j=0;j<configurations[i]->get_descriptor()->bNumInterfaces;j++) {
 			int k;
-			dbgMessage("");
 			for (k=0;k<configurations[i]->get_interface_alernate_count(j);k++) {
 				
 				// modified 20140903 atsumi@aizulab.com
 				// begin
-				dbgMessage("");
 				if ( configurations[i]->get_interface_alternate(j,k)) {
-					dbgMessage("");
 					if ( configurations[i]->get_interface_alternate(j,k)->get_descriptor()) {
-						dbgMessage("");
 						__u8 iInterface=configurations[i]->get_interface_alternate(j,k)->get_descriptor()->iInterface;
-						dbgMessage("");
 						if (iInterface) {
-							dbgMessage("");
 							add_string(iInterface);
 						}
-						dbgMessage("");
 					}
 				}
 				// End
@@ -117,39 +93,28 @@ Device::Device(DeviceProxy* _proxy) {
 		}
 	}
 
-	dbgMessage("");
 	qualifier=new DeviceQualifier(this,proxy);
 
 	//not a high speed device
-	dbgMessage("");
 	if (!(qualifier->get_descriptor()->bLength)) {
-		dbgMessage("");
 		delete(qualifier);
-		dbgMessage("");
 		qualifier=NULL;
 	}
 
-	dbgMessage("");
 	deviceState=USB_STATE_DEFAULT;
-	dbgMessage("");
 	deviceAddress=proxy->get_address();
-	dbgMessage("");
 	highspeed=proxy->is_highspeed();
-	dbgMessage("");
 	if (deviceAddress) {
-		dbgMessage("");
 		setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
 		setup_packet.bRequest=USB_REQ_GET_CONFIGURATION;
 		setup_packet.wValue=0;
 		setup_packet.wIndex=0;
 		setup_packet.wLength=1;
 		__u8 result;
-		dbgMessage("");
 		proxy->control_request(&setup_packet,&len,&result);
 		deviceConfigurationIndex=result;
 		deviceState=deviceConfigurationIndex?USB_STATE_CONFIGURED:USB_STATE_ADDRESS;
 	} else {
-		dbgMessage("");
 		deviceState=USB_STATE_ADDRESS;
 		deviceConfigurationIndex=0;
 	}

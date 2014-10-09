@@ -46,7 +46,6 @@
 #include "valgrind.h"
 #endif //NVALGRIND
 
-#include "myDebug.h"
 
 RelayWriter::RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _recvQueue) {
 	haltSignal=0;
@@ -135,7 +134,6 @@ void RelayWriter::set_haltsignal(__u8 _haltSignal) {
 #ifdef USEVALGRIND
 
 void RelayWriter::relay_write_setup_valgrind() {
-	dbgMessage("");
 	if (!deviceProxy) {fprintf(stderr,"DeviceProxy not initialized for EP00 writer.\n");return;}
 	if (!sendQueues) {fprintf(stderr,"outQueues not initialized for EP00 writer.\n");return;}
 

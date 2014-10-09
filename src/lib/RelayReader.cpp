@@ -37,6 +37,8 @@
 #include "HostProxy.h"
 #include "Packet.h"
 
+#include "myDebug.h"
+
 RelayReader::RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _sendQueue) {
 	haltSignal=0;
 	sendQueue=_sendQueue;
@@ -166,6 +168,7 @@ void RelayReader::relay_read() {
 			buf=NULL;
 			length=0;
 			proxy->receive_data(endpoint,attributes,maxPacketSize,&buf,&length,500);
+			if (endpoint=0x01) dbgMessage("proxy->receive_data(endpoint,attributes,maxPacketSize,&buf,&length,500);");
 			if (length) {
 				p=new Packet(endpoint,buf,length);
 				idle=false;

@@ -40,11 +40,9 @@
 #include "DeviceProxy.h"
 #include "USBString.h"
 
-#include "myDebug.h"
 
 Configuration::Configuration(Device* _device,DeviceProxy* proxy, int idx,bool otherSpeed)
 {
-	dbgMessage("");
 	device=_device;
 	__u8* buf=(__u8 *)malloc(8);
 	usb_ctrlrequest setup_packet;
@@ -57,7 +55,6 @@ Configuration::Configuration(Device* _device,DeviceProxy* proxy, int idx,bool ot
 	// setup_packet.wLength=8;
 	setup_packet.wLength=9;
 	int len=0;
-	dbgMessage("");
 	proxy->control_request(&setup_packet,&len,buf);
 	// modfied 20140910 atsumi@aizulab.com
 	// a size of all parts of configuration is saved at buf[3] << 8 + buf[2]
@@ -73,46 +70,36 @@ Configuration::Configuration(Device* _device,DeviceProxy* proxy, int idx,bool ot
 	__u8* e=buf+len;
 	__u8* p=buf+9;
 	while (p<e) {
-		dbgMessage("");
 		add_interface(new Interface(this,&p,e));
 	}
-	dbgMessage("");
 	free(buf);
 
 	int i;
-	dbgMessage("");
 	for (i=0;i<descriptor.bNumInterfaces;i++) {
-		dbgMessage("");
 		if (interfaceGroups[i]->get_alternate_count()==1) {
-			dbgMessage("");
 			interfaceGroups[i]->activeAlternateIndex=0;
 		} else {
 			// modified 20140905 atsumi@aizulab.com
 			// setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
-			dbgMessage(""); fprintf( stderr, "interfaceGroups[%d]=%x\n", i, interfaceGroups[i]);
 			setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_INTERFACE;
 			setup_packet.bRequest=USB_REQ_GET_INTERFACE;
 			setup_packet.wValue=0;
 			setup_packet.wIndex=i;
 			setup_packet.wLength=1;
 			__u8 result;
-			dbgMessage("");
 			proxy->control_request(&setup_packet,&len,&result);
 			interfaceGroups[i]->activeAlternateIndex=result;
 		}
-		dbgMessage("");
 	}
 }
 
 Configuration::Configuration(Device* _device,const usb_config_descriptor* _descriptor) {
-	dbgMessage("");
 	device=_device;
 	descriptor=*_descriptor;
 	interfaceGroups=(InterfaceGroup **)calloc(descriptor.bNumInterfaces,sizeof(*interfaceGroups));
 }
 
 Configuration::Configuration(Device* _device,__u16 wTotalLength,__u8 bNumInterfaces,__u8 bConfigurationValue,__u8 iConfiguration,__u8 bmAttributes,__u8 bMaxPower,bool highSpeed) {
-	dbgMessage("");
 	device=_device;
 	descriptor.bLength=9;
 	descriptor.bDescriptorType=highSpeed?USB_DT_OTHER_SPEED_CONFIG:USB_DT_CONFIG;

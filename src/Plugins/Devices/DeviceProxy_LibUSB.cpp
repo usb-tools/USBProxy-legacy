@@ -28,7 +28,6 @@
 #include "DeviceProxy_LibUSB.h"
 #include "TRACE.h"
 #include "HexString.h"
-
 #include "myDebug.h"
 
 int DeviceProxy_LibUSB::debugLevel=0;
@@ -41,26 +40,22 @@ extern "C" {
 	// for handling events of hotploug.
 	int hotplug_callback( struct libusb_context *ctx, struct libusb_device *dev, libusb_hotplug_event envet, void *user_data)
 	{
-		dbgMessage("");
 		sleep(1);
 		kill( 0, SIGHUP);
 	}
 
 	DeviceProxy * get_deviceproxy_plugin(ConfigParser *cfg) {
-		dbgMessage("");
 		proxy = new DeviceProxy_LibUSB(cfg);
 		return (DeviceProxy *) proxy;
 	}
 	
 	void destroy_plugin() {
-		dbgMessage("");
 		delete proxy;
 	}
 }
 
 DeviceProxy_LibUSB::DeviceProxy_LibUSB(int vendorId,int productId,bool includeHubs)
 {
-	dbgMessage("");
 	context=NULL;
 	dev_handle=NULL;
 	// modified 20140926 atsumi@aizulab.com
@@ -77,7 +72,6 @@ DeviceProxy_LibUSB::DeviceProxy_LibUSB(ConfigParser *cfg)
 {
 	int vendorId, productId;
 	
-	dbgMessage("");
 	std::string vid_str = cfg->get("vendorId");
 	if(vid_str == "")
 		vendorId = LIBUSB_HOTPLUG_MATCH_ANY;
@@ -107,7 +101,6 @@ DeviceProxy_LibUSB::DeviceProxy_LibUSB(ConfigParser *cfg)
 }
 
 DeviceProxy_LibUSB::~DeviceProxy_LibUSB() {
-	dbgMessage("");
 	// modified 20140926 atsumi@aizulab.com
 	// for handling events of hotploug.
 	if (context && callback_handle != -1) {
@@ -118,16 +111,13 @@ DeviceProxy_LibUSB::~DeviceProxy_LibUSB() {
 }
 
 int DeviceProxy_LibUSB::connect(int timeout) {
-	dbgMessage("");
 	return connect(desired_vid,desired_pid,desired_hubs);
 }
 
 int DeviceProxy_LibUSB::connect(libusb_device* dvc, libusb_context* _context) {
-	dbgMessage("");
 	if (dev_handle) {fprintf(stderr,"LibUSB already connected.\n"); return 0;}
 	privateContext=false;
 	context=_context;
-	dbgMessage("");
 	int rc=libusb_open(dvc,&dev_handle);
 	if (rc) {
 		if (debugLevel) {fprintf(stderr,"Error %d opening device handle.\n",rc);}
@@ -139,7 +129,6 @@ int DeviceProxy_LibUSB::connect(libusb_device* dvc, libusb_context* _context) {
 }
 
 int DeviceProxy_LibUSB::connect(libusb_device_handle* devh,libusb_context* _context) {
-	dbgMessage("");
 	if (dev_handle) {fprintf(stderr,"LibUSB already connected.\n"); return 0;}
 	privateContext=false;
 	privateDevice=false;
@@ -150,20 +139,17 @@ int DeviceProxy_LibUSB::connect(libusb_device_handle* devh,libusb_context* _cont
 }
 
 int DeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) {
-	dbgMessage("");
 	if (dev_handle) {fprintf(stderr,"LibUSB already connected.\n"); return 0;}
 	privateContext=true;
 	privateDevice=true;
-	dbgMessage("");
 	libusb_init(&context);
 
 	// modified 20140908 atsumi@aizulab.com
-  libusb_set_debug( context, 3);
+  // libusb_set_debug( context, 3);
 
 	libusb_device **list=NULL;
 	libusb_device *found=NULL;
 
-	dbgMessage("");
 	ssize_t cnt=libusb_get_device_list(context,&list);
 	if (cnt<0) {
 		if (debugLevel) {fprintf(stderr,"Error %d retrieving device list.\n", (int)cnt);}
@@ -175,36 +161,28 @@ int DeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) {
 	struct libusb_device_descriptor desc;
 	int rc=0;
 
-	dbgMessage("");
 	for(i = 0; i < cnt; i++){
-		dbgMessage("");
 		libusb_device *dvc = list[i];
-		dbgMessage("");
 		rc = libusb_get_device_descriptor(dvc,&desc);
 		if (rc) {
 			if (debugLevel) {fprintf(stderr,"Error %d retrieving device descriptor.\n",rc);}
 		} else {
-			dbgMessage("");
 			if (
 					(includeHubs || desc.bDeviceClass!=LIBUSB_CLASS_HUB) &&
 					(vendorId==desc.idVendor || vendorId==LIBUSB_HOTPLUG_MATCH_ANY) &&
 					(productId==desc.idProduct || productId==LIBUSB_HOTPLUG_MATCH_ANY)
 				) {
-				dbgMessage("");
 				found=dvc;
 				break;
 			}
 		}
 	}
 
-	dbgMessage("");
 	if (found==NULL) {
-		dbgMessage("");
 		if (debugLevel) {fprintf(stderr,"No devices found.\n");}
 		libusb_free_device_list(list,1);
 		return -1;
 	} else {
-		dbgMessage("");
 		rc=libusb_open(found,&dev_handle);
 		if (rc) {
 			if (debugLevel) {fprintf(stderr,"Error %d opening device handle.\n",rc);}
@@ -214,14 +192,11 @@ int DeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) {
 		}
 	}
 
-	dbgMessage("");
 	libusb_free_device_list(list,1);
 	// modfied 20140905 atsumi@aizulab.ocm
 	// libusb_set_auto_detach_kernel_driver(dev_handle,1);
 	// begin
-	dbgMessage("");
 	rc = libusb_set_auto_detach_kernel_driver(dev_handle,1);
-	dbgMessage("");
 	if ( rc < 0) {
 		fprintf( stderr, "failed libusb_set_auto_detach_kernel_driver(): (%d,%s)\n", rc, libusb_error_name(rc));
 		return rc;
@@ -229,14 +204,12 @@ int DeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) {
 	//end
 	
 	//check that device is responsive
-	dbgMessage("");
 	rc=libusb_get_string_descriptor(dev_handle,0,0,(unsigned char*)&rc,4);
 	if (rc<0) {
 		fprintf(stderr,"Device unresponsive.\n");
 		return rc;
 	}
 
-	dbgMessage("");
 	if (debugLevel) {
 		char *device_desc=toString();
 		fprintf(stdout,"Connected to device: %s\n",device_desc);
@@ -246,9 +219,7 @@ int DeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) {
 	// modified 20140926 atsumi@aizulab.com
 	// for handling events of hotploug.
 	// begin
-	dbgMessage("Hotplug callback1");
 	if ( callback_handle == -1) {
-			dbgMessage("Hotplug callback2");
 			//rc = libusb_hotplug_register_callback( context, LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED | LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT, 0, desc.idVendor, desc.idProduct, LIBUSB_HOTPLUG_MATCH_ANY, hotplug_callback, NULL, &callback_handle);
 		rc = libusb_hotplug_register_callback( context, LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED, (libusb_hotplug_flag)0, desc.idVendor, desc.idProduct, LIBUSB_HOTPLUG_MATCH_ANY, hotplug_callback, NULL, &callback_handle);
 
@@ -270,38 +241,29 @@ void DeviceProxy_LibUSB::disconnect() {
 		libusb_hotplug_deregister_callback( context, callback_handle);
 	}
 	callback_handle = -1;
-	dbgMessage("");
 	if (privateDevice && dev_handle) {libusb_close(dev_handle);}
-	dbgMessage("");
 	dev_handle=NULL;
-	dbgMessage("");
 	if (privateContext && context) {libusb_exit(context);}
-	dbgMessage("");
 	context=NULL;
-	dbgMessage("");
 }
 
 void DeviceProxy_LibUSB::reset() {
-	dbgMessage("");
 	int rc=libusb_reset_device(dev_handle);
 	if (rc==LIBUSB_ERROR_NOT_FOUND) {disconnect();}
 	if (rc) {fprintf(stderr,"Error %s(%d) resetting device.\n",libusb_error_name(rc), rc);}
 }
 
 bool DeviceProxy_LibUSB::is_connected() {
-	dbgMessage("");
 	if (dev_handle) {return true;} else {return false;}
 }
 
 bool DeviceProxy_LibUSB::is_highspeed() {
-	dbgMessage("");
 	libusb_device* dvc=libusb_get_device(dev_handle);
 	int speed=libusb_get_device_speed(dvc);
 	return (speed==LIBUSB_SPEED_HIGH) || (speed==LIBUSB_SPEED_SUPER);
 }
 
 char* DeviceProxy_LibUSB::toString() {
-	dbgMessage("");
 	unsigned char* str_mfr=NULL;
 	unsigned char* str_prd=NULL;
 	struct libusb_device_descriptor desc;
@@ -338,17 +300,14 @@ char* DeviceProxy_LibUSB::toString() {
 
 int DeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr,int timeout) {
 	int rc;
-	dbgMessage("");
 	if (debugLevel>1) {
 		char* hex=hex_string((void*)setup_packet,sizeof(*setup_packet));
 		printf("LibUSB> %s\n",hex);
 		free(hex);
 	}
 	
-	dbgMessage("");
 	rc=libusb_control_transfer(dev_handle,setup_packet->bRequestType,setup_packet->bRequest,setup_packet->wValue,setup_packet->wIndex,dataptr,setup_packet->wLength,timeout);
-
-	dbgMessage(""); fprintf( stderr, "%d=libusb_control_transfer(%x, %02x, %02x, %04x, %04x, %04x, %d)\n", rc,dev_handle,setup_packet->bRequestType,setup_packet->bRequest,setup_packet->wValue,setup_packet->wIndex,dataptr,setup_packet->wLength,timeout); myDump( dataptr, rc);
+	dbgMessage(""); fprintf( stderr, "%d=libusb_control_transfer(%x,%02x,%02x,%04x,%04x,%x,%x,%d)\n", rc, dev_handle,setup_packet->bRequestType,setup_packet->bRequest,setup_packet->wValue,setup_packet->wIndex,dataptr,setup_packet->wLength,timeout);
 	if (rc<0) {
 		if (debugLevel) {fprintf(stderr,"Error %d[%s] sending setup packet.\n",rc,libusb_error_name(rc));}
 		if (rc==-9) return -1;
@@ -363,11 +322,11 @@ int DeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, int
 
 	// modified 20141001 atsumi@aizulab.com
 	// to reset after recieving mirrorlink magic
-	if ( resetCount > 0 && setup_packet->bRequestType == 0x40 && setup_packet->bRequest == 0xf0) {
-		resetCount--;
-		sleep(1);
-		kill( 0, SIGHUP);
-	}
+	// if ( resetCount > 0 && setup_packet->bRequestType == 0x40 && setup_packet->bRequest == 0xf0) {
+	// 	resetCount--;
+	// 	sleep(1);
+	// 	kill( 0, SIGHUP);
+	// }
 
 	return 0;
 }
@@ -378,7 +337,6 @@ __u8 DeviceProxy_LibUSB::get_address() {
 }
 
 void DeviceProxy_LibUSB::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length) {
-	dbgMessage("");
 	int transferred;
 	int rc;
 
@@ -396,14 +354,14 @@ void DeviceProxy_LibUSB::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacket
 			break;
 		case USB_ENDPOINT_XFER_BULK:
 			rc=libusb_bulk_transfer(dev_handle,endpoint,dataptr,length,&transferred,0);
-			dbgMessage(""); fprintf( stderr, "%d=libusb_bulk_transfer(%x,%02x,%x,%x,%x,0);\n",rc,dev_handle,endpoint,dataptr,length,&transferred); myDump( dataptr, length);
+			dbgMessage(""); fprintf( stderr, "%d=libusb_bulk_transfer(%x, %02x, %x, %d, %d)\n", rc, dev_handle,endpoint,dataptr,length,transferred,0);
 			if (rc) {fprintf(stderr,"Transfer error (%d) on Device EP%d\n",rc,endpoint);}
 			//TODO retry transfer if incomplete
 			if (transferred!=length) {fprintf(stderr,"Incomplete Bulk transfer on EP%02x\n",endpoint);}
 			break;
 		case USB_ENDPOINT_XFER_INT:
 			rc=libusb_interrupt_transfer(dev_handle,endpoint,dataptr,length,&transferred,0);
-			dbgMessage(""); fprintf( stderr, "%d=libusb_interrupt_transfer(%x,%02x,%x,%x,%x,0);\n",rc,dev_handle,endpoint,dataptr,length,&transferred); myDump( dataptr, length);
+			dbgMessage(""); fprintf( stderr, "%d=libusb_interrupt_transfer(%x, %02x, %x, %d, %d)\n", rc, dev_handle,endpoint,dataptr,length,transferred,0);
 			if (rc) {fprintf(stderr,"Transfer error (%d) on Device EP%d\n",rc,endpoint);}
 			//TODO retry transfer if incomplete
 			if (transferred!=length) {fprintf(stderr,"Incomplete Interrupt transfer on EP%02x\n",endpoint);}
@@ -413,9 +371,9 @@ void DeviceProxy_LibUSB::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacket
 }
 
 void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length,int timeout) {
-	dbgMessage("");
 	int rc;
 
+	dbgMessage(""); fprintf( stderr, "endpoint = %02x\n", endpoint);
 	if (timeout<10) timeout=10;
 	switch (attributes & USB_ENDPOINT_XFERTYPE_MASK) {
 		case USB_ENDPOINT_XFER_CONTROL:
@@ -433,7 +391,7 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 			timeout=100;
 			*dataptr=(__u8*)malloc(maxPacketSize*8);
 			rc=libusb_bulk_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,timeout);
-			dbgMessage(""); fprintf( stderr, "%d=libusb_bulk_transfer(%x,%02x,%x,%x,%x,%d);\n",rc,dev_handle,endpoint,*dataptr,maxPacketSize,length,timeout); myDump( *dataptr, *length);
+			dbgMessage(""); fprintf( stderr, "%d=libusb_bulk_transfer(%x,%02x,%x,%d,%d,%d)\n", rc, dev_handle,endpoint,*dataptr,maxPacketSize,*length,timeout);
 			if (rc==LIBUSB_ERROR_TIMEOUT){
 				free(*dataptr);
 				*dataptr=NULL;
@@ -443,12 +401,11 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 				break;
 			}
 			if (rc) {free(*dataptr);*dataptr=NULL;*length=0;fprintf(stderr,"Transfer error (%d) on Device EP%02x\n",rc,endpoint);}
-			dbgMessage(""); fprintf( stderr, "%d = libusb_bulk_transfer( %x, %x, %x, %d, %x, %d);\n", rc, dev_handle, endpoint, *dataptr, maxPacketSize, length, timeout); myDump( *dataptr, *length);
 			break;
 	  case USB_ENDPOINT_XFER_INT:
 			*dataptr=(__u8*)malloc(maxPacketSize);
 			rc=libusb_interrupt_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,timeout);
-			dbgMessage(""); fprintf( stderr, "%d=libusb_interrupt_transfer(%x,%02x,%x,%d,%x,%d);\n",rc,dev_handle,endpoint,*dataptr,maxPacketSize,length,timeout); myDump( *dataptr, *length);
+			dbgMessage(""); fprintf( stderr, "%d=libusb_interrupt_transfer(%x,%02x,%x,%d,%d,%d)\n", rc, dev_handle,endpoint,*dataptr,maxPacketSize,*length,timeout);
 			if (rc==LIBUSB_ERROR_TIMEOUT){
 				free(*dataptr);
 				*dataptr=NULL;
@@ -465,7 +422,6 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 void DeviceProxy_LibUSB::claim_interface(__u8 interface) {
 	int rc;
 
-	dbgMessage("");
 	// for test code 20140912 atsumi@aizulab.com
 	__u8 buf[256];
 	usb_ctrlrequest setup_packet;
@@ -477,15 +433,12 @@ void DeviceProxy_LibUSB::claim_interface(__u8 interface) {
 	setup_packet.wValue= 0;
 	setup_packet.wIndex=0;
 	setup_packet.wLength=1;
-	dbgMessage("USB_REQ_GET_CONFIGURATION");
 	len = 0;
 	control_request(&setup_packet,&len,buf);
-	dbgMessage(""); myDump( buf, len);
 	*/
 	
 	if (is_connected()) {
 		int rc=libusb_claim_interface(dev_handle,interface);
-		dbgMessage(""); fprintf( stderr, "%d=libusb_claim_interface(%x,%d);\n", rc,dev_handle,interface);
 		if (rc) {
 			fprintf(stderr,"Error %s(%d) claiming interface %d\n",libusb_error_name( rc), rc,interface);
 		}
@@ -493,10 +446,8 @@ void DeviceProxy_LibUSB::claim_interface(__u8 interface) {
 }
 
 void DeviceProxy_LibUSB::release_interface(__u8 interface) {
-	dbgMessage("");
 	if (is_connected()) {
 		int rc=libusb_release_interface(dev_handle,interface);
-		dbgMessage(""); fprintf( stderr, "%d=libusb_release_interface(%x,%d);\n", rc,dev_handle,interface);
 		if (rc && rc!=-5) {fprintf(stderr,"Error (%d) releasing interface %d\n",rc,interface);}
 	}
 }

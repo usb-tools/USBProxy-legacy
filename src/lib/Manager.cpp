@@ -205,7 +205,6 @@ void Manager::add_filter(PacketFilter* _filter){
 }
 
 void Manager::remove_filter(__u8 index,bool freeMemory){
-	dbgMessage(""); fprintf( stderr, "status=%d\n", status);
 	if (status!=USBM_IDLE && status != USBM_RESET) {fprintf(stderr,"Can't remove filters unless manager is idle or reset.\n");}
 	if (!filters || index>=filterCount) {fprintf(stderr,"Filter index out of bounds.\n");}
 	if (freeMemory && filters[index]) {delete(filters[index]);/* not needed filters[index]=NULL;*/}
@@ -251,7 +250,6 @@ void Manager::start_control_relaying(){
 	status=USBM_SETUP;
 
 	//connect device proxy
-	dbgMessage(""); fprintf( stderr, "deviceProxy: %x\n", deviceProxy);
 	int rc=deviceProxy->connect();
 	spinner(0);
 	while (rc==ETIMEDOUT && status==USBM_SETUP) {
@@ -260,20 +258,17 @@ void Manager::start_control_relaying(){
 	}
 	if (rc!=0) {fprintf(stderr,"Unable to connect to device proxy.\n");status=USBM_IDLE;return;}
 
+	// modified 20141007 atsumi@aizulab.com
+  // I think interfaces are claimed soon after connecting device.
 	//Claim interfaces
-	dbgMessage("");
-	for (int i=0;i<2;i++) {
-		dbgMessage("");
+	for (int i=0;i<10;i++) {
 		deviceProxy->claim_interface(i);
 	}
 
 	//populate device model
-	dbgMessage("");
 	device=new Device(deviceProxy);
-	dbgMessage("");
 	device->print(0);
 
-	dbgMessage("");
 	if (status!=USBM_SETUP) {stop_relaying();return;}
 
 	//create EP0 endpoint object
@@ -344,9 +339,7 @@ void Manager::start_control_relaying(){
 	}
 
 
-	dbgMessage("");
 	rc=hostProxy->connect(device);
-	dbgMessage("");
 	spinner(0);
 	while (rc==ETIMEDOUT && status==USBM_SETUP) {
 		spinner(1);
@@ -372,177 +365,109 @@ void Manager::start_control_relaying(){
 }
 
 void Manager::start_data_relaying() {
-	dbgMessage("");
 	//enumerate endpoints
 	Configuration* cfg;
 	cfg=device->get_active_configuration();
 	int ifc_idx;
-	dbgMessage("");
 	int ifc_cnt=cfg->get_descriptor()->bNumInterfaces;
-	dbgMessage("");
 	for (ifc_idx=0;ifc_idx<ifc_cnt;ifc_idx++) {
-		dbgMessage("");
 		Interface* ifc=cfg->get_interface(ifc_idx);
 		int ep_idx;
-		dbgMessage(""); fprintf( stderr, "ifc=%x, ifc_idx=%d, ifc_cnt=%d\n", ifc, ifc_idx, ifc_cnt);
 		int ep_cnt=ifc->get_endpoint_count();
-		dbgMessage("");
 		for(ep_idx=0;ep_idx<ep_cnt;ep_idx++) {
-			dbgMessage("");
 			Endpoint* ep=ifc->get_endpoint_by_idx(ep_idx);
-			dbgMessage("");
 			const usb_endpoint_descriptor* epd=ep->get_descriptor();
-			dbgMessage("");
 			if (epd->bEndpointAddress & 0x80) { //IN EP
-				dbgMessage("");
 				in_endpoints[epd->bEndpointAddress&0x0f]=ep;
 			} else { //OUT EP
-				dbgMessage("");
 				out_endpoints[epd->bEndpointAddress&0x0f]=ep;
 			}
-			dbgMessage("");
 		}
 	}
 	
 	int i,j;
-	dbgMessage("");
 	for (i=1;i<16;i++) {
 		char mqname[16];
 		struct mq_attr mqa;
 		mqa.mq_maxmsg=1;
 		mqa.mq_msgsize=4;
 
-		dbgMessage("");
 		if (in_endpoints[i]) {
-			dbgMessage("");
 			sprintf(mqname,"/USBProxy(%d)-%02X-EP",getpid(),i|0x80);
-			dbgMessage("");
+			dbgMessage(mqname);
 			mqd_t mq=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
 			//RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
-			dbgMessage("");
 			in_readers[i]=new RelayReader(in_endpoints[i],(Proxy*)deviceProxy,mq);
 			//RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
-			dbgMessage("");
 			in_writers[i]=new RelayWriter(in_endpoints[i],(Proxy*)hostProxy,mq);
-			dbgMessage("");
 		}
-		dbgMessage("");
 		if (out_endpoints[i]) {
-			dbgMessage("");
 			sprintf(mqname,"/USBProxy(%d)-%02X-EP",getpid(),i);
-			dbgMessage("");
+			dbgMessage(mqname);
 			mqd_t mq=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
 			//RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
-			dbgMessage("");
 			out_readers[i]=new RelayReader(out_endpoints[i],(Proxy*)hostProxy,mq);
 			//RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
-			dbgMessage("");
 			out_writers[i]=new RelayWriter(out_endpoints[i],(Proxy*)deviceProxy,mq);
-			dbgMessage("");
 		}
-		dbgMessage("");
 	}
 
 	//apply filters to relayers
-	dbgMessage("");
 	for(i=0;i<filterCount;i++) {
-		dbgMessage("");
 		if (filters[i]->device.test(device) && filters[i]->configuration.test(cfg)) {
-			dbgMessage("");
 			for (j=1;j<16;j++) {
-				dbgMessage("");
 				if (in_endpoints[j] && filters[i]->endpoint.test(in_endpoints[j]) && filters[i]->interface.test(in_endpoints[j]->get_interface())) {
-					dbgMessage("");
 					in_writers[j]->add_filter(filters[i]);
 				}
-				dbgMessage("");
 				if (out_endpoints[j] && filters[i]->endpoint.test(out_endpoints[j]) && filters[i]->interface.test(out_endpoints[j]->get_interface())) {
-					dbgMessage("");
 					out_writers[j]->add_filter(filters[i]);
 				}
-				dbgMessage("");
 			}
 		}
 	}
 
 	//apply injectors to relayers
-	dbgMessage("");
 	for(i=0;i<injectorCount;i++) {
-		dbgMessage("");
 		if (injectors[i]->device.test(device) && injectors[i]->configuration.test(cfg)) {
 			char mqname[16];
 			struct mq_attr mqa;
-			dbgMessage("");
 			mqa.mq_maxmsg=1;
 			mqa.mq_msgsize=4;
-			dbgMessage("");
 			for (j=1;j<16;j++) {
-				dbgMessage("");
 				if (in_endpoints[j] && injectors[i]->endpoint.test(in_endpoints[j]) && injectors[i]->interface.test(in_endpoints[j]->get_interface())) {
-					dbgMessage("");
 					sprintf(mqname,"/USBProxy(%d)-%02X-%02X",getpid(),j|0x80,i);
-					dbgMessage("");
 					mqd_t mq=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
-					dbgMessage("");
 					injectors[i]->set_queue(j|0x80,mq);
-					dbgMessage("");
 					in_writers[j]->add_queue(mq);
-					dbgMessage("");
 				}
-				dbgMessage("");
 				if (out_endpoints[j] && injectors[i]->endpoint.test(out_endpoints[j]) && injectors[i]->interface.test(out_endpoints[j]->get_interface())) {
-					dbgMessage("");
 					sprintf(mqname,"/USBProxy(%d)-%02X-%02X",getpid(),j,i);
-					dbgMessage("");
 					mqd_t mq=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
-					dbgMessage("");
 					injectors[i]->set_queue(j,mq);
-					dbgMessage("");
 					out_writers[j]->add_queue(mq);
-					dbgMessage("");
 				}
-				dbgMessage("");
 			}
 		}
 	}
 
-	dbgMessage("");
 	for(i=1;i<16;i++) {
-		dbgMessage("");
 		if (in_readers[i]) {
-			dbgMessage("");
 			in_readers[i]->set_haltsignal(haltSignal);
-			dbgMessage("");
 			pthread_create(&in_readerThreads[i],NULL,&RelayReader::relay_read_helper,in_readers[i]);
-			dbgMessage("");
 		}
-		dbgMessage("");
 		if (in_writers[i]) {
-			dbgMessage("");
 			in_writers[i]->set_haltsignal(haltSignal);
-			dbgMessage("");
 			pthread_create(&in_writerThreads[i],NULL,&RelayWriter::relay_write_helper,in_writers[i]);
-			dbgMessage("");
 		}
-		dbgMessage("");
 		if (out_readers[i]) {
-			dbgMessage("");
 			out_readers[i]->set_haltsignal(haltSignal);
-			dbgMessage("");
 			pthread_create(&out_readerThreads[i],NULL,&RelayReader::relay_read_helper,out_readers[i]);
-			dbgMessage("");
 		}
-		dbgMessage("");
 		if (out_writers[i]) {
-			dbgMessage("");
 			out_writers[i]->set_haltsignal(haltSignal);
-			dbgMessage("");
 			pthread_create(&out_writerThreads[i],NULL,&RelayWriter::relay_write_helper,out_writers[i]);
-			dbgMessage("");
 		}
-		dbgMessage("");
 	}
-	dbgMessage("");
 }
 
 void Manager::stop_relaying(){
@@ -629,62 +554,40 @@ void Manager::stop_relaying(){
 	}
 
 	//disconnect from host
-	dbgMessage("");
 	hostProxy->disconnect();
 
 	//disconnect device proxy
-	dbgMessage("");
 	deviceProxy->disconnect();
 
 	//clean up device model & endpoints
-	dbgMessage("");
 	if (device) {
-		dbgMessage("");
 		// modified 20141001 atsumi@aizulab.com
 		// temporary debug because it's invalid pointer for free()
 		// delete(device);
-		dbgMessage("");
 		device=NULL;
 	}
 
-	dbgMessage("");
 	clean_mqueue();
 
-	dbgMessage("");
 	status=USBM_IDLE;
 }
 
 void Manager::setConfig(__u8 index) {
-	dbgMessage("");
 	device->set_active_configuration(index);
-	dbgMessage("");
 	DeviceQualifier* qualifier=device->get_device_qualifier();
-	dbgMessage("");
 	if (qualifier) {
-		dbgMessage("");
 		if (device->is_highspeed()) {
-			dbgMessage("");
 			deviceProxy->setConfig(device->get_device_qualifier()->get_configuration(index),device->get_configuration(index),true);
-			dbgMessage("");
 			hostProxy->setConfig(device->get_device_qualifier()->get_configuration(index),device->get_configuration(index),true);
-			dbgMessage("");
 		} else {
-			dbgMessage("");
 			deviceProxy->setConfig(device->get_configuration(index),device->get_device_qualifier()->get_configuration(index),false);
-			dbgMessage("");
 			hostProxy->setConfig(device->get_configuration(index),device->get_device_qualifier()->get_configuration(index),false);
-			dbgMessage("");
 		}
 	} else {
-		dbgMessage("");
 		deviceProxy->setConfig(device->get_configuration(index),NULL,device->is_highspeed());
-		dbgMessage("");
 		hostProxy->setConfig(device->get_configuration(index),NULL,device->is_highspeed());
-		dbgMessage("");
 	}
-	dbgMessage("");
 	start_data_relaying();
-	dbgMessage("");
 }
 
 /* Delete all injectors and filters - easier to manage */

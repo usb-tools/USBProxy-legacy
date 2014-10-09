@@ -39,7 +39,6 @@
 
 #include "Configuration.h"
 
-#include "myDebug.h"
 
 //CLEANUP update active interface in interfacegroup upon set interface request
 //CLEANUP update active endpoints in proxied device upon set interface request
@@ -56,7 +55,6 @@ Interface::Interface(Configuration* _configuration,__u8** p,const __u8* e) {
   // Follow code handles its descriptors as a generic descriptora.
 	// begin
 	while ( *(*p+1) != 4 && *p < e) {
-		dbgMessage( "Descriptor:"); myDump( *p, **p);
 		GenericDescriptor* d=(GenericDescriptor*)malloc((*p)[0]);
 		memcpy(d,*p,(*p)[0]);
 		generic_descriptor_count++;
@@ -74,12 +72,10 @@ Interface::Interface(Configuration* _configuration,__u8** p,const __u8* e) {
 	// modified 20140903 atsumi@aizulab.com
 	// memcpy(&descriptor,*p,9);
 	memcpy(&descriptor,*p,**p);
-	dbgMessage( "Descriptor:"); myDump( *p, **p);
 	*p=*p+**p;
 	endpoints=(Endpoint**)calloc(descriptor.bNumEndpoints,sizeof(*endpoints));
 	Endpoint** ep=endpoints;
 	while (*p<e && (*(*p+1))!=4) {
-		dbgMessage( "Descriptor:"); myDump( *p, **p);
 		switch (*(*p+1)) {
 			case 5:
 				*(ep++)=new Endpoint(this,*p);
