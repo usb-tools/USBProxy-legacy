@@ -258,16 +258,22 @@ void Manager::start_control_relaying(){
 	}
 	if (rc!=0) {fprintf(stderr,"Unable to connect to device proxy.\n");status=USBM_IDLE;return;}
 
-	// modified 20141007 atsumi@aizulab.com
-  // I think interfaces are claimed soon after connecting device.
-	//Claim interfaces
-	for (int i=0;i<10;i++) {
-		deviceProxy->claim_interface(i);
-	}
-
 	//populate device model
 	device=new Device(deviceProxy);
 	device->print(0);
+
+	// modified 20141007 atsumi@aizulab.com
+  // I think interfaces are claimed soon after connecting device.
+	//Claim interfaces
+	dbgMessage("");
+	Configuration* cfg;
+	cfg=device->get_active_configuration();
+	dbgMessage("");
+	int ifc_cnt=cfg->get_descriptor()->bNumInterfaces;
+	dbgMessage("");
+	for (int i=0;i<ifc_cnt;i++) {
+	 	deviceProxy->claim_interface(i);
+	}
 
 	if (status!=USBM_SETUP) {stop_relaying();return;}
 
@@ -338,7 +344,6 @@ void Manager::start_control_relaying(){
 		}
 	}
 
-
 	rc=hostProxy->connect(device);
 	spinner(0);
 	while (rc==ETIMEDOUT && status==USBM_SETUP) {
@@ -368,21 +373,32 @@ void Manager::start_data_relaying() {
 	//enumerate endpoints
 	Configuration* cfg;
 	cfg=device->get_active_configuration();
+
 	int ifc_idx;
 	int ifc_cnt=cfg->get_descriptor()->bNumInterfaces;
 	for (ifc_idx=0;ifc_idx<ifc_cnt;ifc_idx++) {
-		Interface* ifc=cfg->get_interface(ifc_idx);
-		int ep_idx;
-		int ep_cnt=ifc->get_endpoint_count();
-		for(ep_idx=0;ep_idx<ep_cnt;ep_idx++) {
-			Endpoint* ep=ifc->get_endpoint_by_idx(ep_idx);
-			const usb_endpoint_descriptor* epd=ep->get_descriptor();
-			if (epd->bEndpointAddress & 0x80) { //IN EP
-				in_endpoints[epd->bEndpointAddress&0x0f]=ep;
-			} else { //OUT EP
-				out_endpoints[epd->bEndpointAddress&0x0f]=ep;
+		// modified 20141010 atsumi@aizulab.com
+		// for considering alternate interface
+		// begin
+		int aifc_idx;
+		int aifc_cnt = cfg->get_interface_alternate_count( ifc_idx);
+		for ( aifc_idx=0; aifc_idx < aifc_cnt; aifc_idx++) {
+			Interface* aifc=cfg->get_interface_alternate(ifc_idx, aifc_idx);
+			int ep_idx;
+			int ep_cnt=aifc->get_endpoint_count();
+			dbgMessage(""); fprintf( stderr, "ifc_cnt=%d, if_idx=%d, aifc_cnt=%d, aifc_idx=%d, ep_cnt=%d\n", ifc_cnt, ifc_idx, aifc_cnt, aifc_idx, ep_cnt);
+			for(ep_idx=0;ep_idx<ep_cnt;ep_idx++) {
+				Endpoint* ep=aifc->get_endpoint_by_idx(ep_idx);
+				const usb_endpoint_descriptor* epd=ep->get_descriptor();
+				dbgMessage(""); fprintf( stderr, "epaddr=%d\n", epd->bEndpointAddress);
+				if (epd->bEndpointAddress & 0x80) { //IN EP
+					in_endpoints[epd->bEndpointAddress&0x0f]=ep;
+				} else { //OUT EP
+					out_endpoints[epd->bEndpointAddress&0x0f]=ep;
+				}
 			}
 		}
+		// end
 	}
 	
 	int i,j;
@@ -411,7 +427,7 @@ void Manager::start_data_relaying() {
 			out_writers[i]=new RelayWriter(out_endpoints[i],(Proxy*)deviceProxy,mq);
 		}
 	}
-
+	/*
 	//apply filters to relayers
 	for(i=0;i<filterCount;i++) {
 		if (filters[i]->device.test(device) && filters[i]->configuration.test(cfg)) {
@@ -449,7 +465,7 @@ void Manager::start_data_relaying() {
 			}
 		}
 	}
-
+	*/
 	for(i=1;i<16;i++) {
 		if (in_readers[i]) {
 			in_readers[i]->set_haltsignal(haltSignal);

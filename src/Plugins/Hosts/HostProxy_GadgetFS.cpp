@@ -423,19 +423,24 @@ void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 		fprintf(stderr,"trying to receive %d bytes on EP00\n",*length);
 		return;
 	}
+	dbgMessage("");
 	if (endpoint & 0x80) {
 		fprintf(stderr,"trying to receive %d bytes on an in EP%02x\n",*length,endpoint);
 		return;
 	}
+	dbgMessage("");
 	int number=endpoint&0x0f;
 	if (!p_epout_async[number]) {
 		fprintf(stderr,"trying to receive %d bytes on a non-open EP%02x\n",*length,endpoint);
 		return;
 	}
 
+	dbgMessage("");
 	aiocb* aio=p_epout_async[number];
 
+	dbgMessage("");
 	int rc=aio_error(aio);
+	dbgMessage("");
 	if (rc==EINPROGRESS && timeout) {
 		struct timespec ts;
 		ts.tv_sec=0;
@@ -446,6 +451,7 @@ void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 			rc=aio_error(aio);
 		}
 	}
+	dbgMessage("");
 	if (rc) {
 		if (rc==EINPROGRESS) {return;}
 		fprintf(stderr,"Error during async aio on EP %02x %d %s\n",endpoint,rc,strerror(rc));
@@ -489,62 +495,69 @@ void HostProxy_GadgetFS::stall_ep(__u8 endpoint) {
 }
 
 void HostProxy_GadgetFS::setConfig(Configuration* fs_cfg,Configuration* hs_cfg,bool hs) {
-	int ifc_idx;
+	int ifc_idx, aifc_idx;
 	__u8 ifc_count=fs_cfg->get_descriptor()->bNumInterfaces;
 	for (ifc_idx=0;ifc_idx<ifc_count;ifc_idx++) {
-		Interface* fs_ifc=fs_cfg->get_interface(ifc_idx);
-		Interface* hs_ifc=hs_cfg?hs_cfg->get_interface(ifc_idx):fs_ifc;
-		hs_ifc=hs_ifc?hs_ifc:fs_ifc;
-		__u8 ep_count=fs_ifc->get_endpoint_count();
-		int ep_idx;
-		for (ep_idx=0;ep_idx<ep_count;ep_idx++) {
-			const usb_endpoint_descriptor* fs_ep=fs_ifc->get_endpoint_by_idx(ep_idx)->get_descriptor();
-			const usb_endpoint_descriptor* hs_ep=(hs_ifc->get_endpoint_by_idx(ep_idx))?hs_ifc->get_endpoint_by_idx(ep_idx)->get_descriptor():fs_ep;
-			__u8 bufSize=4+fs_ep->bLength+hs_ep->bLength;
-			__u8* buf=(__u8*)calloc(1,bufSize);
-			buf[0]=1;
+		// modified 20141010 atsumi@aizulab.com
+		// for considering alternate interface
+		// begin
+		int aifc_cnt = fs_cfg->get_interface_alternate_count( ifc_idx);
+		for ( aifc_idx=0; aifc_idx < aifc_cnt; aifc_idx++) {
+			Interface* fs_aifc=fs_cfg->get_interface_alternate(ifc_idx, aifc_idx);
+			Interface* hs_aifc=hs_cfg?hs_cfg->get_interface_alternate(aifc_idx, aifc_idx):fs_aifc;
+			hs_aifc=hs_aifc?hs_aifc:fs_aifc;
+			__u8 ep_count=fs_aifc->get_endpoint_count();
+			int ep_idx;
+			for (ep_idx=0;ep_idx<ep_count;ep_idx++) {
+				const usb_endpoint_descriptor* fs_ep=fs_aifc->get_endpoint_by_idx(ep_idx)->get_descriptor();
+				const usb_endpoint_descriptor* hs_ep=(hs_aifc->get_endpoint_by_idx(ep_idx))?hs_aifc->get_endpoint_by_idx(ep_idx)->get_descriptor():fs_ep;
+				__u8 bufSize=4+fs_ep->bLength+hs_ep->bLength;
+				__u8* buf=(__u8*)calloc(1,bufSize);
+				buf[0]=1;
 
-			memcpy(buf+4,fs_ep,fs_ep->bLength);
-			memcpy(buf+4+fs_ep->bLength,hs_ep,hs_ep->bLength);
+				memcpy(buf+4,fs_ep,fs_ep->bLength);
+				memcpy(buf+4+fs_ep->bLength,hs_ep,hs_ep->bLength);
 
-			__u8 epAddress=fs_ep->bEndpointAddress;
+				__u8 epAddress=fs_ep->bEndpointAddress;
 
-			int fd=open_endpoint(epAddress);
-			if (fd<0) {
-				fprintf(stderr,"Fail on open EP%02x %d %s\n",epAddress,errno,strerror(errno));
-				return;
-			}
-			if (epAddress & 0x80) {
-				aiocb* aio=new aiocb();
-				aio->aio_fildes=fd;
-				aio->aio_offset=0;
-				aio->aio_nbytes=0;
-				aio->aio_buf=NULL;
-				aio->aio_sigevent.sigev_notify=SIGEV_NONE;
-				p_epin_async[epAddress&0x0f]=aio;
-			} else {
-				aiocb* aio=new aiocb();
-				aio->aio_fildes=fd;
-				aio->aio_offset=0;
-				if (hs) {
-					aio->aio_nbytes=(hs_ep->bmAttributes&0x02)?hs_ep->wMaxPacketSize:hs_ep->wMaxPacketSize;
-				} else {
-					aio->aio_nbytes=(fs_ep->bmAttributes&0x02)?fs_ep->wMaxPacketSize:fs_ep->wMaxPacketSize;
+				int fd=open_endpoint(epAddress);
+				if (fd<0) {
+					fprintf(stderr,"Fail on open EP%02x %d %s\n",epAddress,errno,strerror(errno));
+					return;
 				}
-				aio->aio_buf=malloc(aio->aio_nbytes);
-				aio->aio_sigevent.sigev_notify=SIGEV_NONE;
-				int rc=aio_read(aio);
-				if (rc) {
-					delete(aio);fprintf(stderr,"Error submitting aio for EP%02x %d %s\n",epAddress,errno,strerror(errno));
+				if (epAddress & 0x80) {
+					aiocb* aio=new aiocb();
+					aio->aio_fildes=fd;
+					aio->aio_offset=0;
+					aio->aio_nbytes=0;
+					aio->aio_buf=NULL;
+					aio->aio_sigevent.sigev_notify=SIGEV_NONE;
+					p_epin_async[epAddress&0x0f]=aio;
 				} else {
-					p_epout_async[epAddress&0x0f]=aio;
+					aiocb* aio=new aiocb();
+					aio->aio_fildes=fd;
+					aio->aio_offset=0;
+					if (hs) {
+						aio->aio_nbytes=(hs_ep->bmAttributes&0x02)?hs_ep->wMaxPacketSize:hs_ep->wMaxPacketSize;
+					} else {
+						aio->aio_nbytes=(fs_ep->bmAttributes&0x02)?fs_ep->wMaxPacketSize:fs_ep->wMaxPacketSize;
+					}
+					aio->aio_buf=malloc(aio->aio_nbytes);
+					aio->aio_sigevent.sigev_notify=SIGEV_NONE;
+					int rc=aio_read(aio);
+					if (rc) {
+						delete(aio);fprintf(stderr,"Error submitting aio for EP%02x %d %s\n",epAddress,errno,strerror(errno));
+					} else {
+						p_epout_async[epAddress&0x0f]=aio;
+					}
 				}
+				
+				write(fd,buf,bufSize);
+				free(buf);
+				fprintf(stderr,"Opened EP%02x\n",epAddress);
 			}
-
-			write(fd,buf,bufSize);
-			free(buf);
-			fprintf(stderr,"Opened EP%02x\n",epAddress);
 		}
+		// end
 	}
 }
 

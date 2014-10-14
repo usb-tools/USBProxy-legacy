@@ -327,7 +327,10 @@ int DeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, int
 	// 	sleep(1);
 	// 	kill( 0, SIGHUP);
 	// }
-
+	// for debug code 20141010 atsumi@aizulab.com
+	if ( setup_packet->bRequestType == 0x01 && setup_packet->bRequest == 0x0b) {
+		dbgMessage( ""); fprintf( stderr, "set interface %d:%d\n", setup_packet->wIndex, setup_packet->wValue);
+	}
 	return 0;
 }
 
