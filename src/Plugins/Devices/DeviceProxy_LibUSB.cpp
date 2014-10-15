@@ -53,8 +53,6 @@ extern "C" {
 	}
 }
 
-int DeviceProxy_LibUSB::debugLevel=0;
-
 //CLEANUP hotplug support
 
 DeviceProxy_LibUSB::DeviceProxy_LibUSB(int vendorId,int productId,bool includeHubs)
