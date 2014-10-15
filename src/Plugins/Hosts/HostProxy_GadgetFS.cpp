@@ -38,7 +38,6 @@
 #include "Configuration.h"
 #include "Interface.h"
 #include "Endpoint.h"
-#include "myDebug.h"
 
 int HostProxy_GadgetFS::debugLevel=0;
 
@@ -332,17 +331,12 @@ int HostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *nbyt
 
 
 void HostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length) {
-	int rc;
-	
-	dbgMessage("");
-
 	if (!endpoint) {
-		rc=write(p_device_file,dataptr,length);
-		dbgMessage(""); fprintf( stderr, "%d=write(%x,%x,%d)\n", rc, p_device_file,dataptr,length); myDump( dataptr, length);
+		int rc=write(p_device_file,dataptr,length);
 		if (rc<0) {
 			fprintf(stderr,"Fail on EP00 write %d %s\n",errno,strerror(errno));
 		} else {
-			fprintf(stderr,"Sent %d bytes on EP00\n",rc);
+			//fprintf(stderr,"Sent %d bytes on EP00\n",rc);
 		}
 		return;
 	}
@@ -361,8 +355,7 @@ void HostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacket
 	memcpy((void*)(aio->aio_buf),dataptr,length);
 	aio->aio_nbytes=length;
 
-	rc=aio_write(aio);
-	dbgMessage(""); fprintf( stderr, "%d=write(%x,%d)\n", rc, dataptr,length); myDump( dataptr, length);
+	int rc=aio_write(aio);
 	if (rc) {
 		fprintf(stderr,"Error submitting aio for EP%02x %d %s\n",endpoint,errno,strerror(errno));
 	} else {
@@ -371,7 +364,6 @@ void HostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacket
 }
 
 bool HostProxy_GadgetFS::send_wait_complete(__u8 endpoint,int timeout) {
-	dbgMessage("");
 	if (!endpoint) return true;
 	if (!(endpoint & 0x80)) {
 		fprintf(stderr,"trying to check send on an out EP%02x\n",endpoint);
@@ -409,7 +401,6 @@ bool HostProxy_GadgetFS::send_wait_complete(__u8 endpoint,int timeout) {
 	} else {
 		rc=aio_return(aio);
 		if (!rc) return true;
-		dbgMessage(""); fprintf(stderr,"Sent %d bytes on EP%02x\n",rc,endpoint);
 		//fprintf(stderr,"Sent %d bytes on EP%02x\n",rc,endpoint);
 		p_epin_active[number]=false;
 		return true;
@@ -417,30 +408,23 @@ bool HostProxy_GadgetFS::send_wait_complete(__u8 endpoint,int timeout) {
 }
 
 void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length, int timeout) {
-	dbgMessage("");
-
 	if (!endpoint) {
 		fprintf(stderr,"trying to receive %d bytes on EP00\n",*length);
 		return;
 	}
-	dbgMessage("");
 	if (endpoint & 0x80) {
 		fprintf(stderr,"trying to receive %d bytes on an in EP%02x\n",*length,endpoint);
 		return;
 	}
-	dbgMessage("");
 	int number=endpoint&0x0f;
 	if (!p_epout_async[number]) {
 		fprintf(stderr,"trying to receive %d bytes on a non-open EP%02x\n",*length,endpoint);
 		return;
 	}
 
-	dbgMessage("");
 	aiocb* aio=p_epout_async[number];
 
-	dbgMessage("");
 	int rc=aio_error(aio);
-	dbgMessage("");
 	if (rc==EINPROGRESS && timeout) {
 		struct timespec ts;
 		ts.tv_sec=0;
@@ -451,7 +435,6 @@ void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 			rc=aio_error(aio);
 		}
 	}
-	dbgMessage("");
 	if (rc) {
 		if (rc==EINPROGRESS) {return;}
 		fprintf(stderr,"Error during async aio on EP %02x %d %s\n",endpoint,rc,strerror(rc));
@@ -460,8 +443,6 @@ void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 		*dataptr=(__u8*)malloc(rc);
 		memcpy(*dataptr,(void*)(aio->aio_buf),rc);
 		*length=rc;
-		dbgMessage(""); fprintf( stderr, "%d=read(%x,%x,%d)\n", rc, p_device_file,dataptr,length); myDump( *dataptr, *length);
-		
 		//fprintf(stderr,"Read %d bytes on EP%02x\n",rc,number);
 		int rc=aio_read(aio);
 		if (rc) {

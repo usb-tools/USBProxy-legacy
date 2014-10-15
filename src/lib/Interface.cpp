@@ -39,7 +39,6 @@
 
 #include "Configuration.h"
 
-
 //CLEANUP update active interface in interfacegroup upon set interface request
 //CLEANUP update active endpoints in proxied device upon set interface request
 //CLEANUP handle any endpoints that become inactive upon set interface request
@@ -55,8 +54,8 @@ Interface::Interface(Configuration* _configuration,__u8** p,const __u8* e) {
   // Follow code handles its descriptors as a generic descriptora.
 	// begin
 	while ( *(*p+1) != 4 && *p < e) {
-		GenericDescriptor* d=(GenericDescriptor*)malloc((*p)[0]);
-		memcpy(d,*p,(*p)[0]);
+		GenericDescriptor* d=(GenericDescriptor*)malloc(**p);
+		memcpy(d,*p,**p);
 		generic_descriptor_count++;
 		if (generic_descriptors) {
 			generic_descriptors=(GenericDescriptor**)realloc(generic_descriptors,sizeof(*generic_descriptors)*generic_descriptor_count);

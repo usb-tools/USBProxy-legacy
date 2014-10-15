@@ -47,7 +47,6 @@
 #include "RelayWriter.h"
 #include "Injector.h"
 
-
 Manager::Manager() {
 	haltSignal=0;
 	status=USBM_IDLE;
@@ -167,6 +166,7 @@ void Manager::add_injector(Injector* _injector){
 }
 
 void Manager::remove_injector(__u8 index,bool freeMemory){
+	// modified 20141015 atsumi@aizulab.com for reset bust
 	if (status!=USBM_IDLE && status != USBM_RESET) {fprintf(stderr,"Can't remove injectors unless manager is idle or reset.\n");}
 	if (!injectors || index>=injectorCount) {fprintf(stderr,"Injector index out of bounds.\n");}
 	if (freeMemory && injectors[index]) {delete(injectors[index]);/* not needed injectors[index]=NULL;*/}
@@ -193,6 +193,7 @@ __u8 Manager::get_injector_count(){
 }
 
 void Manager::add_filter(PacketFilter* _filter){
+	// modified 20141015 atsumi@aizulab.com for reset bust
 	if (status!=USBM_IDLE  && status != USBM_RESET) {fprintf(stderr,"Can't add filters unless manager is idle or reset.\n");}
 	if (filters) {
 		filters=(PacketFilter**)realloc(filters,++filterCount*sizeof(PacketFilter*));
@@ -204,6 +205,7 @@ void Manager::add_filter(PacketFilter* _filter){
 }
 
 void Manager::remove_filter(__u8 index,bool freeMemory){
+	// modified 20141015 atsumi@aizulab.com for reset bust
 	if (status!=USBM_IDLE && status != USBM_RESET) {fprintf(stderr,"Can't remove filters unless manager is idle or reset.\n");}
 	if (!filters || index>=filterCount) {fprintf(stderr,"Filter index out of bounds.\n");}
 	if (freeMemory && filters[index]) {delete(filters[index]);/* not needed filters[index]=NULL;*/}
@@ -394,7 +396,7 @@ void Manager::start_data_relaying() {
 		}
 		// end
 	}
-	
+
 	int i,j;
 	for (i=1;i<16;i++) {
 		char mqname[16];
@@ -456,6 +458,11 @@ void Manager::start_data_relaying() {
 				}
 			}
 		}
+	}
+
+	//Claim interfaces
+	for (ifc_idx=0;ifc_idx<ifc_cnt;ifc_idx++) {
+		deviceProxy->claim_interface(ifc_idx);
 	}
 
 	for(i=1;i<16;i++) {

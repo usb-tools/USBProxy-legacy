@@ -51,6 +51,7 @@ enum Manager_status {
 	USBM_RELAYING=2,
 	USBM_STOPPING=3,
 	USBM_SETUP_ABORT=4,
+	// midified 20141015 atsumi@aizulab.com for reset bust
 	USBM_RESET=5
 };
 

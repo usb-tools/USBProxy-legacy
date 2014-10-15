@@ -77,13 +77,13 @@ public:
 	USBString* get_manufacturer_string(__u16 languageId=0);
 	USBString* get_product_string(__u16 languageId=0);
 	USBString* get_serial_string(__u16 languageId=0);
-    __u16 get_language_by_index(__u8 index);
-    int get_language_count();
-    Configuration* get_active_configuration();
-    DeviceQualifier* get_device_qualifier();
-    void set_device_qualifier(DeviceQualifier* _qualifier);
-    bool is_highspeed();
-    const definition_error is_defined();
+	__u16 get_language_by_index(__u8 index);
+	int get_language_count();
+	Configuration* get_active_configuration();
+	DeviceQualifier* get_device_qualifier();
+	void set_device_qualifier(DeviceQualifier* _qualifier);
+	bool is_highspeed();
+	const definition_error is_defined();
 };
 
 #endif /* USBPROXY_DEVICE_H */

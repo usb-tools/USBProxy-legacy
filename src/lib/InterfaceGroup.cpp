@@ -35,7 +35,6 @@
 #include "Device.h"
 #include "Interface.h"
 
-
 InterfaceGroup::InterfaceGroup(__u8 _number) {
 	number=_number;
 	alternateCount=0;
