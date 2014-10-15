@@ -41,7 +41,6 @@
 #include "PacketFilter.h"
 #include "Manager.h"
 
-#include "myDebug.h"
 
 #ifndef NVALGRIND
 #define USEVALGRIND
@@ -384,7 +383,6 @@ void RelayWriter::relay_write_setup() {
 }
 
 void RelayWriter::relay_write() {
-	dbgMessage("");
 	if (!endpoint) {
 		relay_write_setup();
 		return;

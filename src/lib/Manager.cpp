@@ -47,7 +47,6 @@
 #include "RelayWriter.h"
 #include "Injector.h"
 
-#include "myDebug.h"
 
 Manager::Manager() {
 	haltSignal=0;
@@ -265,12 +264,9 @@ void Manager::start_control_relaying(){
 	// modified 20141007 atsumi@aizulab.com
   // I think interfaces are claimed soon after connecting device.
 	//Claim interfaces
-	dbgMessage("");
 	Configuration* cfg;
 	cfg=device->get_active_configuration();
-	dbgMessage("");
 	int ifc_cnt=cfg->get_descriptor()->bNumInterfaces;
-	dbgMessage("");
 	for (int i=0;i<ifc_cnt;i++) {
 	 	deviceProxy->claim_interface(i);
 	}
@@ -386,11 +382,9 @@ void Manager::start_data_relaying() {
 			Interface* aifc=cfg->get_interface_alternate(ifc_idx, aifc_idx);
 			int ep_idx;
 			int ep_cnt=aifc->get_endpoint_count();
-			dbgMessage(""); fprintf( stderr, "ifc_cnt=%d, if_idx=%d, aifc_cnt=%d, aifc_idx=%d, ep_cnt=%d\n", ifc_cnt, ifc_idx, aifc_cnt, aifc_idx, ep_cnt);
 			for(ep_idx=0;ep_idx<ep_cnt;ep_idx++) {
 				Endpoint* ep=aifc->get_endpoint_by_idx(ep_idx);
 				const usb_endpoint_descriptor* epd=ep->get_descriptor();
-				dbgMessage(""); fprintf( stderr, "epaddr=%d\n", epd->bEndpointAddress);
 				if (epd->bEndpointAddress & 0x80) { //IN EP
 					in_endpoints[epd->bEndpointAddress&0x0f]=ep;
 				} else { //OUT EP
@@ -410,7 +404,6 @@ void Manager::start_data_relaying() {
 
 		if (in_endpoints[i]) {
 			sprintf(mqname,"/USBProxy(%d)-%02X-EP",getpid(),i|0x80);
-			dbgMessage(mqname);
 			mqd_t mq=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
 			//RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
 			in_readers[i]=new RelayReader(in_endpoints[i],(Proxy*)deviceProxy,mq);
@@ -419,7 +412,6 @@ void Manager::start_data_relaying() {
 		}
 		if (out_endpoints[i]) {
 			sprintf(mqname,"/USBProxy(%d)-%02X-EP",getpid(),i);
-			dbgMessage(mqname);
 			mqd_t mq=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
 			//RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
 			out_readers[i]=new RelayReader(out_endpoints[i],(Proxy*)hostProxy,mq);

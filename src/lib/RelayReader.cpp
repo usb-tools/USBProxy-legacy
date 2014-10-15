@@ -37,7 +37,6 @@
 #include "HostProxy.h"
 #include "Packet.h"
 
-#include "myDebug.h"
 
 RelayReader::RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _sendQueue) {
 	haltSignal=0;
@@ -144,7 +143,6 @@ void RelayReader::relay_read_setup() {
 }
 
 void RelayReader::relay_read() {
-	dbgMessage("");
 	if (!endpoint) {
 		relay_read_setup();
 		return;
