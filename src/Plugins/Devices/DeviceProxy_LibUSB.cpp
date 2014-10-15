@@ -28,7 +28,6 @@
 #include "DeviceProxy_LibUSB.h"
 #include "TRACE.h"
 #include "HexString.h"
-#include "myDebug.h"
 
 int DeviceProxy_LibUSB::debugLevel=0;
 int resetCount = 1;
@@ -307,7 +306,6 @@ int DeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, int
 	}
 	
 	rc=libusb_control_transfer(dev_handle,setup_packet->bRequestType,setup_packet->bRequest,setup_packet->wValue,setup_packet->wIndex,dataptr,setup_packet->wLength,timeout);
-	dbgMessage(""); fprintf( stderr, "%d=libusb_control_transfer(%x,%02x,%02x,%04x,%04x,%x,%x,%d)\n", rc, dev_handle,setup_packet->bRequestType,setup_packet->bRequest,setup_packet->wValue,setup_packet->wIndex,dataptr,setup_packet->wLength,timeout);
 	if (rc<0) {
 		if (debugLevel) {fprintf(stderr,"Error %d[%s] sending setup packet.\n",rc,libusb_error_name(rc));}
 		if (rc==-9) return -1;
@@ -329,7 +327,6 @@ int DeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, int
 	// }
 	// for debug code 20141010 atsumi@aizulab.com
 	if ( setup_packet->bRequestType == 0x01 && setup_packet->bRequest == 0x0b) {
-		dbgMessage( ""); fprintf( stderr, "set interface %d:%d\n", setup_packet->wIndex, setup_packet->wValue);
 	}
 	return 0;
 }
@@ -357,14 +354,12 @@ void DeviceProxy_LibUSB::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacket
 			break;
 		case USB_ENDPOINT_XFER_BULK:
 			rc=libusb_bulk_transfer(dev_handle,endpoint,dataptr,length,&transferred,0);
-			dbgMessage(""); fprintf( stderr, "%d=libusb_bulk_transfer(%x, %02x, %x, %d, %d)\n", rc, dev_handle,endpoint,dataptr,length,transferred,0);
 			if (rc) {fprintf(stderr,"Transfer error (%d) on Device EP%d\n",rc,endpoint);}
 			//TODO retry transfer if incomplete
 			if (transferred!=length) {fprintf(stderr,"Incomplete Bulk transfer on EP%02x\n",endpoint);}
 			break;
 		case USB_ENDPOINT_XFER_INT:
 			rc=libusb_interrupt_transfer(dev_handle,endpoint,dataptr,length,&transferred,0);
-			dbgMessage(""); fprintf( stderr, "%d=libusb_interrupt_transfer(%x, %02x, %x, %d, %d)\n", rc, dev_handle,endpoint,dataptr,length,transferred,0);
 			if (rc) {fprintf(stderr,"Transfer error (%d) on Device EP%d\n",rc,endpoint);}
 			//TODO retry transfer if incomplete
 			if (transferred!=length) {fprintf(stderr,"Incomplete Interrupt transfer on EP%02x\n",endpoint);}
@@ -376,7 +371,6 @@ void DeviceProxy_LibUSB::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacket
 void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length,int timeout) {
 	int rc;
 
-	dbgMessage(""); fprintf( stderr, "endpoint = %02x\n", endpoint);
 	if (timeout<10) timeout=10;
 	switch (attributes & USB_ENDPOINT_XFERTYPE_MASK) {
 		case USB_ENDPOINT_XFER_CONTROL:
@@ -394,7 +388,6 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 			timeout=100;
 			*dataptr=(__u8*)malloc(maxPacketSize*8);
 			rc=libusb_bulk_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,timeout);
-			dbgMessage(""); fprintf( stderr, "%d=libusb_bulk_transfer(%x,%02x,%x,%d,%d,%d)\n", rc, dev_handle,endpoint,*dataptr,maxPacketSize,*length,timeout);
 			if (rc==LIBUSB_ERROR_TIMEOUT){
 				free(*dataptr);
 				*dataptr=NULL;
@@ -408,7 +401,6 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 	  case USB_ENDPOINT_XFER_INT:
 			*dataptr=(__u8*)malloc(maxPacketSize);
 			rc=libusb_interrupt_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,timeout);
-			dbgMessage(""); fprintf( stderr, "%d=libusb_interrupt_transfer(%x,%02x,%x,%d,%d,%d)\n", rc, dev_handle,endpoint,*dataptr,maxPacketSize,*length,timeout);
 			if (rc==LIBUSB_ERROR_TIMEOUT){
 				free(*dataptr);
 				*dataptr=NULL;
