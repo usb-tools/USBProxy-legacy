@@ -38,6 +38,7 @@
 
 #include "DeviceProxy.h"
 
+
 DeviceQualifier::DeviceQualifier(Device* _device,DeviceProxy* proxy) {
 	device=_device;
 
@@ -63,7 +64,7 @@ DeviceQualifier::DeviceQualifier(Device* _device,DeviceProxy* proxy) {
 		int j;
 		for (j=0;j<configurations[i]->get_descriptor()->bNumInterfaces;j++) {
 			int k;
-			for (k=0;k<configurations[i]->get_interface_alernate_count(j);k++) {
+			for (k=0;k<configurations[i]->get_interface_alternate_count(j);k++) {
 
 				// modified 20140903 atsumi@aizulab.com
 				// begin

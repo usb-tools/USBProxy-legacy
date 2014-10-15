@@ -90,9 +90,15 @@ void handle_signal(int signum)
 			sigaction(SIGTERM, &action, NULL);
 			break;
 		case SIGHUP:
+			// modified 20140924 atsumi@aizulab.com
+			// restart manager for handling reset bus.
+			// begin
 			fprintf(stderr, "Received SIGHUP, restarting relaying...\n");
 			if (manager) {manager->stop_relaying();}
 			if (manager) {manager->start_control_relaying();}
+			// fprintf(stderr, "Received SIGHUP, restarting manager..\n");
+			// if ( manager) {manager->set_status( USBM_RESET);}
+			// end
 			break;
 	}
 }
@@ -113,7 +119,6 @@ extern "C" int main(int argc, char **argv)
 	sigaction(SIGHUP, &action, NULL);
 	sigaction(SIGINT, &action, NULL);
 	
-	manager=new Manager();
 	ConfigParser *cfg = new ConfigParser();
 
 	while ((opt = getopt (argc, argv, "v:p:P:D:H:dsc:C:lmikw:hx")) != EOF) {
@@ -194,17 +199,24 @@ extern "C" int main(int argc, char **argv)
 		if(!host_set)
 			cfg->set("HostProxy", "HostProxy_GadgetFS");
 	}
-	manager->load_plugins(cfg);
-	cfg->print_config();
 
-	manager->start_control_relaying();
-	while (manager->get_status()==USBM_RELAYING) {usleep(10000);}
+	int status;
+	do {
+		manager=new Manager();
+		manager->load_plugins(cfg);
+		cfg->print_config();
 
-	// Tidy up
-	manager->stop_relaying();
-	manager->cleanup();
-	delete(manager);
+		manager->start_control_relaying();
+		while ( ( status = manager->get_status()) == USBM_RELAYING) {
+			usleep(10000);
+		}
 
+		// Tidy up
+		manager->stop_relaying();
+		manager->cleanup();
+		delete(manager);
+	} while ( status == USBM_RESET);
+	
 	printf("done\n");
 	return 0;
 }

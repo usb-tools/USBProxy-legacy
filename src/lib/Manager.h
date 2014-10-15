@@ -50,7 +50,8 @@ enum Manager_status {
 	USBM_SETUP=1,
 	USBM_RELAYING=2,
 	USBM_STOPPING=3,
-	USBM_SETUP_ABORT=4
+	USBM_SETUP_ABORT=4,
+	USBM_RESET=5
 };
 
 class Manager {
@@ -103,6 +104,9 @@ public:
 	void setConfig(__u8 index);
 
 	enum Manager_status get_status() {return status;}
+
+	// modified 20140924 atsumi@aizulab.com
+  void set_status( Manager_status status_) { status = status_;}
 
 	void start_control_relaying();
 	void stop_relaying();

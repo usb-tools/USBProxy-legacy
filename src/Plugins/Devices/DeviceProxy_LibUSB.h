@@ -33,13 +33,16 @@
 class DeviceProxy_LibUSB:public DeviceProxy {
 private:
 	libusb_context* context;
+	// modified 20140926 atsumi@aizulab.com
+	// for handling events of hotploug.
 	libusb_device_handle* dev_handle;
+	libusb_hotplug_callback_handle callback_handle;
 	bool privateContext;
 	bool privateDevice;
 	int desired_vid;
 	int desired_pid;
 	bool desired_hubs;
-
+	
 public:
 	static int debugLevel;
 	DeviceProxy_LibUSB(int vendorId=LIBUSB_HOTPLUG_MATCH_ANY,int productId=LIBUSB_HOTPLUG_MATCH_ANY,bool includeHubs=false);
