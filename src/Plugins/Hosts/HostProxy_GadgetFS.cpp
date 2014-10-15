@@ -331,15 +331,12 @@ int HostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *nbyt
 
 
 void HostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length) {
-	int rc;
-	
-
 	if (!endpoint) {
-		rc=write(p_device_file,dataptr,length);
+		int rc=write(p_device_file,dataptr,length);
 		if (rc<0) {
 			fprintf(stderr,"Fail on EP00 write %d %s\n",errno,strerror(errno));
 		} else {
-			fprintf(stderr,"Sent %d bytes on EP00\n",rc);
+			//fprintf(stderr,"Sent %d bytes on EP00\n",rc);
 		}
 		return;
 	}
@@ -358,7 +355,7 @@ void HostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacket
 	memcpy((void*)(aio->aio_buf),dataptr,length);
 	aio->aio_nbytes=length;
 
-	rc=aio_write(aio);
+	int rc=aio_write(aio);
 	if (rc) {
 		fprintf(stderr,"Error submitting aio for EP%02x %d %s\n",endpoint,errno,strerror(errno));
 	} else {
@@ -411,7 +408,6 @@ bool HostProxy_GadgetFS::send_wait_complete(__u8 endpoint,int timeout) {
 }
 
 void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length, int timeout) {
-
 	if (!endpoint) {
 		fprintf(stderr,"trying to receive %d bytes on EP00\n",*length);
 		return;
@@ -447,7 +443,6 @@ void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 		*dataptr=(__u8*)malloc(rc);
 		memcpy(*dataptr,(void*)(aio->aio_buf),rc);
 		*length=rc;
-		
 		//fprintf(stderr,"Read %d bytes on EP%02x\n",rc,number);
 		int rc=aio_read(aio);
 		if (rc) {

@@ -71,8 +71,6 @@ public:
 	void claim_interface(__u8 interface);
 	void release_interface(__u8 interface);
 
-	// modified 20141003 atsumi@aizulab.com
-	void setEp2inf( __u8 *ep2inf_, __u8 *claimedInterface) {};
 	__u8 get_address();
 };
 

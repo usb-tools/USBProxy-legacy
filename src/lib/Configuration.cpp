@@ -40,7 +40,6 @@
 #include "DeviceProxy.h"
 #include "USBString.h"
 
-
 Configuration::Configuration(Device* _device,DeviceProxy* proxy, int idx,bool otherSpeed)
 {
 	device=_device;

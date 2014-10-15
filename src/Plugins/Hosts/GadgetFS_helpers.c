@@ -39,7 +39,6 @@
 #include <mntent.h>
 #include "TRACE.h"
 
-
 static char *gadgetfs_path;
 
 void clean_tmp() {

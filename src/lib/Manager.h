@@ -50,8 +50,12 @@ enum Manager_status {
 	USBM_SETUP=1,
 	USBM_RELAYING=2,
 	USBM_STOPPING=3,
+<<<<<<< HEAD
 	USBM_SETUP_ABORT=4,
 	USBM_RESET=5
+=======
+	USBM_SETUP_ABORT=4
+>>>>>>> 671feff598b0a000f4d457e1909d3baa05ab9c4b
 };
 
 class Manager {
@@ -105,9 +109,12 @@ public:
 
 	enum Manager_status get_status() {return status;}
 
+<<<<<<< HEAD
 	// modified 20140924 atsumi@aizulab.com
   void set_status( Manager_status status_) { status = status_;}
 
+=======
+>>>>>>> 671feff598b0a000f4d457e1909d3baa05ab9c4b
 	void start_control_relaying();
 	void stop_relaying();
 	void cleanup();

@@ -52,7 +52,6 @@ set(c_sources
 	${CMAKE_CURRENT_SOURCE_DIR}/get_tid.c
 	${CMAKE_CURRENT_SOURCE_DIR}/HaltSignal.c
 	${CMAKE_CURRENT_SOURCE_DIR}/mqueue_helpers.c
-	${CMAKE_CURRENT_SOURCE_DIR}/myDebug.c
 	CACHE INTERNAL "List of C sources")
 
 set(headers
@@ -78,7 +77,6 @@ set(headers
 	${CMAKE_CURRENT_SOURCE_DIR}/Packet.h
 	${CMAKE_CURRENT_SOURCE_DIR}/Proxy.h
 	${CMAKE_CURRENT_SOURCE_DIR}/USBString.h
-	${CMAKE_CURRENT_SOURCE_DIR}/myDebug.h
 	CACHE INTERNAL "List of headers")
 
 add_definitions( -DPLUGIN_PATH="${CMAKE_INSTALL_PREFIX}/lib/USBProxy/")

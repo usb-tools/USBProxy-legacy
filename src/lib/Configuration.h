@@ -57,6 +57,7 @@ class Configuration {
 		Interface* get_interface(__u8 number);
 		void print(__u8 tabs=0,bool active=false);
 		USBString* get_config_string(__u16 languageId=0);
+
 		__u8 get_interface_alternate_count(__u8 number);
 		bool is_highspeed();
 		const definition_error is_defined(bool highSpeed=false);
