@@ -144,6 +144,7 @@ void RelayReader::relay_read_setup() {
 }
 
 void RelayReader::relay_read() {
+	dbgMessage("");
 	if (!endpoint) {
 		relay_read_setup();
 		return;
@@ -168,7 +169,6 @@ void RelayReader::relay_read() {
 			buf=NULL;
 			length=0;
 			proxy->receive_data(endpoint,attributes,maxPacketSize,&buf,&length,500);
-			if (endpoint=0x01) dbgMessage("proxy->receive_data(endpoint,attributes,maxPacketSize,&buf,&length,500);");
 			if (length) {
 				p=new Packet(endpoint,buf,length);
 				idle=false;
@@ -179,7 +179,7 @@ void RelayReader::relay_read() {
 			poll_out.revents=0;
 			p=NULL;
 		}
-		if (idle) sched_yield();
+		// if (idle) sched_yield();
 		halt=haltsignal_check(haltSignal,&haltpoll,&haltfd);
 	}
 	fprintf(stderr,"Finished reader thread (%ld) for EP%02x.\n",gettid(),endpoint);

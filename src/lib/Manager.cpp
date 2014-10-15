@@ -427,7 +427,7 @@ void Manager::start_data_relaying() {
 			out_writers[i]=new RelayWriter(out_endpoints[i],(Proxy*)deviceProxy,mq);
 		}
 	}
-	/*
+
 	//apply filters to relayers
 	for(i=0;i<filterCount;i++) {
 		if (filters[i]->device.test(device) && filters[i]->configuration.test(cfg)) {
@@ -465,7 +465,7 @@ void Manager::start_data_relaying() {
 			}
 		}
 	}
-	*/
+
 	for(i=1;i<16;i++) {
 		if (in_readers[i]) {
 			in_readers[i]->set_haltsignal(haltSignal);
