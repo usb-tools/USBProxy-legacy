@@ -49,10 +49,16 @@ Configuration::Configuration(Device* _device,DeviceProxy* proxy, int idx,bool ot
 	setup_packet.bRequest=USB_REQ_GET_DESCRIPTOR;
 	setup_packet.wValue=((otherSpeed?USB_DT_OTHER_SPEED_CONFIG:USB_DT_CONFIG)<<8)|idx;
 	setup_packet.wIndex=0;
-	setup_packet.wLength=8;
+	// modified 20140910 atsumi@aizulab.com
+	// a size of standard configuration is 9 at least.
+	// setup_packet.wLength=8;
+	setup_packet.wLength=9;
 	int len=0;
 	proxy->control_request(&setup_packet,&len,buf);
-	len=buf[2];
+	// modfied 20140910 atsumi@aizulab.com
+	// a size of all parts of configuration is saved at buf[3] << 8 + buf[2]
+	// len = buf[2];
+	len = ( buf[3] << 8) + buf[2];
 	buf=(__u8*)realloc(buf,len);
 	setup_packet.wLength=len;
 	proxy->control_request(&setup_packet,&len,buf);
@@ -169,7 +175,7 @@ Interface* Configuration::get_interface(__u8 number) {
 	return interfaceGroups[number]->get_active_interface();
 }
 
-__u8 Configuration::get_interface_alernate_count(__u8 number) {
+__u8 Configuration::get_interface_alternate_count(__u8 number) {
 	if (!interfaceGroups[number]) {return 0;}
 	return interfaceGroups[number]->get_alternate_count();
 }

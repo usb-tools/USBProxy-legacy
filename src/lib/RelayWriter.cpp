@@ -41,10 +41,12 @@
 #include "PacketFilter.h"
 #include "Manager.h"
 
+
 #ifndef NVALGRIND
 #define USEVALGRIND
 #include "valgrind.h"
 #endif //NVALGRIND
+
 
 RelayWriter::RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _recvQueue) {
 	haltSignal=0;

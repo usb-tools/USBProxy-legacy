@@ -138,7 +138,6 @@ Manager::~Manager() {
 		free(injectors);
 		injectors=NULL;
 	}
-
 }
 
 void Manager::load_plugins(ConfigParser *cfg) {
@@ -167,7 +166,8 @@ void Manager::add_injector(Injector* _injector){
 }
 
 void Manager::remove_injector(__u8 index,bool freeMemory){
-	if (status!=USBM_IDLE) {fprintf(stderr,"Can't remove injectors unless manager is idle.\n");}
+	// modified 20141015 atsumi@aizulab.com for reset bust
+	if (status!=USBM_IDLE && status != USBM_RESET) {fprintf(stderr,"Can't remove injectors unless manager is idle or reset.\n");}
 	if (!injectors || index>=injectorCount) {fprintf(stderr,"Injector index out of bounds.\n");}
 	if (freeMemory && injectors[index]) {delete(injectors[index]);/* not needed injectors[index]=NULL;*/}
 	if (injectorCount==1) {
@@ -193,7 +193,8 @@ __u8 Manager::get_injector_count(){
 }
 
 void Manager::add_filter(PacketFilter* _filter){
-	if (status!=USBM_IDLE) {fprintf(stderr,"Can't add filters unless manager is idle.\n");}
+	// modified 20141015 atsumi@aizulab.com for reset bust
+	if (status!=USBM_IDLE  && status != USBM_RESET) {fprintf(stderr,"Can't add filters unless manager is idle or reset.\n");}
 	if (filters) {
 		filters=(PacketFilter**)realloc(filters,++filterCount*sizeof(PacketFilter*));
 	} else {
@@ -204,7 +205,8 @@ void Manager::add_filter(PacketFilter* _filter){
 }
 
 void Manager::remove_filter(__u8 index,bool freeMemory){
-	if (status!=USBM_IDLE) {fprintf(stderr,"Can't remove filters unless manager is idle.\n");}
+	// modified 20141015 atsumi@aizulab.com for reset bust
+	if (status!=USBM_IDLE && status != USBM_RESET) {fprintf(stderr,"Can't remove filters unless manager is idle or reset.\n");}
 	if (!filters || index>=filterCount) {fprintf(stderr,"Filter index out of bounds.\n");}
 	if (freeMemory && filters[index]) {delete(filters[index]);/* not needed filters[index]=NULL;*/}
 	if (filterCount==1) {
@@ -260,6 +262,16 @@ void Manager::start_control_relaying(){
 	//populate device model
 	device=new Device(deviceProxy);
 	device->print(0);
+
+	// modified 20141007 atsumi@aizulab.com
+  // I think interfaces are claimed soon after connecting device.
+	//Claim interfaces
+	Configuration* cfg;
+	cfg=device->get_active_configuration();
+	int ifc_cnt=cfg->get_descriptor()->bNumInterfaces;
+	for (int i=0;i<ifc_cnt;i++) {
+	 	deviceProxy->claim_interface(i);
+	}
 
 	if (status!=USBM_SETUP) {stop_relaying();return;}
 
@@ -359,21 +371,30 @@ void Manager::start_data_relaying() {
 	//enumerate endpoints
 	Configuration* cfg;
 	cfg=device->get_active_configuration();
+
 	int ifc_idx;
 	int ifc_cnt=cfg->get_descriptor()->bNumInterfaces;
 	for (ifc_idx=0;ifc_idx<ifc_cnt;ifc_idx++) {
-		Interface* ifc=cfg->get_interface(ifc_idx);
-		int ep_idx;
-		int ep_cnt=ifc->get_endpoint_count();
-		for(ep_idx=0;ep_idx<ep_cnt;ep_idx++) {
-			Endpoint* ep=ifc->get_endpoint_by_idx(ep_idx);
-			const usb_endpoint_descriptor* epd=ep->get_descriptor();
-			if (epd->bEndpointAddress & 0x80) { //IN EP
-				in_endpoints[epd->bEndpointAddress&0x0f]=ep;
-			} else { //OUT EP
-				out_endpoints[epd->bEndpointAddress&0x0f]=ep;
+		// modified 20141010 atsumi@aizulab.com
+		// for considering alternate interface
+		// begin
+		int aifc_idx;
+		int aifc_cnt = cfg->get_interface_alternate_count( ifc_idx);
+		for ( aifc_idx=0; aifc_idx < aifc_cnt; aifc_idx++) {
+			Interface* aifc=cfg->get_interface_alternate(ifc_idx, aifc_idx);
+			int ep_idx;
+			int ep_cnt=aifc->get_endpoint_count();
+			for(ep_idx=0;ep_idx<ep_cnt;ep_idx++) {
+				Endpoint* ep=aifc->get_endpoint_by_idx(ep_idx);
+				const usb_endpoint_descriptor* epd=ep->get_descriptor();
+				if (epd->bEndpointAddress & 0x80) { //IN EP
+					in_endpoints[epd->bEndpointAddress&0x0f]=ep;
+				} else { //OUT EP
+					out_endpoints[epd->bEndpointAddress&0x0f]=ep;
+				}
 			}
 		}
+		// end
 	}
 
 	int i,j;
@@ -462,7 +483,6 @@ void Manager::start_data_relaying() {
 			pthread_create(&out_writerThreads[i],NULL,&RelayWriter::relay_write_helper,out_writers[i]);
 		}
 	}
-
 }
 
 void Manager::stop_relaying(){
@@ -540,7 +560,7 @@ void Manager::stop_relaying(){
 
 	//Release interfaces
 	int ifc_idx;
-		if (device) {
+	if (device) {
 		Configuration* cfg=device->get_active_configuration();
 		int ifc_cnt=cfg->get_descriptor()->bNumInterfaces;
 		for (ifc_idx=0;ifc_idx<ifc_cnt;ifc_idx++) {
@@ -556,7 +576,9 @@ void Manager::stop_relaying(){
 
 	//clean up device model & endpoints
 	if (device) {
-		delete(device);
+		// modified 20141001 atsumi@aizulab.com
+		// temporary debug because it's invalid pointer for free()
+		// delete(device);
 		device=NULL;
 	}
 

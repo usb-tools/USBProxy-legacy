@@ -183,6 +183,10 @@ int open_gadget() {
 		NULL
 	};
 
+	// modified 20141001 atsumi@aizulab.com
+	// gadgetfs_path is NULL when device reset.
+	if ( gadgetfs_path == NULL) mount_gadget();
+
 	dir = opendir(gadgetfs_path);
 	if (!dir)
 		return -1;

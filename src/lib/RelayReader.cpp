@@ -37,6 +37,7 @@
 #include "HostProxy.h"
 #include "Packet.h"
 
+
 RelayReader::RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _sendQueue) {
 	haltSignal=0;
 	sendQueue=_sendQueue;
@@ -176,7 +177,7 @@ void RelayReader::relay_read() {
 			poll_out.revents=0;
 			p=NULL;
 		}
-		if (idle) sched_yield();
+		// if (idle) sched_yield();
 		halt=haltsignal_check(haltSignal,&haltpoll,&haltfd);
 	}
 	fprintf(stderr,"Finished reader thread (%ld) for EP%02x.\n",gettid(),endpoint);
