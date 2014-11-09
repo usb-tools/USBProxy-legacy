@@ -28,6 +28,7 @@
 
 #include <linux/types.h>
 #include <mqueue.h>
+#include <vector>
 
 class PacketFilter;
 class Proxy;
@@ -38,18 +39,16 @@ class Manager;
 class RelayWriter {
 private:
 	__u8 haltSignal;
-	mqd_t* recvQueues;
-	mqd_t* sendQueues;
+	std::vector<mqd_t> recvQueues;
+	std::vector<mqd_t> sendQueues;
 	__u8 endpoint;
 	__u8 attributes;
 	__u16 maxPacketSize;
 
 	Proxy* proxy;
 	DeviceProxy* deviceProxy;
-	PacketFilter** filters;
+	std::vector<PacketFilter*> filters;
 	Manager* manager;
-	__u8 filterCount;
-	__u8 queueCount;
 
 public:
 	RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _recvQueue);

@@ -50,13 +50,7 @@
 
 RelayWriter::RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _recvQueue) {
 	haltSignal=0;
-	recvQueues=(mqd_t*)malloc(sizeof(mqd_t));
-	recvQueues[0]=_recvQueue;
-	sendQueues=NULL;
-	queueCount=1;
-
-	filters=NULL;
-	filterCount=0;
+	recvQueues.push_back(_recvQueue);
 
 	endpoint=_endpoint->get_descriptor()->bEndpointAddress;
 	attributes=_endpoint->get_descriptor()->bmAttributes;
@@ -69,14 +63,8 @@ RelayWriter::RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _recvQueue) {
 
 RelayWriter::RelayWriter(Endpoint* _endpoint,DeviceProxy* _deviceProxy,Manager* _manager,mqd_t _recvQueue,mqd_t _sendQueue) {
 	haltSignal=0;
-	recvQueues=(mqd_t*)malloc(sizeof(mqd_t));
-	recvQueues[0]=_recvQueue;
-	sendQueues=(mqd_t*)malloc(sizeof(mqd_t));
-	sendQueues[0]=_sendQueue;
-	queueCount=1;
-
-	filters=NULL;
-	filterCount=0;
+	recvQueues.push_back(_recvQueue);
+	sendQueues.push_back(_sendQueue);
 
 	endpoint=_endpoint->get_descriptor()->bEndpointAddress;
 	attributes=_endpoint->get_descriptor()->bmAttributes;
@@ -88,44 +76,34 @@ RelayWriter::RelayWriter(Endpoint* _endpoint,DeviceProxy* _deviceProxy,Manager* 
 }
 
 RelayWriter::~RelayWriter() {
-	if (filters) {
-		free(filters);
-		filters=NULL;
-	}
-	if (recvQueues) {
-		__u8 i,j;
-		for (i=0;i<queueCount;i++) {
-			mq_attr mqa;
-			mq_getattr(recvQueues[i],&mqa);
-			if (mqa.mq_curmsgs>0) {
-				Packet *p;
-				for (j=0;j<mqa.mq_curmsgs;j++) {
-					 mq_receive(recvQueues[i],(char*)&p,4,NULL);
-					 delete(p);
-				}
+	filters.clear();
+	__u8 i,j;
+	for (i=0;i<recvQueues.size();i++) {
+		mq_attr mqa;
+		mq_getattr(recvQueues[i],&mqa);
+		if (mqa.mq_curmsgs>0) {
+			Packet *p;
+			for (j=0;j<mqa.mq_curmsgs;j++) {
+				 mq_receive(recvQueues[i],(char*)&p,4,NULL);
+				 delete(p);
 			}
-			mq_close(recvQueues[i]);
 		}
-		free(recvQueues);
-		recvQueues=NULL;
+		mq_close(recvQueues[i]);
 	}
-	if (sendQueues) {
-		__u8 i,j;
-		for (i=0;i<queueCount;i++) {
-			mq_attr mqa;
-			mq_getattr(sendQueues[i],&mqa);
-			if (mqa.mq_curmsgs>0) {
-				Packet *p;
-				for (j=0;j<mqa.mq_curmsgs;j++) {
-					 mq_receive(sendQueues[i],(char*)&p,4,NULL);
-					 delete(p);
-				}
+	recvQueues.clear();
+	for (i=0;i<sendQueues.size();i++) {
+		mq_attr mqa;
+		mq_getattr(sendQueues[i],&mqa);
+		if (mqa.mq_curmsgs>0) {
+			Packet *p;
+			for (j=0;j<mqa.mq_curmsgs;j++) {
+				 mq_receive(sendQueues[i],(char*)&p,4,NULL);
+				 delete(p);
 			}
-			mq_close(sendQueues[i]);
 		}
-		free(sendQueues);
-		sendQueues=NULL;
+		mq_close(sendQueues[i]);
 	}
+	sendQueues.clear();
 }
 
 void RelayWriter::set_haltsignal(__u8 _haltSignal) {
@@ -136,7 +114,7 @@ void RelayWriter::set_haltsignal(__u8 _haltSignal) {
 
 void RelayWriter::relay_write_setup_valgrind() {
 	if (!deviceProxy) {fprintf(stderr,"DeviceProxy not initialized for EP00 writer.\n");return;}
-	if (!sendQueues) {fprintf(stderr,"outQueues not initialized for EP00 writer.\n");return;}
+	if (sendQueues.size()==0) {fprintf(stderr,"outQueues not initialized for EP00 writer.\n");return;}
 
 	bool halt=false;
 	struct pollfd haltpoll;
@@ -147,8 +125,8 @@ void RelayWriter::relay_write_setup_valgrind() {
 	poll_send.events=POLLOUT;
 
 	__u8 i,j;
-	struct pollfd* pollfds=(pollfd*)calloc(queueCount,sizeof(pollfd));
-	for (i=0;i<queueCount;i++) {
+	struct pollfd* pollfds=(pollfd*)calloc(recvQueues.size(),sizeof(pollfd));
+	for (i=0;i<recvQueues.size();i++) {
 		pollfds[i].fd=recvQueues[i];
 		pollfds[i].events=POLLIN;
 	}
@@ -168,7 +146,7 @@ void RelayWriter::relay_write_setup_valgrind() {
 				if (!numEvents) {
 					i=0;
 					p=NULL;
-					numEvents=poll(pollfds,queueCount,500);
+					numEvents=poll(pollfds,recvQueues.size(),500);
 					idle=!numEvents;
 				}
 				while(i<numEvents && (!(pollfds[i].revents&POLLIN))) {i++;}
@@ -180,11 +158,9 @@ void RelayWriter::relay_write_setup_valgrind() {
 				if (i>=numEvents) numEvents=0;
 			}
 			if (p) {
-				j=0;
-				while (j<filterCount && p->filter_out) {
-					if (filters[j]->test_setup_packet(p,true)) {filters[j]->filter_setup_packet(p,true);}
-					j++;
-				}
+				for(j=0; j<filters.size() && p->filter_out; j++)
+					if (filters[j]->test_setup_packet(p,true))
+						filters[j]->filter_setup_packet(p,true);
 				ctrl_req=p->ctrl_req;
 				if (p->transmit_out) {
 					if (ctrl_req.bRequestType&0x80) { //device->host
@@ -198,10 +174,9 @@ void RelayWriter::relay_write_setup_valgrind() {
 						if (p->ctrl_req.bRequest==9 && p->ctrl_req.bRequestType==0) {manager->setConfig(p->ctrl_req.wValue);}
 						p->ctrl_req.wLength=0;
 					}
-					while (j<filterCount && p->filter_in) {
-						if (filters[j]->test_setup_packet(p,false)) {filters[j]->filter_setup_packet(p,false);}
-						j++;
-					}
+					for(; j<filters.size() && p->filter_in; j++)
+						if (filters[j]->test_setup_packet(p,false))
+							filters[j]->filter_setup_packet(p,false);
 					poll_send.fd=p->source;
 					mq_send(p->source,(char*)&p,4,0);
 					writing=true;
@@ -235,8 +210,8 @@ void RelayWriter::relay_write_valgrind() {
 
 	__u8 i,j;
 
-	struct pollfd* pollfds=(pollfd*)calloc(queueCount,sizeof(pollfd));
-	for (i=0;i<queueCount;i++) {
+	struct pollfd* pollfds=(pollfd*)calloc(recvQueues.size(),sizeof(pollfd));
+	for (i=0;i<recvQueues.size();i++) {
 		pollfds[i].fd=recvQueues[i];
 		pollfds[i].events=POLLIN;
 	}
@@ -254,7 +229,7 @@ void RelayWriter::relay_write_valgrind() {
 				if (!numEvents) {
 					i=0;
 					p=NULL;
-					numEvents=poll(pollfds,queueCount,500);
+					numEvents=poll(pollfds,recvQueues.size(),500);
 					idle=!numEvents;
 				}
 				while(i<numEvents && (!(pollfds[i].revents&POLLIN))) {i++;}
@@ -265,11 +240,9 @@ void RelayWriter::relay_write_valgrind() {
 				if (i>=numEvents) numEvents=0;
 			}
 			if (p) {
-				j=0;
-				while (j<filterCount && p->filter) {
-					if (filters[j]->test_packet(p)) {filters[j]->filter_packet(p);}
-					j++;
-				}
+				for(j=0; j<filters.size() && p->filter; j++)
+					if (filters[j]->test_packet(p))
+						filters[j]->filter_packet(p);
 				if (p->transmit) {
 					proxy->send_data(endpoint,attributes,maxPacketSize,p->data,p->wLength);
 					writing=true;
@@ -289,8 +262,14 @@ void RelayWriter::relay_write_valgrind() {
 
 #endif //USEVALGRIND
 void RelayWriter::relay_write_setup() {
-	if (!deviceProxy) {fprintf(stderr,"DeviceProxy not initialized for EP00 writer.\n");return;}
-	if (!sendQueues) {fprintf(stderr,"outQueues not initialized for EP00 writer.\n");return;}
+	if (!deviceProxy) {
+		fprintf(stderr,"DeviceProxy not initialized for EP00 writer.\n");
+		return;
+	}
+	if (sendQueues.size()==0) {
+		fprintf(stderr,"outQueues not initialized for EP00 writer.\n");
+		return;
+	}
 
 	bool halt=false;
 	struct pollfd haltpoll;
@@ -302,9 +281,9 @@ void RelayWriter::relay_write_setup() {
 
 	__u8 i,j;
 	int efd=epoll_create1(EPOLL_CLOEXEC);
-	struct epoll_event* events=(epoll_event*)calloc(queueCount,sizeof(epoll_event));
+	struct epoll_event* events=(epoll_event*)calloc(recvQueues.size(),sizeof(epoll_event));
 	if (efd<0) fprintf(stderr,"Error creating epoll fd %d [%s].\n",errno,strerror(errno));
-	for (i=0;i<queueCount;i++) {
+	for (i=0;i<recvQueues.size();i++) {
 		struct epoll_event event;
 		event.data.u64=((__u64)recvQueues[i])<<32 | sendQueues[i];
 		event.events=EPOLLIN;
@@ -326,7 +305,7 @@ void RelayWriter::relay_write_setup() {
 				if (!numEvents) {
 					i=0;
 					p=NULL;
-					numEvents=epoll_wait(efd,events,queueCount,500);
+					numEvents=epoll_wait(efd,events,recvQueues.size(),500);
 				}
 				if (i<numEvents && (events[i].events&EPOLLIN)) {
 					int recvQueue=events[i].data.u64>>32;
@@ -338,11 +317,9 @@ void RelayWriter::relay_write_setup() {
 				if (i>=numEvents) numEvents=0;
 			}
 			if (p) {
-				j=0;
-				while (j<filterCount && p->filter_out) {
-					if (filters[j]->test_setup_packet(p,true)) {filters[j]->filter_setup_packet(p,true);}
-					j++;
-				}
+				for(j=0; j<filters.size() && p->filter_out; j++)
+					if (filters[j]->test_setup_packet(p,true))
+						filters[j]->filter_setup_packet(p,true);
 				ctrl_req=p->ctrl_req;
 				if (p->transmit_out) {
 					if (ctrl_req.bRequestType&0x80) { //device->host
@@ -356,10 +333,9 @@ void RelayWriter::relay_write_setup() {
 						if (p->ctrl_req.bRequest==9 && p->ctrl_req.bRequestType==0) {manager->setConfig(p->ctrl_req.wValue);}
 						p->ctrl_req.wLength=0;
 					}
-					while (j<filterCount && p->filter_in) {
-						if (filters[j]->test_setup_packet(p,false)) {filters[j]->filter_setup_packet(p,false);}
-						j++;
-					}
+					for(;j<filters.size() && p->filter_in; j++)
+						if (filters[j]->test_setup_packet(p,false))
+							filters[j]->filter_setup_packet(p,false);
 					mq_send(p->source,(char*)&p,4,0);
 					poll_send.fd=p->source;
 					writing=true;
@@ -392,11 +368,11 @@ void RelayWriter::relay_write() {
 	int haltfd;
 	if (haltsignal_setup(haltSignal,&haltpoll,&haltfd)!=0) return;
 
-	__u8 i,j;
+	__u8 i, j;
 	int efd=epoll_create1(EPOLL_CLOEXEC);
 	if (efd<0) fprintf(stderr,"Error creating epoll fd %d [%s].\n",errno,strerror(errno));
-	struct epoll_event* events=(epoll_event*)calloc(queueCount,sizeof(epoll_event));
-	for (i=0;i<queueCount;i++) {
+	struct epoll_event* events=(epoll_event*)calloc(recvQueues.size(),sizeof(epoll_event));
+	for (i=0;i<recvQueues.size();i++) {
 		struct epoll_event event;
 		event.data.fd=recvQueues[i];
 		event.events=EPOLLIN;
@@ -408,7 +384,6 @@ void RelayWriter::relay_write() {
 	Packet *p=NULL;
 	int numEvents=0;
 
-
 	fprintf(stderr,"Starting writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
 	while (!halt) {
 		idle=true;
@@ -417,17 +392,17 @@ void RelayWriter::relay_write() {
 				if (!numEvents) {
 					i=0;
 					p=NULL;
-					numEvents=epoll_wait(efd,events,queueCount,500);
+					numEvents=epoll_wait(efd,events,recvQueues.size(),500);
 					idle=!numEvents;
 				}
 				if (i<numEvents && (events[i].events&EPOLLIN)) mq_receive(events[i++].data.fd,(char*)&p,4,NULL);
 				if (i>=numEvents) numEvents=0;
 			}
 			if (p) {
-				j=0;
-				while (j<filterCount && p->filter) {
-					if (filters[j]->test_packet(p)) {filters[j]->filter_packet(p);}
-					j++;
+				for(j=0; j<filters.size(); j++) {
+					if (filters[j]->test_packet(p)) {
+						filters[j]->filter_packet(p);
+					}
 				}
 				if (p->transmit) {
 					proxy->send_data(endpoint,attributes,maxPacketSize,p->data,p->wLength);
@@ -448,27 +423,16 @@ void RelayWriter::relay_write() {
 }
 
 void RelayWriter::add_filter(PacketFilter* filter) {
-	if (filterCount) {
-		filters=(PacketFilter**)realloc(filters,(filterCount+1)*sizeof(PacketFilter*));
-	} else {
-		filters=(PacketFilter**)malloc(sizeof(PacketFilter*));
-	}
-	filters[filterCount]=filter;
-	filterCount++;
+	filters.push_back(filter);
 }
 
 void RelayWriter::add_queue(mqd_t recvQueue) {
-	recvQueues=(mqd_t*)realloc(recvQueues,(queueCount+1)*sizeof(mqd_t));
-	recvQueues[queueCount]=recvQueue;
-	queueCount++;
+	recvQueues.push_back(recvQueue);
 }
 
 void RelayWriter::add_setup_queue(mqd_t recvQueue,mqd_t sendQueue) {
-	recvQueues=(mqd_t*)realloc(recvQueues,(queueCount+1)*sizeof(mqd_t));
-	recvQueues[queueCount]=recvQueue;
-	sendQueues=(mqd_t*)realloc(sendQueues,(queueCount+1)*sizeof(mqd_t));
-	sendQueues[queueCount]=sendQueue;
-	queueCount++;
+	recvQueues.push_back(recvQueue);
+	sendQueues.push_back(sendQueue);
 }
 
 void* RelayWriter::relay_write_helper(void* context) {
