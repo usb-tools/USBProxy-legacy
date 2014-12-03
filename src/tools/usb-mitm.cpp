@@ -66,7 +66,6 @@ void handle_signal(int signum)
 			sigaction(SIGTERM, &action, NULL);
 			break;
 		case SIGHUP:
-			// modified 20140924 atsumi@aizulab.com
 			fprintf(stderr, "Received SIGHUP, restarting relaying...\n");
 			if (manager) {manager->stop_relaying();}
 			if (manager) {manager->start_control_relaying();}
