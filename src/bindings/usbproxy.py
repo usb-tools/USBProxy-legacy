@@ -2,8 +2,9 @@
 
 from ctypes import *
 
+lib = cdll.LoadLibrary("libUSBProxyAPI.so")
+
 def init():
-	lib = cdll.LoadLibrary("libUSBProxyAPI.so")
 	lib.usbproxy_init()
 	# Put in some dummy config so that it works for now
 	lib.set_config()
@@ -39,3 +40,8 @@ if __name__ == '__main__':
 	lib.print_config()
 	lib.load_plugins()
 	lib.start()
+	import time
+	while(1):
+		time.sleep(15)
+	lib.usbproxy_shutdown()
+

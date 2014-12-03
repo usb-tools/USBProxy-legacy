@@ -10,11 +10,13 @@ PacketFilter_Callback::PacketFilter_Callback(ConfigParser *cfg) {
 }
 
 void PacketFilter_Callback::filter_packet(Packet* packet) {
-	cb(packet);
+	if(cb)
+		cb(packet);
 }
 
 void PacketFilter_Callback::filter_setup_packet(SetupPacket* packet,bool direction_out) {
-	cb_setup(packet,direction_out);
+	if (cb_setup)
+		cb_setup(packet,direction_out);
 }
 
 static PacketFilter_Callback *proxy;
