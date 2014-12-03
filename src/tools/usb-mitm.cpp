@@ -1,32 +1,6 @@
 /*
- * Copyright 2013 Dominic Spill
- * Copyright 2013 Adam Stasiak
- *
  * This file is part of USBProxy.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3, or (at your option)
- * any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; see the file COPYING.  If not, write to
- * the Free Software Foundation, Inc., 51 Franklin Street,
- * Boston, MA 02110-1301, USA.
  */
-
-/*
- * This file is based on http://www.linux-usb.org/gadget/usb.c
- * That file lacks any copyright information - but it belongs to someone
- * probably David Brownell - so thank you very much to him too!
- */
-
-/* $(CROSS_COMPILE)cc -Wall -g -o proxy proxy.c usbstring.c -lpthread */
 
 #include <errno.h>
 #include <fcntl.h>
@@ -71,8 +45,10 @@ void usage(char *arg) {
 void cleanup(void) {
 }
 
-//sigterm: stop forwarding threads, and/or hotplug loop and exit
-//sighup: reset forwarding threads, reset device and gadget
+/*
+ * sigterm: stop forwarding threads, and/or hotplug loop and exit
+ * sighup: reset forwarding threads, reset device and gadget
+ */
 void handle_signal(int signum)
 {
 	struct sigaction action;
@@ -91,14 +67,9 @@ void handle_signal(int signum)
 			break;
 		case SIGHUP:
 			// modified 20140924 atsumi@aizulab.com
-			// restart manager for handling reset bus.
-			// begin
 			fprintf(stderr, "Received SIGHUP, restarting relaying...\n");
 			if (manager) {manager->stop_relaying();}
 			if (manager) {manager->start_control_relaying();}
-			// fprintf(stderr, "Received SIGHUP, restarting manager..\n");
-			// if ( manager) {manager->set_status( USBM_RESET);}
-			// end
 			break;
 	}
 }
@@ -111,8 +82,6 @@ extern "C" int main(int argc, char **argv)
 	FILE *keylog_output_file = NULL;
 	fprintf(stderr,"SIGRTMIN: %d\n",SIGRTMIN);
 
-	// int vendorId=LIBUSB_HOTPLUG_MATCH_ANY, productId=LIBUSB_HOTPLUG_MATCH_ANY;
-	
 	struct sigaction action;
 	memset(&action, 0, sizeof(struct sigaction));
 	action.sa_handler = handle_signal;
@@ -222,11 +191,9 @@ extern "C" int main(int argc, char **argv)
 			usleep(10000);
 		}
 
-		// Tidy up
 		manager->stop_relaying();
 		manager->cleanup();
 		delete(manager);
-		// modified 20141015 atsumi@aizulab.com for reset bus
 	} while ( status == USBM_RESET);
 	
 	if (keylog_output_file) {
