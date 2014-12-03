@@ -14,6 +14,7 @@ set(INSTALL_DEFAULT_BINDIR "bin" CACHE STRING "Appended to CMAKE_INSTALL_PREFIX"
 add_subdirectory(lib)
 add_subdirectory(Plugins)
 add_subdirectory(tools)
+add_subdirectory(bindings)
 
 # Comment the following out for releases.
 set(CMAKE_C_FLAGS "$ENV{CFLAGS}")

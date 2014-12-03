@@ -8,6 +8,7 @@ PacketFilter_Callback::PacketFilter_Callback(ConfigParser *cfg) {
 	cb = (f_cb) cfg->get_pointer("PacketFilter_Callback::filter_packet");
 	cb_setup = (f_cb_setup) cfg->get_pointer("PacketFilter_Callback::filter_setup_packet");
 }
+
 void PacketFilter_Callback::filter_packet(Packet* packet) {
 	cb(packet);
 }
