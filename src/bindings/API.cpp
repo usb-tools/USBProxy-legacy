@@ -19,7 +19,6 @@ API void usbproxy_init() {
 API void set_config() {
 	cfg->set("DeviceProxy", "DeviceProxy_LibUSB");
 	cfg->set("HostProxy", "HostProxy_GadgetFS");
-	//cfg->set("HostProxy_TCP::TCPAddress", "127.0.0.1");
 }
 
 API void register_packet_filter(f_cb cb) {
@@ -40,7 +39,11 @@ API void start() {
 	manager->start_control_relaying();
 }
 
-API void usbproxy_shutdown() {
+API int get_status() {
+	return manager->get_status();
+}
+
+API void shutdown() {
     manager->stop_relaying();
 	manager->cleanup();
 	delete(manager);
