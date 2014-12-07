@@ -127,10 +127,10 @@ def register_deviceproxy(
 		toString_func_cb = None
 	
 	lib.register_deviceproxy(
-		device_descriptor)
-		#POINTER(config_descriptor),
-		#POINTER(interface_descriptor),
-		#POINTER(callback_eps),
+		device_descriptor,
+		config_descriptor,
+		interface_descriptor,
+		callback_eps)
 		#control_request_func_cb,
 		#send_data_func_cb,
 		#receive_data_func_cb,

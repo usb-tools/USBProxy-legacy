@@ -47,9 +47,10 @@ DeviceProxy_Callback::DeviceProxy_Callback(ConfigParser *cfg) {
 		memcpy(&callback_config_descriptor, _callback_config_descriptor, sizeof(struct usb_config_descriptor));
 	if(_callback_interface_descriptor)
 		memcpy(&callback_interface_descriptor, _callback_interface_descriptor, sizeof(struct usb_interface_descriptor));
-	if(_callback_eps)
-		memcpy(&callback_eps, _callback_eps, 2*sizeof(struct usb_endpoint_descriptor));
-	
+	if(_callback_eps) {
+		memcpy(&callback_eps, _callback_eps, sizeof(struct usb_endpoint_descriptor));
+		memcpy((&callback_eps)+sizeof(struct usb_endpoint_descriptor), _callback_eps, sizeof(struct usb_endpoint_descriptor));
+	}
 	__u16 string0[2]={0x0409,0x0000};
 	callback_strings=(USBString**)calloc(5,sizeof(USBString*));
 
