@@ -28,9 +28,6 @@ typedef char* (*f_toString)(void);
 class DeviceProxy_Callback : public DeviceProxy {
 private:
 	bool p_is_connected;
-	struct pkt *buffer;
-	int head, tail;
-	bool full;
 	struct usb_device_descriptor callback_device_descriptor;
 	struct usb_config_descriptor callback_config_descriptor;
 	struct usb_interface_descriptor callback_interface_descriptor;
@@ -54,7 +51,6 @@ public:
 	void disconnect();
 	void reset();
 	bool is_connected();
-
 	bool is_highspeed();
 
 	//return -1 to stall

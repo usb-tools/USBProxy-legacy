@@ -33,7 +33,7 @@ def run():
 		time.sleep(10)
 	lib.shutdown()
 
-class USB_Device_Descriptor(Structure):
+class USB_Device_Descriptor(LittleEndianStructure):
 	_fields_ = [("bLength", c_uint8),
 	            ("bDescriptorType", c_uint8),
 	            ("bcdUSB", c_uint16),
@@ -49,7 +49,7 @@ class USB_Device_Descriptor(Structure):
 	            ("iSerialNumber", c_uint8),
 	            ("bNumConfigurations", c_uint8)]
 
-class USB_Config_Descriptor(Structure):
+class USB_Config_Descriptor(LittleEndianStructure):
 	_fields_ = [("bLength", c_uint8),
 	            ("bDescriptorType", c_uint8),
 	            ("wTotalLength", c_uint16),
@@ -59,7 +59,7 @@ class USB_Config_Descriptor(Structure):
 	            ("bmAttributes", c_uint8),
 	            ("bMaxPower", c_uint8)]
 
-class USB_Interface_Descriptor(Structure):
+class USB_Interface_Descriptor(LittleEndianStructure):
 	_fields_ = [("bLength", c_uint8),
 	            ("bDescriptorType", c_uint8),
 	            ("bInterfaceNumber", c_uint8),
@@ -70,7 +70,7 @@ class USB_Interface_Descriptor(Structure):
 	            ("bInterfaceProtocol", c_uint8),
 	            ("iInterface", c_uint8)]
 
-class USB_Endpoint_Descriptor(Structure):
+class USB_Endpoint_Descriptor(LittleEndianStructure):
 	_fields_ = [("bLength", c_uint8),
 	            ("bDescriptorType", c_uint8),
 	            ("bEndpointAddress", c_uint8),
@@ -78,7 +78,7 @@ class USB_Endpoint_Descriptor(Structure):
 	            ("wMaxPacketSize", c_uint16),
 	            ("bInterval", c_uint8)]
 
-class USB_CtrlRequest(Structure):
+class USB_CtrlRequest(LittleEndianStructure):
 	_fields_ = [("bRequestType", c_uint8),
 	            ("bRequest", c_uint8),
 	            ("wValue", c_uint16),

@@ -15,7 +15,7 @@ if __name__ == '__main__':
 		18, 1, 0x0200, 0xff, 0, 0, 64, 0x1d50, 0x6002, 0x0100, 1, 2, 3, 1
 	)
 	config_desc = usbproxy.USB_Config_Descriptor(
-		9, 2, 32, 1, 1, 0, 0x80
+		9, 2, 0x0020, 1, 1, 0, 0x80
 	)
 	interface_desc = usbproxy.USB_Interface_Descriptor(
 		9, 4, 0, 0, 2, 0xff, 0, 0, 0
@@ -28,4 +28,3 @@ if __name__ == '__main__':
 	usbproxy.lib.print_config()
 	usbproxy.lib.load_plugins()
 	usbproxy.run()
-
