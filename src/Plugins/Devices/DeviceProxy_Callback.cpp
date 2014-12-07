@@ -26,138 +26,30 @@ int DeviceProxy_Callback::debugLevel = 1;
 static USBString** callback_strings;
 static int callback_stringMaxIndex;
 
-DeviceProxy_Callback::DeviceProxy_Callback(int vendorId,int productId) {
-	p_is_connected = false;
-	
-	callback_device_descriptor.bLength = USB_DT_DEVICE_SIZE;
-	callback_device_descriptor.bDescriptorType = USB_DT_DEVICE;
-	callback_device_descriptor.bcdUSB = cpu_to_le16(0x0100);
-	callback_device_descriptor.bDeviceClass = USB_CLASS_VENDOR_SPEC;
-	callback_device_descriptor.bDeviceSubClass = 0;
-	callback_device_descriptor.bDeviceProtocol = 0;
-	callback_device_descriptor.bMaxPacketSize0=64;
-	callback_device_descriptor.idVendor = cpu_to_le16(vendorId & 0xffff);
-	callback_device_descriptor.idProduct = cpu_to_le16(productId & 0xffff);
-	fprintf(stderr,"V: %04x P: %04x\n",callback_device_descriptor.idVendor,callback_device_descriptor.idProduct);
-	callback_device_descriptor.bcdDevice = 0;
-	callback_device_descriptor.iManufacturer = STRING_MANUFACTURER;
-	callback_device_descriptor.iProduct = STRING_PRODUCT;
-	callback_device_descriptor.iSerialNumber = STRING_SERIAL;
-	callback_device_descriptor.bNumConfigurations = 1;
-	
-	callback_config_descriptor.bLength = USB_DT_CONFIG_SIZE;
-	callback_config_descriptor.bDescriptorType = USB_DT_CONFIG;
-	callback_config_descriptor.bNumInterfaces = 1;
-	callback_config_descriptor.bConfigurationValue = 1;
-	callback_config_descriptor.iConfiguration = STRING_LOOPBACK;
-	callback_config_descriptor.bmAttributes = USB_CONFIG_ATT_ONE | USB_CONFIG_ATT_SELFPOWER;
-	callback_config_descriptor.bMaxPower = 1;		/* self-powered */
-	
-	callback_interface_descriptor.bLength = USB_DT_INTERFACE_SIZE;
-	callback_interface_descriptor.bDescriptorType = USB_DT_INTERFACE;
-	callback_interface_descriptor.bInterfaceNumber=0;
-	callback_interface_descriptor.bAlternateSetting=0;
-	callback_interface_descriptor.bNumEndpoints = 2;
-	callback_interface_descriptor.bInterfaceClass = USB_CLASS_VENDOR_SPEC;
-	callback_interface_descriptor.bInterfaceSubClass=0;
-	callback_interface_descriptor.bInterfaceProtocol=0;
-	callback_interface_descriptor.iInterface = STRING_LOOPBACK;
-
-	struct usb_endpoint_descriptor *ep;
-	ep = &callback_eps[0];
-	ep->bLength = USB_DT_ENDPOINT_SIZE;
-	ep->bDescriptorType = USB_DT_ENDPOINT;
-	ep->bEndpointAddress = USB_ENDPOINT_DIR_MASK | 1;
-	ep->bmAttributes = USB_ENDPOINT_XFER_INT;
-	ep->wMaxPacketSize = 64;
-	ep->bInterval = 10;
-	
-	ep = &callback_eps[1];
-	ep->bLength = USB_DT_ENDPOINT_SIZE;
-	ep->bDescriptorType = USB_DT_ENDPOINT;
-	ep->bEndpointAddress = 1;
-	ep->bmAttributes = USB_ENDPOINT_XFER_INT;
-	ep->wMaxPacketSize = 64;
-	ep->bInterval = 10;
-
-	callback_config_descriptor.wTotalLength=callback_config_descriptor.bLength+callback_interface_descriptor.bLength+callback_eps[0].bLength+callback_eps[1].bLength;
-
-	__u16 string0[2]={0x0409,0x0000};
-	callback_strings=(USBString**)calloc(5,sizeof(USBString*));
-
-	callback_strings[0]=new USBString(string0,0,0);
-
-	callback_strings[STRING_MANUFACTURER]=new USBString("Manufacturer",STRING_MANUFACTURER,0x409);
-	callback_strings[STRING_PRODUCT]=new USBString("Product",STRING_PRODUCT,0x409);
-	callback_strings[STRING_SERIAL]=new USBString("Serial",STRING_SERIAL,0x409);
-	callback_strings[STRING_LOOPBACK]=new USBString("Loopback",STRING_LOOPBACK,0x409);
-	callback_stringMaxIndex=STRING_LOOPBACK;
-
-	buffer=NULL;
-	full=false;
-	head=tail=0;
-}
-
 DeviceProxy_Callback::DeviceProxy_Callback(ConfigParser *cfg) {
-	/* FIXME pull these values from the config object */
-	int vendorId = 0xffff;
-	int productId = 0xffff;
+	 connect_cb = (f_connect) cfg->get_pointer("DeviceProxy_Callback::connect");
+	 disconnect_cb = (f_disconnect) cfg->get_pointer("DeviceProxy_Callback::disconnect");
+	 reset_cb = (f_reset) cfg->get_pointer("DeviceProxy_Callback::reset");
+	 control_request_cb = (f_control_request) cfg->get_pointer("DeviceProxy_Callback::control_request");
+	 send_data_cb = (f_send_data) cfg->get_pointer("DeviceProxy_Callback::send_data");
+	 receive_data_cb = (f_receive_data) cfg->get_pointer("DeviceProxy_Callback::receive_data");
+	 toString_cb = (f_toString) cfg->get_pointer("DeviceProxy_Callback::toString");
+	 
+	/* Copy descriptors */
+	struct usb_device_descriptor *_callback_device_descriptor = (struct usb_device_descriptor *) cfg->get_pointer("DeviceProxy_Callback::device_descriptor");
+	struct usb_config_descriptor *_callback_config_descriptor = (struct usb_config_descriptor *) cfg->get_pointer("DeviceProxy_Callback::config_descriptor");
+	struct usb_interface_descriptor *_callback_interface_descriptor = (struct usb_interface_descriptor *) cfg->get_pointer("DeviceProxy_Callback::interface_descriptor");
+	struct usb_endpoint_descriptor *_callback_eps = (struct usb_endpoint_descriptor *) cfg->get_pointer("DeviceProxy_Callback::endpoint_descriptor");
 
-	p_is_connected = false;
+	if(_callback_device_descriptor)
+		memcpy(&callback_device_descriptor, _callback_device_descriptor, sizeof(struct usb_device_descriptor));
+	if(_callback_config_descriptor)
+		memcpy(&callback_config_descriptor, _callback_config_descriptor, sizeof(struct usb_config_descriptor));
+	if(_callback_interface_descriptor)
+		memcpy(&callback_interface_descriptor, _callback_interface_descriptor, sizeof(struct usb_interface_descriptor));
+	if(_callback_eps)
+		memcpy(&callback_eps, _callback_eps, 2*sizeof(struct usb_endpoint_descriptor));
 	
-	callback_device_descriptor.bLength = USB_DT_DEVICE_SIZE;
-	callback_device_descriptor.bDescriptorType = USB_DT_DEVICE;
-	callback_device_descriptor.bcdUSB = cpu_to_le16(0x0100);
-	callback_device_descriptor.bDeviceClass = USB_CLASS_VENDOR_SPEC;
-	callback_device_descriptor.bDeviceSubClass = 0;
-	callback_device_descriptor.bDeviceProtocol = 0;
-	callback_device_descriptor.bMaxPacketSize0=64;
-	callback_device_descriptor.idVendor = cpu_to_le16(vendorId & 0xffff);
-	callback_device_descriptor.idProduct = cpu_to_le16(productId & 0xffff);
-	fprintf(stderr,"V: %04x P: %04x\n",callback_device_descriptor.idVendor,callback_device_descriptor.idProduct);
-	callback_device_descriptor.bcdDevice = 0;
-	callback_device_descriptor.iManufacturer = STRING_MANUFACTURER;
-	callback_device_descriptor.iProduct = STRING_PRODUCT;
-	callback_device_descriptor.iSerialNumber = STRING_SERIAL;
-	callback_device_descriptor.bNumConfigurations = 1;
-	
-	callback_config_descriptor.bLength = USB_DT_CONFIG_SIZE;
-	callback_config_descriptor.bDescriptorType = USB_DT_CONFIG;
-	callback_config_descriptor.bNumInterfaces = 1;
-	callback_config_descriptor.bConfigurationValue = 1;
-	callback_config_descriptor.iConfiguration = STRING_LOOPBACK;
-	callback_config_descriptor.bmAttributes = USB_CONFIG_ATT_ONE | USB_CONFIG_ATT_SELFPOWER;
-	callback_config_descriptor.bMaxPower = 1;		/* self-powered */
-	
-	callback_interface_descriptor.bLength = USB_DT_INTERFACE_SIZE;
-	callback_interface_descriptor.bDescriptorType = USB_DT_INTERFACE;
-	callback_interface_descriptor.bInterfaceNumber=0;
-	callback_interface_descriptor.bAlternateSetting=0;
-	callback_interface_descriptor.bNumEndpoints = 2;
-	callback_interface_descriptor.bInterfaceClass = USB_CLASS_VENDOR_SPEC;
-	callback_interface_descriptor.bInterfaceSubClass=0;
-	callback_interface_descriptor.bInterfaceProtocol=0;
-	callback_interface_descriptor.iInterface = STRING_LOOPBACK;
-
-	struct usb_endpoint_descriptor *ep;
-	ep = &callback_eps[0];
-	ep->bLength = USB_DT_ENDPOINT_SIZE;
-	ep->bDescriptorType = USB_DT_ENDPOINT;
-	ep->bEndpointAddress = USB_ENDPOINT_DIR_MASK | 1;
-	ep->bmAttributes = USB_ENDPOINT_XFER_INT;
-	ep->wMaxPacketSize = 64;
-	ep->bInterval = 10;
-	
-	ep = &callback_eps[1];
-	ep->bLength = USB_DT_ENDPOINT_SIZE;
-	ep->bDescriptorType = USB_DT_ENDPOINT;
-	ep->bEndpointAddress = 1;
-	ep->bmAttributes = USB_ENDPOINT_XFER_INT;
-	ep->wMaxPacketSize = 64;
-	ep->bInterval = 10;
-
-	callback_config_descriptor.wTotalLength=callback_config_descriptor.bLength+callback_interface_descriptor.bLength+callback_eps[0].bLength+callback_eps[1].bLength;
-
 	__u16 string0[2]={0x0409,0x0000};
 	callback_strings=(USBString**)calloc(5,sizeof(USBString*));
 
@@ -170,23 +62,14 @@ DeviceProxy_Callback::DeviceProxy_Callback(ConfigParser *cfg) {
 	callback_stringMaxIndex=STRING_LOOPBACK;
 
 	buffer=NULL;
+	p_is_connected = false;
 	full=false;
 	head=tail=0;
 }
 
 DeviceProxy_Callback::~DeviceProxy_Callback() {
 	disconnect();
-
-	int i;
-	if (callback_strings) {
-		for (i=0;i<callback_stringMaxIndex;i++) {
-			if (callback_strings[i]) {
-				delete(callback_strings[i]);
-				callback_strings[i]=NULL;
-			}
-		}
-		delete callback_strings;
-	}
+	delete[] callback_strings;
 }
 
 int DeviceProxy_Callback::connect(int timeout) {

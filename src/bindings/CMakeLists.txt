@@ -5,7 +5,7 @@
 project(libusbproxyAPI C)
 set(PACKAGE libusbproxyAPI)
 
-include_directories(${libusbproxy_SOURCE_DIR} ${usbproxy_filters_SOURCE_DIR})
+include_directories(${libusbproxy_SOURCE_DIR} ${usbproxy_filters_SOURCE_DIR} ${usbproxy_devices_SOURCE_DIR})
 
 # Target
 set(cpp_sources

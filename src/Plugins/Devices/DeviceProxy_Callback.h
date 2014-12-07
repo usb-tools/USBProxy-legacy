@@ -47,7 +47,6 @@ private:
 
 public:
 	static int debugLevel;
-	DeviceProxy_Callback(int vendorId, int productId);
 	DeviceProxy_Callback(ConfigParser *cfg);
 	~DeviceProxy_Callback();
 

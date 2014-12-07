@@ -5,6 +5,7 @@
 #include "Manager.h"
 #include "ConfigParser.h"
 #include "PacketFilter_Callback.h"
+#include "DeviceProxy_Callback.h"
 
 #define API extern "C"
     
@@ -17,8 +18,36 @@ API void usbproxy_init() {
 }
 
 API void set_config() {
-	cfg->set("DeviceProxy", "DeviceProxy_LibUSB");
-	cfg->set("HostProxy", "HostProxy_GadgetFS");
+	//cfg->set("HostProxy", "HostProxy_GadgetFS");
+	cfg->set("HostProxy", "HostProxy_TCP");
+	cfg->set("HostProxy_TCP::TCPAddress", "127.0.0.1");
+}
+
+API void register_deviceproxy(
+		struct usb_device_descriptor callback_device_descriptor,
+		struct usb_config_descriptor *callback_config_descriptor,
+		struct usb_interface_descriptor *callback_interface_descriptor,
+		struct usb_endpoint_descriptor *callback_eps
+		//f_connect connect_cb,
+		//f_disconnect disconnect_cb,
+		//f_reset reset_cb,
+		//f_control_request control_request_cb,
+		//f_send_data send_data_cb,
+		//f_receive_data receive_data_cb,
+		//f_toString toString_cb
+		) {
+	cfg->set("DeviceProxy", "DeviceProxy_Callback");
+	cfg->add_pointer("DeviceProxy_Callback::device_descriptor", (void *)&callback_device_descriptor);
+	cfg->add_pointer("DeviceProxy_Callback::config_descriptor", (void *)callback_config_descriptor);
+	cfg->add_pointer("DeviceProxy_Callback::interface_descriptor", (void *)callback_interface_descriptor);
+	cfg->add_pointer("DeviceProxy_Callback::endpoint_descriptor", (void *)callback_eps);
+	//cfg->add_pointer("PacketFilter_Callback::connect", (void *)connect_cb);
+	//cfg->add_pointer("PacketFilter_Callback::disconnect", (void *)disconnect_cb);
+	//cfg->add_pointer("PacketFilter_Callback::reset", (void *)reset_cb);
+	//cfg->add_pointer("PacketFilter_Callback::control_request", (void *)control_request_cb);
+	//cfg->add_pointer("PacketFilter_Callback::send_data", (void *)send_data_cb);
+	//cfg->add_pointer("PacketFilter_Callback::receive_data", (void *)receive_data_cb);
+	//cfg->add_pointer("PacketFilter_Callback::)toString", (void *)toString_cb);
 }
 
 API void register_packet_filter(f_cb cb) {
