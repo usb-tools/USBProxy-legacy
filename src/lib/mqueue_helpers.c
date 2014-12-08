@@ -112,7 +112,7 @@ int clean_mqueue() {
 
 	fprintf(stderr,"removing %d\n",rmCount);
 	for (i=0;i<rmCount;i++) {
-		char buf[20]={0x0};
+		char buf[22]={0x0};
 		strcat(buf,"/");
 		strcat(buf,rmQueues[i]);
 		mq_unlink(buf);
