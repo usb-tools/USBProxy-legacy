@@ -134,7 +134,8 @@ int HostProxy_GadgetFS::connect(Device* device,int timeout) {
 		free(hex);
 	}
 
-	p_device_file = open_gadget();
+	device_filename = find_gadget_filename();
+	p_device_file = open_gadget(device_filename);
 	if (p_device_file < 0) {
 		fprintf(stderr,"Fail on open %d %s\n",errno,strerror(errno));
 		return 1;
@@ -164,7 +165,8 @@ int HostProxy_GadgetFS::reconnect() {
 		free(hex);
 	}
 
-	p_device_file = open_gadget();
+	device_filename = find_gadget_filename();
+	p_device_file = open_gadget(device_filename);
 	if (p_device_file < 0) {
 		fprintf(stderr,"Fail on open %d %s\n",errno,strerror(errno));
 		return 1;
@@ -478,7 +480,7 @@ void HostProxy_GadgetFS::setConfig(Configuration* fs_cfg,Configuration* hs_cfg,b
 
 				__u8 epAddress=fs_ep->bEndpointAddress;
 
-				int fd=open_endpoint(epAddress);
+				int fd=open_endpoint(epAddress, device_filename);
 				if (fd<0) {
 					fprintf(stderr,"Fail on open EP%02x %d %s\n",epAddress,errno,strerror(errno));
 					return;

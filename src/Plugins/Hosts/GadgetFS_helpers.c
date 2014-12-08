@@ -160,7 +160,25 @@ int unmount_gadget() {
 }
 
 /* Find the appropriate gadget file on the GadgetFS filesystem */
-int open_gadget() {
+int open_gadget(const char * gadget_filename ) {
+	const char *filename = gadget_filename;
+
+	if (filename == NULL) {
+		fprintf(stderr, "Error, unable to find gadget file.\n");
+		return -1;
+	}
+
+	char path[256];
+	int ret, status;
+	sprintf(path, "%s/%s", gadgetfs_path, filename);
+
+	ret = open(path, O_CLOEXEC | O_RDWR);
+
+	return ret;
+}
+
+const char * find_gadget_filename()
+{
 	const char *filename = NULL;
 	DIR *dir;
 	struct dirent *entry;
@@ -180,6 +198,7 @@ int open_gadget() {
 		"lh740x_udc",
 		"atmel_usba_udc",
 		"musb-hdrc",
+		"sw_usb_udc",
 		NULL
 	};
 
@@ -189,7 +208,7 @@ int open_gadget() {
 
 	dir = opendir(gadgetfs_path);
 	if (!dir)
-		return -1;
+		return NULL;
 
 	entry = malloc(offsetof(struct dirent, d_name)
 				   + pathconf(gadgetfs_path, _PC_NAME_MAX)
@@ -199,7 +218,7 @@ int open_gadget() {
 
 	if (!entry) {
 		closedir (dir);
-		return -1;
+		return NULL;
 	}
 
 	while(1) {
@@ -216,31 +235,27 @@ int open_gadget() {
 	free(entry);
 	closedir(dir);
 	
-	if (filename == NULL) {
-		fprintf(stderr, "Error, unable to find gadget file.\n");
-		return -1;
-	}
-	
-	char path[256];
-	int ret, status;
-	sprintf(path, "%s/%s", gadgetfs_path, filename);
-	
-	ret = open(path, O_CLOEXEC | O_RDWR);
-	
-	return ret;
+	return filename;
 }
 
-int open_endpoint(__u8 epAddress) {
+int open_endpoint(__u8 epAddress, const char * gadget_filename) {
 	int number=epAddress&0xf;
 	if (number==0) return -1;
 	char* direction=NULL;
-	if (number>12) {
-		direction="";
-	} else {
-		direction=(epAddress&0x80)?"in":"out";
+
+	if(gadget_filename == "sw_usb_udc") {
+		direction="-bulk";
+	}
+	else {
+		if (number>12) {
+			direction="";
+		} else {
+			direction=(epAddress&0x80)?"in":"out";
+		}
 	}
 
 	char path[256];
 	sprintf(path, "%s/ep%d%s", gadgetfs_path, number,direction);
+
 	return open(path, O_CLOEXEC | O_RDWR);
 }

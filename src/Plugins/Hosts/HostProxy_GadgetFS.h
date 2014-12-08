@@ -20,6 +20,7 @@ class HostProxy_GadgetFS: public HostProxy {
 private:
 	bool p_is_connected;
 	int p_device_file;
+	const char* device_filename;
 	struct aiocb* p_epin_async[16];
 	struct aiocb* p_epout_async[16];
 	bool p_epin_active[16];
