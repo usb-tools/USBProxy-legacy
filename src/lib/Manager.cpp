@@ -378,7 +378,7 @@ void Manager::start_data_relaying() {
 
 	int i,j;
 	for (i=1;i<16;i++) {
-		char mqname[16];
+		char mqname[22];
 		struct mq_attr mqa;
 		mqa.mq_maxmsg=1;
 		mqa.mq_msgsize=4;
