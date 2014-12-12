@@ -15,7 +15,7 @@
 
 
 PacketFilter_PcapLogger::PacketFilter_PcapLogger(ConfigParser *cfg) {
-	std::string filename = cfg->get("PacketFilter_PcapLogger::filename");
+	std::string filename = cfg->get("PacketFilter_PcapLogger::Filename");
 	pkt_count = 0;
 	file = fopen(filename.c_str(), "w");
 	pcap_file = pcap_open_dead(DLT_USB_LINUX, SNAP_LEN);
