@@ -1,22 +1,5 @@
 #
-# Copyright 2014 Dominic Spill
-#
 # This file is part of USBProxy.
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2, or (at your option)
-# any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; see the file COPYING.  If not, write to
-# the Free Software Foundation, Inc., 51 Franklin Street,
-# Boston, MA 02110-1301, USA.
 #
 #top level cmake project for USBProxy lib, plugins, and commandline tool
 
@@ -28,14 +11,15 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
 set(INSTALL_DEFAULT_BINDIR "bin" CACHE STRING "Appended to CMAKE_INSTALL_PREFIX")
 
-add_subdirectory(lib)
-add_subdirectory(Plugins)
-add_subdirectory(tools)
-
 # Comment the following out for releases.
 set(CMAKE_C_FLAGS "$ENV{CFLAGS}")
 
-set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} -std=gnu++0x -pedantic -felide-constructors -fno-exceptions -fno-rtti")
+set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} $ENV{CPPFLAGS} -std=gnu++0x -pedantic -felide-constructors -fno-exceptions")
+
+add_subdirectory(lib)
+add_subdirectory(Plugins)
+add_subdirectory(tools)
+add_subdirectory(bindings)
 
 # Create uninstall target
 configure_file(

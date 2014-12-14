@@ -1,28 +1,7 @@
 /*
- * Copyright 2013 Dominic Spill
- * Copyright 2013 Adam Stasiak
- *
  * This file is part of USBProxy.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3, or (at your option)
- * any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; see the file COPYING.  If not, write to
- * the Free Software Foundation, Inc., 51 Franklin Street,
- * Boston, MA 02110-1301, USA.
- *
- * Manager.h
- *
- * Created on: Nov 12, 2013
  */
+
 #ifndef USBPROXY_MANAGER_H
 #define USBPROXY_MANAGER_H
 
@@ -50,7 +29,8 @@ enum Manager_status {
 	USBM_SETUP=1,
 	USBM_RELAYING=2,
 	USBM_STOPPING=3,
-	USBM_SETUP_ABORT=4
+	USBM_SETUP_ABORT=4,
+	USBM_RESET=5
 };
 
 class Manager {
@@ -103,6 +83,9 @@ public:
 	void setConfig(__u8 index);
 
 	enum Manager_status get_status() {return status;}
+
+	// modified 20140924 atsumi@aizulab.com
+  void set_status( Manager_status status_) { status = status_;}
 
 	void start_control_relaying();
 	void stop_relaying();

@@ -1,32 +1,6 @@
 /*
- * Copyright 2013 Dominic Spill
- * Copyright 2013 Adam Stasiak
- *
  * This file is part of USBProxy.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3, or (at your option)
- * any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; see the file COPYING.  If not, write to
- * the Free Software Foundation, Inc., 51 Franklin Street,
- * Boston, MA 02110-1301, USA.
  */
-
-/*
- * This file is based on http://www.linux-usb.org/gadget/usb.c
- * That file lacks any copyright information - but it belongs to someone
- * probably David Brownell - so thank you very much to him too!
- */
-
-/* $(CROSS_COMPILE)cc -Wall -g -o proxy proxy.c usbstring.c -lpthread */
 
 #include <errno.h>
 #include <fcntl.h>
@@ -63,7 +37,7 @@ void usage(char *arg) {
 	printf("\t-l Enable stream logger (logs to stderr)\n");
 	printf("\t-i Enable UDP injector\n");
 	printf("\t-x Enable Xbox360 UDPHID injector & filter\n");
-	printf("\t-k Keylogger with ROT13 filter (for demo)\n");
+	printf("\t-k Keylogger with ROT13 filter (for demo), specify optional filename to output to instead of stderr\n");
 	printf("\t-w <filename> Write to pcap file for viewing in Wireshark\n");
 	printf("\t-h Display this message\n");
 }
@@ -71,8 +45,10 @@ void usage(char *arg) {
 void cleanup(void) {
 }
 
-//sigterm: stop forwarding threads, and/or hotplug loop and exit
-//sighup: reset forwarding threads, reset device and gadget
+/*
+ * sigterm: stop forwarding threads, and/or hotplug loop and exit
+ * sighup: reset forwarding threads, reset device and gadget
+ */
 void handle_signal(int signum)
 {
 	struct sigaction action;
@@ -102,10 +78,9 @@ extern "C" int main(int argc, char **argv)
 	int opt;
 	char *host;
 	bool client=false, server=false, device_set=false, host_set=false;
+	FILE *keylog_output_file = NULL;
 	fprintf(stderr,"SIGRTMIN: %d\n",SIGRTMIN);
 
-	// int vendorId=LIBUSB_HOTPLUG_MATCH_ANY, productId=LIBUSB_HOTPLUG_MATCH_ANY;
-	
 	struct sigaction action;
 	memset(&action, 0, sizeof(struct sigaction));
 	action.sa_handler = handle_signal;
@@ -113,10 +88,9 @@ extern "C" int main(int argc, char **argv)
 	sigaction(SIGHUP, &action, NULL);
 	sigaction(SIGINT, &action, NULL);
 	
-	manager=new Manager();
 	ConfigParser *cfg = new ConfigParser();
 
-	while ((opt = getopt (argc, argv, "v:p:P:D:H:dsc:C:lmikw:hx")) != EOF) {
+	while ((opt = getopt (argc, argv, "v:p:P:D:H:dsc:C:lmik::w:hx")) != EOF) {
 		switch (opt) {
 		case 'v':
 			cfg->set("vendorId", optarg);
@@ -162,7 +136,17 @@ extern "C" int main(int argc, char **argv)
 			break;
 		case 'k':
 			cfg->add_to_vector("Plugins", "PacketFilter_KeyLogger");
-			cfg->add_pointer("PacketFilter_KeyLogger::file", stderr);
+			if (optarg) {
+				keylog_output_file = fopen(optarg, "r+");
+				if (keylog_output_file == NULL) {
+					fprintf(stderr, "Output file %s failed to open for writing, exiting\n", optarg);
+					return 1;
+				}
+				fprintf(stderr, "Output file %s opened.\n", optarg);
+				cfg->add_pointer("PacketFilter_KeyLogger::file", keylog_output_file);
+			} else {
+				cfg->add_pointer("PacketFilter_KeyLogger::file", stderr);
+			}
 			cfg->add_to_vector("Plugins", "PacketFilter_ROT13");
 			break;
 		case 'w':
@@ -194,16 +178,26 @@ extern "C" int main(int argc, char **argv)
 		if(!host_set)
 			cfg->set("HostProxy", "HostProxy_GadgetFS");
 	}
-	manager->load_plugins(cfg);
-	cfg->print_config();
 
-	manager->start_control_relaying();
-	while (manager->get_status()==USBM_RELAYING) {usleep(10000);}
+	int status;
+	do {
+		manager=new Manager();
+		manager->load_plugins(cfg);
+		cfg->print_config();
 
-	// Tidy up
-	manager->stop_relaying();
-	manager->cleanup();
-	delete(manager);
+		manager->start_control_relaying();
+		while ( ( status = manager->get_status()) == USBM_RELAYING) {
+			usleep(10000);
+		}
+
+		manager->stop_relaying();
+		manager->cleanup();
+		delete(manager);
+	} while ( status == USBM_RESET);
+	
+	if (keylog_output_file) {
+		fclose(keylog_output_file);
+	}
 
 	printf("done\n");
 	return 0;

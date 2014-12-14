@@ -10,3 +10,4 @@ merge.sh
 .project
 .cproject
 test/relaytest/relaytest
+typescript

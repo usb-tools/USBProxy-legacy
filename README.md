@@ -62,8 +62,10 @@ ToDo
 
 License
 -------
-All files should have a license displayed at the start of the file.  Any code
-that we have written is released under the GPL v3 license.
+Unless explicitly stated otherwise, all code in this repository is released
+under the GPL v2 license, a copy of which can be found in the LICENSE file. All
+files that are released under a different license contain a copy of that license
+in the file.
 
 FAQ
 ---
