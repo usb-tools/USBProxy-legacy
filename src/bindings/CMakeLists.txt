@@ -1,29 +1,41 @@
 #
-# This file is part of USBProxy.
+# This file is part of USBProxy
 #
 
-project(libusbproxyAPI C)
-set(PACKAGE libusbproxyAPI)
+# swig -c++ -python -I../lib usbproxy.i
+# g++ -fpic -shared --std=c++11 usbproxy_wrap.cxx -I/usr/include/python2.7 -I../lib -lpython2.7 -lUSBProxy -o _usbproxy.so
 
-include_directories(${libusbproxy_SOURCE_DIR} ${usbproxy_filters_SOURCE_DIR} ${usbproxy_devices_SOURCE_DIR})
 
-# Target
-set(cpp_sources
-	${CMAKE_CURRENT_SOURCE_DIR}/API.cpp
-	CACHE INTERNAL "List of CPP sources")
+########################################################################
+# Include swig generation macros
+########################################################################
+find_package(SWIG)
+find_package(PythonLibs)
+if(NOT SWIG_FOUND OR NOT PYTHONLIBS_FOUND)
+    return()
+endif()
 
-add_definitions( -DPLUGIN_PATH="${CMAKE_INSTALL_PREFIX}/lib/USBProxy/")
+########################################################################
+# Setup swig generation
+########################################################################
+foreach(incdir ${GNURADIO_RUNTIME_INCLUDE_DIRS})
+    list(APPEND GR_SWIG_INCLUDE_DIRS ${incdir}/gnuradio/swig)
+endforeach(incdir)
 
-# Dynamic library
-add_library(USBProxyAPI SHARED ${cpp_sources})
+set(GR_SWIG_LIBRARIES gnuradio-bluetooth btbb)
 
-set_source_files_properties(${cpp_sources} PROPERTIES COMPILE_FLAGS  "-std=c++0x")
+GR_SWIG_MAKE(usbproxy usbproxy.i)
 
-set_target_properties(USBProxyAPI PROPERTIES VERSION ${MAJOR_VERSION}.${MINOR_VERSION} SOVERSION 0)
+########################################################################
+# Install the built swig module
+########################################################################
+GR_SWIG_INSTALL(TARGETS usbproxy DESTINATION usbproxy)
 
-target_link_libraries(USBProxyAPI USBProxy)
-
-install(TARGETS USBProxyAPI
-        LIBRARY DESTINATION lib${LIB_SUFFIX}
-        COMPONENT sharedlibs
-        )
+########################################################################
+# Install swig .i files for development
+########################################################################
+install(
+    FILES
+    usbproxy.i 
+    DESTINATION ${GR_INCLUDE_DIR}/usbproxy/swig
+)
