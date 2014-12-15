@@ -13,7 +13,7 @@
 class ConfigParser {
 private:
 	std::map<std::string, std::string> strings;
-	std::map<std::string, std::vector<std::string>> vectors;
+	std::map<std::string, std::vector<std::string> > vectors;
 	std::map<std::string, void*> pointers;
 
 public:
