@@ -4,6 +4,7 @@ usb-mitm
 *.o
 *.d
 *.so
+*.pyc
 #shell to move changes from usb-test
 merge.sh
 #eclipse stuff
@@ -11,3 +12,6 @@ merge.sh
 .cproject
 test/relaytest/relaytest
 typescript
+# bindings
+usbproxy_wrap.cxx
+usbproxy.py
