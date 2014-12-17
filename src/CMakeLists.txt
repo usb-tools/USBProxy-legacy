@@ -19,7 +19,7 @@ set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} $ENV{CPPFLAGS} -std=gnu++0x -pedantic -f
 add_subdirectory(lib)
 add_subdirectory(Plugins)
 add_subdirectory(tools)
-#add_subdirectory(bindings)
+add_subdirectory(bindings)
 
 # Create uninstall target
 configure_file(

@@ -4,9 +4,8 @@
 
 %module usbproxy
 %{
-#include "ConfigParser.h"
-#include "Manager.h"
+#include "API.h"
 %}
 
-%include "ConfigParser.h"
-%include "Manager.h"
+%include "API.h"
+

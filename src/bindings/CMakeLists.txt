@@ -1,41 +1,30 @@
 #
-# This file is part of USBProxy
+# This file is part of USBProxy.
 #
 
-# swig -c++ -python -I../lib usbproxy.i
-# g++ -fpic -shared --std=c++11 usbproxy_wrap.cxx -I/usr/include/python2.7 -I../lib -lpython2.7 -lUSBProxy -o _usbproxy.so
+project(usbproxy_bindings C)
+set(PACKAGE usbproxy_bindings)
 
-
-########################################################################
-# Include swig generation macros
-########################################################################
+# Check that we have swig and python
 find_package(SWIG)
 find_package(PythonLibs)
 if(NOT SWIG_FOUND OR NOT PYTHONLIBS_FOUND)
     return()
 endif()
 
-########################################################################
-# Setup swig generation
-########################################################################
-foreach(incdir ${GNURADIO_RUNTIME_INCLUDE_DIRS})
-    list(APPEND GR_SWIG_INCLUDE_DIRS ${incdir}/gnuradio/swig)
-endforeach(incdir)
+INCLUDE(${SWIG_USE_FILE})
+INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+INCLUDE_DIRECTORIES(${libusbproxy_SOURCE_DIR})
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+INCLUDE_DIRECTORIES(${usbproxy_filters_SOURCE_DIR})
+INCLUDE_DIRECTORIES(${usbproxy_devices_SOURCE_DIR})
 
-set(GR_SWIG_LIBRARIES gnuradio-bluetooth btbb)
+SET(CMAKE_SWIG_FLAGS "")
 
-GR_SWIG_MAKE(usbproxy usbproxy.i)
+SET_SOURCE_FILES_PROPERTIES(usbproxy.i PROPERTIES CPLUSPLUS ON)
+SWIG_ADD_MODULE(usbproxy python usbproxy.i usbproxyPYTHON_wrap.cxx API.cpp)
+SWIG_LINK_LIBRARIES(usbproxy USBProxy ${PYTHON_LIBRARIES})
 
-########################################################################
-# Install the built swig module
-########################################################################
-GR_SWIG_INSTALL(TARGETS usbproxy DESTINATION usbproxy)
 
-########################################################################
-# Install swig .i files for development
-########################################################################
-install(
-    FILES
-    usbproxy.i 
-    DESTINATION ${GR_INCLUDE_DIR}/usbproxy/swig
-)
+# swig -c++ -python -I../lib -o usbproxy_wrap.cxx usbproxy.i
+# g++ -fpic -shared -std=c++0x usbproxy_wrap.cxx -I/usr/include/python2.7 -I../lib -lpython2.7 -lUSBProxy -o _usbproxy.so
