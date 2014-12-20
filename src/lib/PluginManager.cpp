@@ -94,6 +94,16 @@ int PluginManager::load_plugins(ConfigParser *cfg)
 	return PLUGIN_MANAGER_SUCCESS;
 }
 
+void PluginManager::add_plugin(PacketFilter* plugin)
+{
+	filters.push_back(plugin);
+}
+
+void PluginManager::add_plugin(Injector* plugin)
+{
+	injectors.push_back(plugin);
+}
+
 void PluginManager::destroy_plugins()
 {	
 	for(std::vector<void*>::iterator it = handleList.begin();

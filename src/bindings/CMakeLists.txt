@@ -23,7 +23,12 @@ SET(CMAKE_SWIG_FLAGS "")
 
 SET_SOURCE_FILES_PROPERTIES(usbproxy.i PROPERTIES CPLUSPLUS ON)
 SWIG_ADD_MODULE(usbproxy python usbproxy.i usbproxyPYTHON_wrap.cxx API.cpp)
-SWIG_LINK_LIBRARIES(usbproxy USBProxy ${PYTHON_LIBRARIES})
+SWIG_LINK_LIBRARIES(usbproxy
+    USBProxy
+    PacketFilter_Callback
+    DeviceProxy_Callback
+    ${PYTHON_LIBRARIES}
+)
 
 
 # swig -c++ -python -I../lib -o usbproxy_wrap.cxx usbproxy.i
