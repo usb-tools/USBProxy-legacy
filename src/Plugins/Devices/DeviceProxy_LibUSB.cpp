@@ -17,7 +17,6 @@ int resetCount = 1;
 static DeviceProxy_LibUSB *proxy;
 
 extern "C" {
-	// modified 20140926 atsumi@aizulab.com
 	// for handling events of hotploug.
 	int hotplug_callback( struct libusb_context *ctx, struct libusb_device *dev, libusb_hotplug_event envet, void *user_data)
 	{
@@ -42,7 +41,6 @@ DeviceProxy_LibUSB::DeviceProxy_LibUSB(int vendorId,int productId,bool includeHu
 	context=NULL;
 	dev_handle=NULL;
 
-	// modified 20140926 atsumi@aizulab.com
 	// for handling events of hotploug.
 	callback_handle = -1;
 
@@ -76,7 +74,6 @@ DeviceProxy_LibUSB::DeviceProxy_LibUSB(ConfigParser *cfg)
 	context=NULL;
 	dev_handle=NULL;
 
-	// modified 20140926 atsumi@aizulab.com
 	// for handling events of hotploug.
 	callback_handle = -1;
 
@@ -88,7 +85,6 @@ DeviceProxy_LibUSB::DeviceProxy_LibUSB(ConfigParser *cfg)
 }
 
 DeviceProxy_LibUSB::~DeviceProxy_LibUSB() {
-	// modified 20140926 atsumi@aizulab.com
 	// for handling events of hotploug.
 	if (context && callback_handle != -1) {
 		libusb_hotplug_deregister_callback( context, callback_handle);
@@ -132,7 +128,6 @@ int DeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) {
 	privateDevice=true;
 	libusb_init(&context);
 
-	// modified 20140908 atsumi@aizulab.com
   libusb_set_debug( context, 3);
 
 	libusb_device **list=NULL;
@@ -181,7 +176,6 @@ int DeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) {
 	}
 
 	libusb_free_device_list(list,1);
-	// modfied 20140905 atsumi@aizulab.ocm
 	// libusb_set_auto_detach_kernel_driver(dev_handle,1);
 	// begin
 	rc = libusb_set_auto_detach_kernel_driver(dev_handle,1);
@@ -204,7 +198,6 @@ int DeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) {
 		free(device_desc);
 	}
 
-	// modified 20140926 atsumi@aizulab.com
 	// for handling events of hotploug.
 	// begin
 	if ( callback_handle == -1) {
@@ -223,7 +216,6 @@ int DeviceProxy_LibUSB::connect(int vendorId,int productId,bool includeHubs) {
 }
 
 void DeviceProxy_LibUSB::disconnect() {
-	// modified 20140926 atsumi@aizulab.com
 	// for handling events of hotploug.
 	if (context && callback_handle != -1) {
 		libusb_hotplug_deregister_callback( context, callback_handle);
@@ -324,14 +316,10 @@ void DeviceProxy_LibUSB::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacket
 	switch (attributes & USB_ENDPOINT_XFERTYPE_MASK) {
 		case USB_ENDPOINT_XFER_CONTROL:
 			fprintf(stderr,"Can't send on a control endpoint.");
-			// modified 20141002 atsumi@aizulab.com
-			// return; 
 			break;
 		case USB_ENDPOINT_XFER_ISOC:
 			//TODO handle isochronous
 			fprintf(stderr,"Isochronous endpoints unhandled.");
-			// modified 20141002 atsumi@aizulab.com
-			// return;
 			break;
 		case USB_ENDPOINT_XFER_BULK:
 			rc=libusb_bulk_transfer(dev_handle,endpoint,dataptr,length,&transferred,0);
@@ -355,14 +343,10 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 	switch (attributes & USB_ENDPOINT_XFERTYPE_MASK) {
 		case USB_ENDPOINT_XFER_CONTROL:
 			fprintf(stderr,"Can't send on a control endpoint.");
-			// modified 20141002 atsumi@aizulab.com
-			// return;
 			break;
 		case USB_ENDPOINT_XFER_ISOC:
 			//TODO handle isochronous
 			fprintf(stderr,"Isochronous endpoints unhandled.");
-			// modified 20141002 atsumi@aizulab.com
-			// return;
 			break;
 		case USB_ENDPOINT_XFER_BULK:
 			timeout=100;
@@ -372,11 +356,15 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 				free(*dataptr);
 				*dataptr=NULL;
 				*length=0;
-				// modified 20141002 atsumi@aizulab.com
-				//return;
+				fprintf(stderr,"Timeout error (%d) on Device EP%02x\n",rc,endpoint);
 				break;
 			}
-			if (rc) {free(*dataptr);*dataptr=NULL;*length=0;fprintf(stderr,"Transfer error (%d) on Device EP%02x\n",rc,endpoint);}
+			if (rc) {
+				free(*dataptr);
+				*dataptr=NULL;
+				*length=0;
+				fprintf(stderr,"Transfer error (%d) on Device EP%02x\n",rc,endpoint);
+			}
 			break;
 	  case USB_ENDPOINT_XFER_INT:
 			*dataptr=(__u8*)malloc(maxPacketSize);
@@ -385,8 +373,6 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 				free(*dataptr);
 				*dataptr=NULL;
 				*length=0;
-				// modified 20141002 atsumi@aizulab.com
-				// return;
 				break;
 			}
 	}
@@ -394,8 +380,6 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 
 void DeviceProxy_LibUSB::claim_interface(__u8 interface) {
 	int rc;
-
-	// for test code 20140912 atsumi@aizulab.com
 	__u8 buf[256];
 	usb_ctrlrequest setup_packet;
 	int len=0;
