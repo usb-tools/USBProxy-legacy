@@ -363,7 +363,7 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 				free(*dataptr);
 				*dataptr=NULL;
 				*length=0;
-				fprintf(stderr,"Transfer error (%d) on Device EP%02x\n",rc,endpoint);
+				fprintf(stderr,"%s error on Device EP%02x\n",libusb_error_name(rc),endpoint);
 			}
 			break;
 	  case USB_ENDPOINT_XFER_INT:
