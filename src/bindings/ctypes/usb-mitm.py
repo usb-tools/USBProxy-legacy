@@ -27,14 +27,17 @@ if __name__ == '__main__':
 	config_desc = usbproxy.USB_Config_Descriptor(
 		9, 2, 0x0020, 1, 1, 0, 0x80
 	)
+	string_desc = usbproxy.USB_String_Descriptor(
+		3, 3, 0x00
+	)
 	interface_desc = usbproxy.USB_Interface_Descriptor(
 		9, 4, 0, 0, 2, 0xff, 0, 0, 0
 	)
 	ep_desc = usbproxy.USB_Endpoint_Descriptor(
 		7, 5, 0x82, 2, 0x0040, 0
 	)
-	
-	#usbproxy.register_deviceproxy(device_desc, config_desc, interface_desc, ep_desc)
+	usbproxy.register_deviceproxy(device_desc, config_desc, interface_desc,
+								  ep_desc, string_desc)
 	usbproxy.lib.print_config()
 	usbproxy.lib.load_plugins()
 	usbproxy.run()

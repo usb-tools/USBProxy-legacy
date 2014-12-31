@@ -84,6 +84,11 @@ class USB_Endpoint_Descriptor(LittleEndianStructure):
 	            ("wMaxPacketSize", c_uint16),
 	            ("bInterval", c_uint8)]
 
+class USB_String_Descriptor(LittleEndianStructure):
+	_fields_ = [("bLength", c_uint8),
+	            ("bDescriptorType", c_uint8),
+	            ("wData", c_uint16)]
+
 class USB_CtrlRequest(LittleEndianStructure):
 	_fields_ = [("bRequestType", c_uint8),
 	            ("bRequest", c_uint8),
@@ -99,7 +104,7 @@ DEVICE_RECEIVE_FUNC = CFUNCTYPE(None, c_uint8, c_uint8, c_uint16, POINTER(POINTE
 
 def register_deviceproxy(
 	device_descriptor, config_descriptor, interface_descriptor, callback_eps,
-	connect_func=None, disconnect_func=None, reset_func=None,
+	string_descriptor, connect_func=None, disconnect_func=None, reset_func=None,
 	control_request_func=None, send_data_func=None, receive_data_func=None,
 	toString_func=None):
 	

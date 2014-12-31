@@ -25,6 +25,7 @@ API void register_deviceproxy(
 		struct usb_config_descriptor callback_config_descriptor,
 		struct usb_interface_descriptor callback_interface_descriptor,
 		struct usb_endpoint_descriptor callback_eps,
+		struct usb_string_descriptor callback_string_descriptor,
 		f_connect connect_cb,
 		f_disconnect disconnect_cb,
 		f_reset reset_cb,
@@ -38,13 +39,14 @@ API void register_deviceproxy(
 	cfg->add_pointer("DeviceProxy_Callback::config_descriptor", (void *)&callback_config_descriptor);
 	cfg->add_pointer("DeviceProxy_Callback::interface_descriptor", (void *)&callback_interface_descriptor);
 	cfg->add_pointer("DeviceProxy_Callback::endpoint_descriptor", (void *)&callback_eps);
-	cfg->add_pointer("PacketFilter_Callback::connect", (void *)connect_cb);
-	cfg->add_pointer("PacketFilter_Callback::disconnect", (void *)disconnect_cb);
-	cfg->add_pointer("PacketFilter_Callback::reset", (void *)reset_cb);
-	cfg->add_pointer("PacketFilter_Callback::control_request", (void *)control_request_cb);
-	cfg->add_pointer("PacketFilter_Callback::send_data", (void *)send_data_cb);
-	cfg->add_pointer("PacketFilter_Callback::receive_data", (void *)receive_data_cb);
-	cfg->add_pointer("PacketFilter_Callback::)toString", (void *)toString_cb);
+	cfg->add_pointer("DeviceProxy_Callback::string_descriptor", (void *)&callback_string_descriptor);
+	cfg->add_pointer("DeviceProxy_Callback::connect", (void *)connect_cb);
+	cfg->add_pointer("DeviceProxy_Callback::disconnect", (void *)disconnect_cb);
+	cfg->add_pointer("DeviceProxy_Callback::reset", (void *)reset_cb);
+	cfg->add_pointer("DeviceProxy_Callback::control_request", (void *)control_request_cb);
+	cfg->add_pointer("DeviceProxy_Callback::send_data", (void *)send_data_cb);
+	cfg->add_pointer("DeviceProxy_Callback::receive_data", (void *)receive_data_cb);
+	cfg->add_pointer("DeviceProxy_Callback::toString", (void *)toString_cb);
 }
 
 API void register_packet_filter(f_cb cb) {
