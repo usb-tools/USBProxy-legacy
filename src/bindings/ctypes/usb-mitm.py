@@ -20,12 +20,12 @@ def rot13_filter(p_pkt):
 
 if __name__ == '__main__':
 	usbproxy.init()
-	usbproxy.register_packet_filter(rot13_filter)
+	#usbproxy.register_packet_filter(rot13_filter)
 	device_desc = usbproxy.USB_Device_Descriptor(
 		18, 1, 0x0200, 0xff, 0, 0, 64, 0x1d50, 0x6002, 0x0100, 1, 2, 3, 1
 	)
 	config_desc = usbproxy.USB_Config_Descriptor(
-		9, 2, 0x0020, 1, 1, 0, 0x80
+		9, 2, 0x0027, 1, 1, 0, 0x80
 	)
 	string_desc = usbproxy.USB_String_Descriptor(
 		3, 3, 0x00

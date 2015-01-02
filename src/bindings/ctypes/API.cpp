@@ -3,6 +3,7 @@
  */
 
 #include "API.h"
+#include <stdio.h>
 
 Manager *manager;
 ConfigParser *cfg;
@@ -34,6 +35,8 @@ API void register_deviceproxy(
 		f_receive_data receive_data_cb,
 		f_toString toString_cb
 		) {
+	fprintf(stderr, "device ptr: 0x%p\n", &callback_device_descriptor);
+	fprintf(stderr, "callback_device_descriptor: %d\n", (&callback_device_descriptor)->bDeviceClass);
 	cfg->set("DeviceProxy", "DeviceProxy_Callback");
 	cfg->add_pointer("DeviceProxy_Callback::device_descriptor", (void *)&callback_device_descriptor);
 	cfg->add_pointer("DeviceProxy_Callback::config_descriptor", (void *)&callback_config_descriptor);

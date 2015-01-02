@@ -16,7 +16,7 @@
 
 #define BUF_LEN 100
 
-int DeviceProxy_Callback::debugLevel = 1;
+int DeviceProxy_Callback::debugLevel = 2;
 
 #define STRING_MANUFACTURER 1
 #define STRING_PRODUCT      2
@@ -36,7 +36,9 @@ DeviceProxy_Callback::DeviceProxy_Callback(ConfigParser *cfg) {
 	 toString_cb = (f_toString) cfg->get_pointer("DeviceProxy_Callback::toString");
 	 
 	/* Copy descriptors */
-	struct usb_device_descriptor *_callback_device_descriptor = (struct usb_device_descriptor *) cfg->get_pointer("DeviceProxy_Callback::device_descriptor");
+	void *device_desc = cfg->get_pointer("DeviceProxy_Callback::device_descriptor");
+	fprintf(stderr, "device ptr: 0x%p\n", device_desc);
+	fprintf(stderr, "_callback_device_descriptor: %d\n", (*(struct usb_device_descriptor *) device_desc).bDeviceClass);
 	struct usb_config_descriptor *_callback_config_descriptor = (struct usb_config_descriptor *) cfg->get_pointer("DeviceProxy_Callback::config_descriptor");
 	struct usb_interface_descriptor *_callback_interface_descriptor = (struct usb_interface_descriptor *) cfg->get_pointer("DeviceProxy_Callback::interface_descriptor");
 	struct usb_endpoint_descriptor *_callback_eps = (struct usb_endpoint_descriptor *) cfg->get_pointer("DeviceProxy_Callback::endpoint_descriptor");
@@ -96,7 +98,6 @@ bool DeviceProxy_Callback::is_highspeed() {
 int DeviceProxy_Callback::control_request(const usb_ctrlrequest* setup_packet, int* nbytes, __u8* dataptr, int timeout) {
 	//if(control_request_cb)
 	//	return control_request_cb(setup_packet, nbytes, dataptr, timeout);
-	TRACE
 	int rv = 0;
 	if (debugLevel>1) {
 		char* hex=hex_string((void*)setup_packet,sizeof(*setup_packet));
@@ -111,12 +112,15 @@ int DeviceProxy_Callback::control_request(const usb_ctrlrequest* setup_packet, i
 	
 		switch ((setup_packet->wValue)>>8) {
 			case USB_DT_DEVICE:
+				TRACE
 				memcpy(dataptr, &callback_device_descriptor, callback_device_descriptor.bLength);
 				*nbytes = callback_device_descriptor.bLength;
 				break;
 			case USB_DT_CONFIG:
+				TRACE
 				idx=setup_packet->wValue & 0xff;
 				if (idx>=callback_device_descriptor.bNumConfigurations) return -1;
+				fprintf(stderr, "callback_config_descriptor> 0x%x\n",callback_config_descriptor.wTotalLength);
 				buf=(__u8*)malloc(callback_config_descriptor.wTotalLength);
 				p=buf;
 				memcpy(p, &callback_config_descriptor, callback_config_descriptor.bLength);
@@ -127,10 +131,12 @@ int DeviceProxy_Callback::control_request(const usb_ctrlrequest* setup_packet, i
 				p+=callback_eps[0].bLength;
 				memcpy(p, &callback_eps[1], callback_eps[1].bLength);
 				*nbytes = callback_config_descriptor.wTotalLength>setup_packet->wLength?setup_packet->wLength:callback_config_descriptor.wTotalLength;
+				TRACE1(*nbytes)
 				memcpy(dataptr, buf, *nbytes);
 				free(buf);
 				break;
 			case USB_DT_STRING:
+				TRACE
 				idx=setup_packet->wValue & 0xff;
 				if (idx>0 && setup_packet->wIndex!=0x409) return -1;
 				if (idx>callback_stringMaxIndex) return -1;
@@ -139,9 +145,11 @@ int DeviceProxy_Callback::control_request(const usb_ctrlrequest* setup_packet, i
 				memcpy(dataptr,string_desc,*nbytes);
 				break;
 			case USB_DT_DEVICE_QUALIFIER:
+				TRACE
 				return -1;
 				break;
 			case USB_DT_OTHER_SPEED_CONFIG:
+				TRACE
 				return -1;
 				break;
 		}
@@ -164,7 +172,7 @@ int DeviceProxy_Callback::control_request(const usb_ctrlrequest* setup_packet, i
 	}
 	if (debugLevel>1 && nbytes) {
 		char* hex=hex_string(dataptr, *nbytes);
-		fprintf(stderr, "802.11> %s\n",hex);
+		fprintf(stderr, "Callback> %s\n",hex);
 		free(hex);
 	}
 	return 0;
