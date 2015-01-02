@@ -14,11 +14,6 @@ API void usbproxy_init();
 API void set_config(char* key, char* value);
 
 API void register_deviceproxy(
-		struct usb_device_descriptor callback_device_descriptor,
-		struct usb_config_descriptor callback_config_descriptor,
-		struct usb_interface_descriptor callback_interface_descriptor,
-		struct usb_endpoint_descriptor callback_eps,
-		struct usb_string_descriptor callback_string_descriptor,
 		f_connect connect_cb,
 		f_disconnect disconnect_cb,
 		f_reset reset_cb,
