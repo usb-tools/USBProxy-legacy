@@ -43,8 +43,8 @@ DeviceProxy_Callback::DeviceProxy_Callback(ConfigParser *cfg) {
 	struct usb_interface_descriptor *_callback_interface_descriptor = (struct usb_interface_descriptor *) cfg->get_pointer("DeviceProxy_Callback::interface_descriptor");
 	struct usb_endpoint_descriptor *_callback_eps = (struct usb_endpoint_descriptor *) cfg->get_pointer("DeviceProxy_Callback::endpoint_descriptor");
 
-	if(_callback_device_descriptor)
-		memcpy(&callback_device_descriptor, _callback_device_descriptor, sizeof(struct usb_device_descriptor));
+	if(device_desc)
+		memcpy(&callback_device_descriptor, device_desc, sizeof(struct usb_device_descriptor));
 	if(_callback_config_descriptor)
 		memcpy(&callback_config_descriptor, _callback_config_descriptor, sizeof(struct usb_config_descriptor));
 	if(_callback_interface_descriptor)
