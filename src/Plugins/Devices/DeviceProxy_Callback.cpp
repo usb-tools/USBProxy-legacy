@@ -18,14 +18,6 @@
 
 int DeviceProxy_Callback::debugLevel = 2;
 
-#define STRING_MANUFACTURER 1
-#define STRING_PRODUCT      2
-#define STRING_SERIAL       3
-#define STRING_LOOPBACK     4
-
-static USBString** callback_strings;
-static int callback_stringMaxIndex;
-
 DeviceProxy_Callback::DeviceProxy_Callback(ConfigParser *cfg) {
 	connect_cb = (f_connect) cfg->get_pointer("DeviceProxy_Callback::connect");
 	disconnect_cb = (f_disconnect) cfg->get_pointer("DeviceProxy_Callback::disconnect");
@@ -39,7 +31,6 @@ DeviceProxy_Callback::DeviceProxy_Callback(ConfigParser *cfg) {
 
 DeviceProxy_Callback::~DeviceProxy_Callback() {
 	disconnect();
-	delete[] callback_strings;
 }
 
 int DeviceProxy_Callback::connect(int timeout) {
@@ -66,8 +57,15 @@ bool DeviceProxy_Callback::is_highspeed() {
 }
 
 int DeviceProxy_Callback::control_request(const usb_ctrlrequest* setup_packet, int* nbytes, __u8* dataptr, int timeout) {
+	int rv, i;
+	fprintf(stdout, "control_request_cb: %d bytes\n", *nbytes);
 	if(control_request_cb)
-		return control_request_cb(setup_packet, nbytes, dataptr, timeout);
+		rv = control_request_cb(setup_packet, nbytes, dataptr, timeout);
+	fprintf(stdout, "control_request_cb: %d, %d bytes\n", rv, *nbytes);
+	for(i=0; i<*nbytes; i++)
+		fprintf(stdout, "%02x ", dataptr[i]);
+	fprintf(stdout, "\n\n");
+	return rv;
 }
 
 void DeviceProxy_Callback::send_data(__u8 endpoint,__u8 attributes, __u16 maxPacketSize, __u8* dataptr, int length) {
