@@ -2,6 +2,9 @@
  * This file is part of USBProxy.
  */
 
+#include <iomanip> // setfill etc.
+#include <sstream> // ostringstream
+
 #include <unistd.h>
 #include <signal.h>
 #include <pthread.h>
@@ -222,6 +225,15 @@ void spinner(int dir) {
 	fflush(stdout);
 }
 
+// Converts an unsigned to a string with an uppercase hex number
+// (same as using %02X in printf)
+inline std::string shex(unsigned num)
+{
+	std::ostringstream os;
+	os << std::setfill('0') << std::setw(2) << std::uppercase << std::hex << num;
+	return os.str();
+}
+
 void Manager::start_control_relaying(){
 	clean_mqueue();
 
@@ -266,14 +278,14 @@ void Manager::start_control_relaying(){
 
 	if (status!=USBM_SETUP) {stop_relaying();return;}
 	//setup EP0 message queues
-	char mqname[16];
+	std::string mqname;
 	struct mq_attr mqa;
 	mqa.mq_maxmsg=1;
 	mqa.mq_msgsize=4;
-	sprintf(mqname,"/USBProxy(%d)-%02X-EP",getpid(),0);
-	mqd_t mq_readersend=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
-	sprintf(mqname,"/USBProxy(%d)-%02X-EP",getpid(),0x80);
-	mqd_t mq_writersend=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
+	mqname = "/USBProxy(" + std::to_string(getpid()) + ")-00-EP";
+	mqd_t mq_readersend=mq_open(mqname.c_str(),O_RDWR | O_CREAT,S_IRWXU,&mqa);
+	mqname = "/USBProxy(" + std::to_string(getpid()) + ")-80-EP";
+	mqd_t mq_writersend=mq_open(mqname.c_str(),O_RDWR | O_CREAT,S_IRWXU,&mqa);
 
 	if (status!=USBM_SETUP) {stop_relaying();return;}
 	//setup EP0 Reader & Writer
@@ -295,15 +307,15 @@ void Manager::start_control_relaying(){
 	for(i=0;i<injectorCount;i++) {
 		if (status!=USBM_SETUP) {stop_relaying();return;}
 		if (injectors[i]->device.test(device)) {
-			char mqname[16];
+			std::string mqname;
 			struct mq_attr mqa;
 			mqa.mq_maxmsg=1;
 			mqa.mq_msgsize=4;
 			if (out_endpoints[0] && injectors[i]->endpoint.test(out_endpoints[0])) {
-				sprintf(mqname,"/USBProxy(%d)-%02X-%02X",getpid(),0,i);
-				mqd_t mq_out=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
-				sprintf(mqname,"/USBProxy(%d)-%02X-%02X",getpid(),0x80,i);
-				mqd_t mq_in=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
+				mqname = "/USBProxy(" + std::to_string(getpid()) + ")-00-" + shex(i);
+				mqd_t mq_out=mq_open(mqname.c_str(),O_RDWR | O_CREAT,S_IRWXU,&mqa);
+				mqname = "/USBProxy(" + std::to_string(getpid()) + ")-80-" + shex(i);
+				mqd_t mq_in=mq_open(mqname.c_str(),O_RDWR | O_CREAT,S_IRWXU,&mqa);
 				injectors[i]->set_queue(0x80,mq_in);
 				injectors[i]->set_queue(0,mq_out);
 				out_writers[0]->add_setup_queue(mq_out,mq_in);
@@ -378,22 +390,22 @@ void Manager::start_data_relaying() {
 
 	int i,j;
 	for (i=1;i<16;i++) {
-		char mqname[22];
+		std::string mqname;
 		struct mq_attr mqa;
 		mqa.mq_maxmsg=1;
 		mqa.mq_msgsize=4;
 
 		if (in_endpoints[i]) {
-			sprintf(mqname,"/USBProxy(%d)-%02X-EP",getpid(),i|0x80);
-			mqd_t mq=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
+			mqname = "/USBProxy(" + std::to_string(getpid()) + ")-" + shex(i|0x80) + "-EP";
+			mqd_t mq=mq_open(mqname.c_str(),O_RDWR | O_CREAT,S_IRWXU,&mqa);
 			//RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
 			in_readers[i]=new RelayReader(in_endpoints[i],(Proxy*)deviceProxy,mq);
 			//RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
 			in_writers[i]=new RelayWriter(in_endpoints[i],(Proxy*)hostProxy,mq);
 		}
 		if (out_endpoints[i]) {
-			sprintf(mqname,"/USBProxy(%d)-%02X-EP",getpid(),i);
-			mqd_t mq=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
+			mqname = "/USBProxy(" + std::to_string(getpid()) + ")-" + shex(i) + "-EP";
+			mqd_t mq=mq_open(mqname.c_str(),O_RDWR | O_CREAT,S_IRWXU,&mqa);
 			//RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
 			out_readers[i]=new RelayReader(out_endpoints[i],(Proxy*)hostProxy,mq);
 			//RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
@@ -418,20 +430,20 @@ void Manager::start_data_relaying() {
 	//apply injectors to relayers
 	for(i=0;i<injectorCount;i++) {
 		if (injectors[i]->device.test(device) && injectors[i]->configuration.test(cfg)) {
-			char mqname[16];
+			std::string mqname;
 			struct mq_attr mqa;
 			mqa.mq_maxmsg=1;
 			mqa.mq_msgsize=4;
 			for (j=1;j<16;j++) {
 				if (in_endpoints[j] && injectors[i]->endpoint.test(in_endpoints[j]) && injectors[i]->interface.test(in_endpoints[j]->get_interface())) {
-					sprintf(mqname,"/USBProxy(%d)-%02X-%02X",getpid(),j|0x80,i);
-					mqd_t mq=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
+					mqname = "/USBProxy(" + std::to_string(getpid()) + ")-" + shex(j|0x80) + '-' + shex(i);
+					mqd_t mq=mq_open(mqname.c_str(),O_RDWR | O_CREAT,S_IRWXU,&mqa);
 					injectors[i]->set_queue(j|0x80,mq);
 					in_writers[j]->add_queue(mq);
 				}
 				if (out_endpoints[j] && injectors[i]->endpoint.test(out_endpoints[j]) && injectors[i]->interface.test(out_endpoints[j]->get_interface())) {
-					sprintf(mqname,"/USBProxy(%d)-%02X-%02X",getpid(),j,i);
-					mqd_t mq=mq_open(mqname,O_RDWR | O_CREAT,S_IRWXU,&mqa);
+					mqname = "/USBProxy(" + std::to_string(getpid()) + ")-" + shex(j) + '-' + shex(i);
+					mqd_t mq=mq_open(mqname.c_str(),O_RDWR | O_CREAT,S_IRWXU,&mqa);
 					injectors[i]->set_queue(j,mq);
 					out_writers[j]->add_queue(mq);
 				}
