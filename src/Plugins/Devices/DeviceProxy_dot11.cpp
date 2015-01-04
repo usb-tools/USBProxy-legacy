@@ -24,7 +24,13 @@ int DeviceProxy_dot11::debugLevel = 1;
 #define STRING_DOT11	    4
 
 extern "C" {
+// lorcon.h defines
+//   unsigned int from_ds, to_ds, protected, fragmented, retry;
+// which ends up with an error because protected is a keyword.
+// Use a hack to avoid that.
+#define protected protected_flag
 #include <lorcon2/lorcon.h>
+#undef protected
 
 static lorcon_driver_t *drvlist, *driver; // Needed to set up interface/context
 static lorcon_t *context; // LORCON context
