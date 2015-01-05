@@ -15,3 +15,5 @@ typescript
 # bindings
 usbproxy_wrap.cxx
 usbproxy.py
+#vi(m)
+*.swp
