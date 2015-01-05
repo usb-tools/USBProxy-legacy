@@ -25,7 +25,7 @@ endif( ${PCAP_FOUND} )
 
 foreach(plugin ${PLUGINS})
 	add_library(${plugin} SHARED ${plugin}.cpp)
-	set_source_files_properties(${plugin}.cpp PROPERTIES COMPILE_FLAGS  "-std=c++0x")
+	set_source_files_properties(${plugin}.cpp PROPERTIES COMPILE_FLAGS  "-std=c++11 -pthread")
 	set_target_properties(${plugin} PROPERTIES PREFIX "")
 	target_link_libraries(${plugin} ${PLUGINS_LINK_LIBS})
 	install(TARGETS ${plugin}

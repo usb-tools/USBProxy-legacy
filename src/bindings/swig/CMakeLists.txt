@@ -32,4 +32,4 @@ SWIG_LINK_LIBRARIES(usbproxy
 
 
 # swig -c++ -python -I../lib -o usbproxy_wrap.cxx usbproxy.i
-# g++ -fpic -shared -std=c++0x usbproxy_wrap.cxx -I/usr/include/python2.7 -I../lib -lpython2.7 -lUSBProxy -o _usbproxy.so
+# g++ -fpic -shared -std=c++11 -pthread usbproxy_wrap.cxx -I/usr/include/python2.7 -I../lib -lpython2.7 -lUSBProxy -o _usbproxy.so
