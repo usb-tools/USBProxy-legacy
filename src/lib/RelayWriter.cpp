@@ -12,7 +12,6 @@
 #include <sys/epoll.h>
 #include <errno.h>
 #include "get_tid.h"
-#include "HaltSignal.h"
 
 #include "RelayWriter.h"
 
@@ -29,8 +28,9 @@
 #endif //NVALGRIND
 
 
-RelayWriter::RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _recvQueue) {
-	haltSignal=0;
+RelayWriter::RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _recvQueue)
+	: _please_stop(false)
+{
 	recvQueues.push_back(_recvQueue);
 
 	endpoint=_endpoint->get_descriptor()->bEndpointAddress;
@@ -42,8 +42,9 @@ RelayWriter::RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _recvQueue) {
 	manager=NULL;
 }
 
-RelayWriter::RelayWriter(Endpoint* _endpoint,DeviceProxy* _deviceProxy,Manager* _manager,mqd_t _recvQueue,mqd_t _sendQueue) {
-	haltSignal=0;
+RelayWriter::RelayWriter(Endpoint* _endpoint,DeviceProxy* _deviceProxy,Manager* _manager,mqd_t _recvQueue,mqd_t _sendQueue)
+	: _please_stop(false)
+{
 	recvQueues.push_back(_recvQueue);
 	sendQueues.push_back(_sendQueue);
 
@@ -95,20 +96,11 @@ RelayWriter::~RelayWriter() {
 	sendQueues.clear();
 }
 
-void RelayWriter::set_haltsignal(__u8 _haltSignal) {
-	haltSignal=_haltSignal;
-}
-
 #ifdef USEVALGRIND
 
 void RelayWriter::relay_write_setup_valgrind() {
 	if (!deviceProxy) {fprintf(stderr,"DeviceProxy not initialized for EP00 writer.\n");return;}
 	if (sendQueues.size()==0) {fprintf(stderr,"outQueues not initialized for EP00 writer.\n");return;}
-
-	bool halt=false;
-	struct pollfd haltpoll;
-	int haltfd;
-	if (haltsignal_setup(haltSignal,&haltpoll,&haltfd)!=0) return;
 
 	struct pollfd poll_send;
 	poll_send.events=POLLOUT;
@@ -128,7 +120,7 @@ void RelayWriter::relay_write_setup_valgrind() {
 	usb_ctrlrequest ctrl_req;
 
 	fprintf(stderr,"Starting setup writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
-	while (!halt) {
+	while (!_please_stop) {
 		idle=true;
 		if (!writing) {
 			if (!p) {
@@ -187,10 +179,10 @@ void RelayWriter::relay_write_setup_valgrind() {
 			}
 		}
 		if (idle) sched_yield();
-		halt=haltsignal_check(haltSignal,&haltpoll,&haltfd);
 	}
 	fprintf(stderr,"Finished setup writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
 	free(pollfds);
+	_please_stop = true;
 }
 
 void RelayWriter::relay_write_valgrind() {
@@ -198,10 +190,6 @@ void RelayWriter::relay_write_valgrind() {
 		relay_write_setup_valgrind();
 		return;
 	}
-	bool halt=false;
-	struct pollfd haltpoll;
-	int haltfd;
-	if (haltsignal_setup(haltSignal,&haltpoll,&haltfd)!=0) return;
 
 	__u8 i,j;
 
@@ -217,7 +205,7 @@ void RelayWriter::relay_write_valgrind() {
 	int numEvents=0;
 
 	fprintf(stderr,"Starting writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
-	while (!halt) {
+	while (!_please_stop) {
 		idle=true;
 		if (!writing) {
 			if (!p) {
@@ -255,10 +243,10 @@ void RelayWriter::relay_write_valgrind() {
 			writing=!(proxy->send_wait_complete(endpoint,500));
 		}
 		if (idle) sched_yield();
-		halt=haltsignal_check(haltSignal,&haltpoll,&haltfd);
 	}
 	fprintf(stderr,"Finished writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
 	free(pollfds);
+	_please_stop = false;
 }
 
 #endif //USEVALGRIND
@@ -271,11 +259,6 @@ void RelayWriter::relay_write_setup() {
 		fprintf(stderr,"outQueues not initialized for EP00 writer.\n");
 		return;
 	}
-
-	bool halt=false;
-	struct pollfd haltpoll;
-	int haltfd;
-	if (haltsignal_setup(haltSignal,&haltpoll,&haltfd)!=0) return;
 
 	struct pollfd poll_send;
 	poll_send.events=POLLOUT;
@@ -299,7 +282,7 @@ void RelayWriter::relay_write_setup() {
 	usb_ctrlrequest ctrl_req;
 
 	fprintf(stderr,"Starting setup writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
-	while (!halt) {
+	while (!_please_stop) {
 		idle=true;
 		if (!writing) {
 			if (!p) {
@@ -358,11 +341,11 @@ void RelayWriter::relay_write_setup() {
 			}
 		}
 		if (idle) sched_yield();
-		halt=haltsignal_check(haltSignal,&haltpoll,&haltfd);
 	}
 	fprintf(stderr,"Finished setup writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
 	free(events);
 	close(efd);
+	_please_stop = false;
 }
 
 void RelayWriter::relay_write() {
@@ -370,10 +353,6 @@ void RelayWriter::relay_write() {
 		relay_write_setup();
 		return;
 	}
-	bool halt=false;
-	struct pollfd haltpoll;
-	int haltfd;
-	if (haltsignal_setup(haltSignal,&haltpoll,&haltfd)!=0) return;
 
 	__u8 i, j;
 	int efd=epoll_create1(EPOLL_CLOEXEC);
@@ -392,7 +371,7 @@ void RelayWriter::relay_write() {
 	int numEvents=0;
 
 	fprintf(stderr,"Starting writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
-	while (!halt) {
+	while (!_please_stop) {
 		idle=true;
 		if (!writing) {
 			if (!p) {
@@ -430,11 +409,11 @@ void RelayWriter::relay_write() {
 			writing=!(proxy->send_wait_complete(endpoint,500));
 		}
 		if (idle) sched_yield();
-		halt=haltsignal_check(haltSignal,&haltpoll,&haltfd);
 	}
 	fprintf(stderr,"Finished writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
 	free(events);
 	close(efd);
+	_please_stop = false;
 }
 
 void RelayWriter::add_filter(PacketFilter* filter) {

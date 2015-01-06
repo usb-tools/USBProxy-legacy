@@ -8,7 +8,6 @@
 #include <sched.h>
 #include <poll.h>
 #include "get_tid.h"
-#include "HaltSignal.h"
 
 #include "RelayReader.h"
 
@@ -19,8 +18,9 @@
 #include "Packet.h"
 
 
-RelayReader::RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _sendQueue) {
-	haltSignal=0;
+RelayReader::RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _sendQueue)
+	: _please_stop(false)
+{
 	sendQueue=_sendQueue;
 	recvQueue=0;
 	proxy=_proxy;
@@ -30,8 +30,9 @@ RelayReader::RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _sendQueue) {
 	maxPacketSize=_endpoint->get_descriptor()->wMaxPacketSize;
 }
 
-RelayReader::RelayReader(Endpoint* _endpoint,HostProxy* _hostProxy,mqd_t _sendQueue,mqd_t _recvQueue) {
-	haltSignal=0;
+RelayReader::RelayReader(Endpoint* _endpoint,HostProxy* _hostProxy,mqd_t _sendQueue,mqd_t _recvQueue)
+	: _please_stop(false)
+{
 	sendQueue=_sendQueue;
 	recvQueue=_recvQueue;
 	proxy=NULL;
@@ -44,17 +45,9 @@ RelayReader::RelayReader(Endpoint* _endpoint,HostProxy* _hostProxy,mqd_t _sendQu
 RelayReader::~RelayReader() {
 }
 
-void RelayReader::set_haltsignal(__u8 _haltSignal) {
-	haltSignal=_haltSignal;
-}
-
 void RelayReader::relay_read_setup() {
 	if (!hostProxy) {fprintf(stderr,"HostProxy not initialized for EP00 reader.\n");return;}
 	if (!recvQueue) {fprintf(stderr,"inQueue not initialized for EP00 reader.\n");return;}
-	bool halt=false;
-	struct pollfd haltpoll;
-	int haltfd;
-	if (haltsignal_setup(haltSignal,&haltpoll,&haltfd)!=0) return;
 
 	struct pollfd poll_send;
 	poll_send.fd=sendQueue;
@@ -73,7 +66,7 @@ void RelayReader::relay_read_setup() {
 	usb_ctrlrequest ctrl_req;
 
 	fprintf(stderr,"Starting setup reader thread (%ld) for EP%02x.\n",gettid(),endpoint);
-	while (!halt) {
+	while (!_please_stop) {
 		idle=true;
 		if (direction_out) {
 			if (!p) {
@@ -123,9 +116,9 @@ void RelayReader::relay_read_setup() {
 			}
 		}
 		if (idle) sched_yield();
-		halt=haltsignal_check(haltSignal,&haltpoll,&haltfd);
 	}
 	fprintf(stderr,"Finished setup reader thread (%ld) for EP%02x.\n",gettid(),endpoint);
+	_please_stop = false;
 }
 
 void RelayReader::relay_read() {
@@ -133,10 +126,6 @@ void RelayReader::relay_read() {
 		relay_read_setup();
 		return;
 	}
-	bool halt=false;
-	struct pollfd haltpoll;
-	int haltfd;
-	if (haltsignal_setup(haltSignal,&haltpoll,&haltfd)!=0) return;
 
 	struct pollfd poll_out;
 	poll_out.fd=sendQueue;
@@ -147,7 +136,7 @@ void RelayReader::relay_read() {
 	Packet *p=NULL;
 
 	fprintf(stderr,"Starting reader thread (%ld) for EP%02x.\n",gettid(),endpoint);
-	while (!halt) {
+	while (!_please_stop) {
 		idle=true;
 		if (!p) {
 			buf=NULL;
@@ -164,9 +153,9 @@ void RelayReader::relay_read() {
 			p=NULL;
 		}
 		// if (idle) sched_yield();
-		halt=haltsignal_check(haltSignal,&haltpoll,&haltfd);
 	}
 	fprintf(stderr,"Finished reader thread (%ld) for EP%02x.\n",gettid(),endpoint);
+	_please_stop = false;
 }
 
 void* RelayReader::relay_read_helper(void* context) {

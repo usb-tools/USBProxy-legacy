@@ -8,6 +8,7 @@
 #include <linux/types.h>
 #include <mqueue.h>
 #include <vector>
+#include <atomic>
 
 class PacketFilter;
 class Proxy;
@@ -17,7 +18,7 @@ class Manager;
 
 class RelayWriter {
 private:
-	__u8 haltSignal;
+	std::atomic_bool _please_stop;
 	std::vector<mqd_t> recvQueues;
 	std::vector<mqd_t> sendQueues;
 	__u8 endpoint;
@@ -46,7 +47,9 @@ public:
 	void relay_write_setup_valgrind();
 #endif //NVALGRIND
 
-	void set_haltsignal(__u8 _haltSignal);
+	void please_stop(void) {
+		_please_stop = true;
+	}
 	static void* relay_write_helper(void* context);
 };
 

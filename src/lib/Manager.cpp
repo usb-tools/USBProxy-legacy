@@ -363,12 +363,10 @@ void Manager::start_control_relaying(){
 	}
 
 	if (out_readers[0]) {
-		out_readers[0]->set_haltsignal(haltSignal);
 		pthread_create(&out_readerThreads[0],NULL,&RelayReader::relay_read_helper,out_readers[0]);
 	}
 	if (status!=USBM_SETUP) {status=USBM_SETUP_ABORT;stop_relaying();return;}
 	if (out_writers[0]) {
-		out_writers[0]->set_haltsignal(haltSignal);
 		pthread_create(&out_writerThreads[i],NULL,&RelayWriter::relay_write_helper,out_writers[0]);
 	}
 	if (status!=USBM_SETUP) {stop_relaying();return;}
@@ -491,19 +489,15 @@ void Manager::start_data_relaying() {
 
 	for(i=1;i<16;i++) {
 		if (in_readers[i]) {
-			in_readers[i]->set_haltsignal(haltSignal);
 			pthread_create(&in_readerThreads[i],NULL,&RelayReader::relay_read_helper,in_readers[i]);
 		}
 		if (in_writers[i]) {
-			in_writers[i]->set_haltsignal(haltSignal);
 			pthread_create(&in_writerThreads[i],NULL,&RelayWriter::relay_write_helper,in_writers[i]);
 		}
 		if (out_readers[i]) {
-			out_readers[i]->set_haltsignal(haltSignal);
 			pthread_create(&out_readerThreads[i],NULL,&RelayReader::relay_read_helper,out_readers[i]);
 		}
 		if (out_writers[i]) {
-			out_writers[i]->set_haltsignal(haltSignal);
 			pthread_create(&out_writerThreads[i],NULL,&RelayWriter::relay_write_helper,out_writers[i]);
 		}
 	}
@@ -522,10 +516,10 @@ void Manager::stop_relaying(){
 
 	//signal all relayer threads to stop ASAP
 	for(i=0;i<16;i++) {
-		if (in_readerThreads[i]) {pthread_kill(in_readerThreads[i],haltSignal);}
-		if (in_writerThreads[i]) {pthread_kill(in_writerThreads[i],haltSignal);}
-		if (out_readerThreads[i]) {pthread_kill(out_readerThreads[i],haltSignal);}
-		if (out_writerThreads[i]) {pthread_kill(out_writerThreads[i],haltSignal);}
+		if (in_readerThreads[i]) {in_readers[i]->please_stop();}
+		if (in_writerThreads[i]) {in_writers[i]->please_stop();}
+		if (out_readerThreads[i]) {out_readers[i]->please_stop();}
+		if (out_writerThreads[i]) {out_writers[i]->please_stop();}
 	}
 
 	//wait for all injector threads to stop

@@ -5,6 +5,8 @@
 #ifndef RELAYREADER_H_
 #define RELAYREADER_H_
 
+#include <atomic>
+
 #include <linux/types.h>
 #include <mqueue.h>
 
@@ -14,7 +16,7 @@ class Endpoint;
 
 class RelayReader {
 private:
-	__u8 haltSignal;
+	std::atomic_bool _please_stop;
 	mqd_t sendQueue;
 	mqd_t recvQueue;
 	Proxy* proxy;
@@ -31,7 +33,9 @@ public:
 	void relay_read();
 	void relay_read_setup();
 
-	void set_haltsignal(__u8 _haltSignal);
+	void please_stop(void) {
+		_please_stop = true;
+	}
 	static void* relay_read_helper(void* context);
 };
 
