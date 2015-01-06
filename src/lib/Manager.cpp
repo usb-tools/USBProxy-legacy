@@ -341,7 +341,6 @@ void Manager::start_control_relaying(){
 		injectorThreads=(pthread_t *)calloc(injectorCount,sizeof(pthread_t));
 		for(i=0;i<injectorCount;i++) {
 			if (status!=USBM_SETUP) {stop_relaying();return;}
-			injectors[i]->set_haltsignal(haltSignal);
 			pthread_create(&injectorThreads[i],NULL,&Injector::listen_helper,injectors[i]);
 		}
 	}
@@ -507,7 +506,7 @@ void Manager::stop_relaying(){
 	int i;
 	//signal all injector threads to stop ASAP
 	for(i=0;i<injectorCount;i++) {
-		if (injectorThreads && injectorThreads[i]) pthread_kill(injectorThreads[i],haltSignal);
+		if (injectorThreads && injectorThreads[i]) injectors[i]->please_stop();
 	}
 
 	//signal all relayer threads to stop ASAP

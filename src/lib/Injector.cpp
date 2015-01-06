@@ -6,15 +6,15 @@
 #include <stdio.h>
 #include <sched.h>
 #include "get_tid.h"
-#include "HaltSignal.h"
 #include "TRACE.h"
 
 #include "Injector.h"
 
 #define SLEEP_US 1000
 
-Injector::Injector() {
-	haltSignal=0;
+Injector::Injector()
+	: _please_stop(false)
+{
 	int i;
 	for (i=0;i<16;i++) {
 		inQueues[i]=0;
@@ -32,17 +32,9 @@ void Injector::set_queue(__u8 epAddress,mqd_t queue) {
 	}
 }
 
-void Injector::set_haltsignal(__u8 _haltSignal) {
-	haltSignal=_haltSignal;
-}
-
 void Injector::listen() {
 	bool idle;
-	bool halt=false;
 	bool setup_wait=false;
-	struct pollfd haltpoll;
-	int haltfd;
-	if (haltsignal_setup(haltSignal,&haltpoll,&haltfd)!=0) return;
 	fprintf(stderr,"Starting injector thread (%ld) for [%s].\n",gettid(),this->toString());
 	start_injector();
 	struct Packet* packet;
@@ -66,7 +58,7 @@ void Injector::listen() {
 	}
 	free(fdlist);
 	int polllistsize=pollreadcount;
-	while (!halt) {
+	while (!_please_stop) {
 		idle=true;
 		if (setup_wait) {
 			if (poll(&poll_setup,1,500) & poll_setup.revents&POLLIN) {
@@ -155,7 +147,6 @@ void Injector::listen() {
 				}
 			}
 		}
-		halt=haltsignal_check(haltSignal,&haltpoll,&haltfd);
 		if (idle) sched_yield();
 	}
 	free(poll_list);
@@ -165,6 +156,7 @@ void Injector::listen() {
 	free(poll_buffer);
 	stop_injector();
 	fprintf(stderr,"Finished injector thread (%ld) for [%s].\n",gettid(),this->toString());
+	_please_stop = false;
 
 	/*
 Injector (this will need to use a common event loop)

@@ -5,6 +5,8 @@
 #ifndef USBPROXY_INJECTOR_H
 #define USBPROXY_INJECTOR_H
 
+#include <atomic>
+
 #include <poll.h>
 #include <mqueue.h>
 
@@ -17,7 +19,7 @@ class Injector {
 private:
 	mqd_t outQueues[16],inQueues[16];
 	int outPollIndex[16],inPollIndex[16];
-	__u8 haltSignal;
+	std::atomic_bool _please_stop;
 
 protected:
 	virtual void get_packets(Packet** packet,SetupPacket** setup,int timeout=500)=0;
@@ -40,7 +42,10 @@ public:
 	Injector();
 	virtual ~Injector() {}
 
-	void set_haltsignal(__u8 _haltSignal);
+	void please_stop(void) {
+		_please_stop = true;
+	}
+
 	void set_queue(__u8 epAddress,mqd_t queue);
 
 	void listen();
