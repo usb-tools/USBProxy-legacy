@@ -112,10 +112,16 @@ int clean_mqueue() {
 
 	fprintf(stderr,"removing %d\n",rmCount);
 	for (i=0;i<rmCount;i++) {
-		char buf[22]={0x0};
+		char *buf = malloc(strlen(rmQueues[i]) + 2);
+		if (!buf) {
+			fprintf(stderr, "Out of memory!\n");
+			exit(1);
+		}
+		*buf = 0;
 		strcat(buf,"/");
 		strcat(buf,rmQueues[i]);
 		mq_unlink(buf);
+		free(buf);
 		free(rmQueues[i]);
 	}
 	free(rmQueues);
