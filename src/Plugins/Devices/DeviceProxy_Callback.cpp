@@ -36,6 +36,7 @@ DeviceProxy_Callback::~DeviceProxy_Callback() {
 int DeviceProxy_Callback::connect(int timeout) {
 	if(connect_cb)
 		return connect_cb(timeout);
+	return -1;
 }
 
 void DeviceProxy_Callback::disconnect() {

@@ -169,7 +169,7 @@ int open_gadget(const char * gadget_filename ) {
 	}
 
 	char path[256];
-	int ret, status;
+	int ret;
 	sprintf(path, "%s/%s", gadgetfs_path, filename);
 
 	ret = open(path, O_CLOEXEC | O_RDWR);
@@ -243,7 +243,7 @@ int open_endpoint(__u8 epAddress, const char * gadget_filename) {
 	if (number==0) return -1;
 	char* direction=NULL;
 
-	if(gadget_filename == "sw_usb_udc") {
+	if(!strcmp(gadget_filename, "sw_usb_udc")) {
 		direction="-bulk";
 	}
 	else {
