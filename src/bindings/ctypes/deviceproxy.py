@@ -36,7 +36,8 @@ def control_req(p_ctrl_req, p_nbytes, p_dataptr, timeout):
 			response = [
 				18, 1, 0x02, 0x00, 0xff, 0x00, 0x00, 0x00,
 				64, 0x1d, 0x50, 0x60, 0x02, 0x01,
-				0x01, 0x02, 0x03, 1]
+				#0x01, 0x02, 0x03, 1]
+				0x00, 0x00, 0x00, 1]
 			for i in range(len(response)):
 				p_dataptr[i] = c_ubyte(response[i])
 			p_nbytes[0] = len(response)
@@ -49,12 +50,15 @@ def control_req(p_ctrl_req, p_nbytes, p_dataptr, timeout):
 			idx = setup_packet.wValue & 0xff
 			print "idx: ", idx
 			if idx == 0:
-				p_nbytes[0] = 2
-				p_dataptr[0] = c_ubyte(0x04)
-				p_dataptr[1] = c_ubyte(0x09)
+				p_nbytes[0] = 4
+				p_dataptr[0] = c_ubyte(0x00)
+				p_dataptr[1] = c_ubyte(0x00)
+				p_dataptr[2] = c_ubyte(0x04)
+				p_dataptr[3] = c_ubyte(0x09)
 				return 0
 			if idx>0 and setup_packet.wIndex!=0x409:
 				print "wIndex: %x" % setup_packet.wIndex
+				print type(setup_packet.wIndex)
 				return -1
 			if idx>=len(callback_strings):
 				return -1
