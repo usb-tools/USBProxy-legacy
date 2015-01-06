@@ -50,7 +50,6 @@ public:
 	void please_stop(void) {
 		_please_stop = true;
 	}
-	static void* relay_write_helper(void* context);
 };
 
 #endif /* RELAYWRITER_H_ */

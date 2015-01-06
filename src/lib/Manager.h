@@ -5,6 +5,8 @@
 #ifndef USBPROXY_MANAGER_H
 #define USBPROXY_MANAGER_H
 
+#include <thread>
+
 #include <linux/usb/ch9.h>
 #include <pthread.h>
 
@@ -53,14 +55,14 @@ private:
 	Endpoint* in_endpoints[16];
 	RelayReader* in_readers[16];
 	RelayWriter* in_writers[16];
-	pthread_t in_readerThreads[16];
-	pthread_t in_writerThreads[16];
+	std::thread in_readerThreads[16];
+	std::thread in_writerThreads[16];
 
 	Endpoint* out_endpoints[16];
 	RelayReader* out_readers[16];
 	RelayWriter* out_writers[16];
-	pthread_t out_readerThreads[16];
-	pthread_t out_writerThreads[16];
+	std::thread out_readerThreads[16];
+	std::thread out_writerThreads[16];
 
 	void start_data_relaying();
 

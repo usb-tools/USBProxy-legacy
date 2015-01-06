@@ -428,17 +428,3 @@ void RelayWriter::add_setup_queue(mqd_t recvQueue,mqd_t sendQueue) {
 	recvQueues.push_back(recvQueue);
 	sendQueues.push_back(sendQueue);
 }
-
-void* RelayWriter::relay_write_helper(void* context) {
-#ifdef USEVALGRIND
-	if (RUNNING_ON_VALGRIND) {
-		((RelayWriter*)context)->relay_write_valgrind();
-	} else {
-		((RelayWriter*)context)->relay_write();
-	}
-#else //NVALGRIND _IS_ defined
-	((RelayWriter*)context)->relay_write();
-#endif //NVALGRIND
-	return 0;
-}
-

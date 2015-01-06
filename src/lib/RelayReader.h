@@ -36,7 +36,6 @@ public:
 	void please_stop(void) {
 		_please_stop = true;
 	}
-	static void* relay_read_helper(void* context);
 };
 
 #endif /* RELAYREADER_H_ */

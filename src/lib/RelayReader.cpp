@@ -157,8 +157,3 @@ void RelayReader::relay_read() {
 	fprintf(stderr,"Finished reader thread (%ld) for EP%02x.\n",gettid(),endpoint);
 	_please_stop = false;
 }
-
-void* RelayReader::relay_read_helper(void* context) {
-	((RelayReader*)context)->relay_read();
-	return 0;
-}
