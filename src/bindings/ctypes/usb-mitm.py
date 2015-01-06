@@ -21,7 +21,10 @@ def rot13_filter(p_pkt):
 if __name__ == '__main__':
 	usbproxy.init()
 	#usbproxy.register_packet_filter(rot13_filter)
-	usbproxy.register_deviceproxy(control_request_func=deviceproxy.control_req)
+	usbproxy.register_deviceproxy(
+		connect_func=deviceproxy.connect,
+		control_request_func=deviceproxy.control_req
+		)
 	usbproxy.lib.print_config()
 	usbproxy.lib.load_plugins()
 	usbproxy.run()

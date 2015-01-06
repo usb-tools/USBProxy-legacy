@@ -109,3 +109,6 @@ def control_req(p_ctrl_req, p_nbytes, p_dataptr, timeout):
 				setup_packet.wValue, setup_packet.wIndex)
 	
 	return 0
+
+def connect(timeout):
+	return 0
