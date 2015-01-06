@@ -50,8 +50,6 @@ public:
 
 	void listen();
 
-	static void *listen_helper(void* context);
-
 	virtual const char* toString() {return "Injector";}
 
 };

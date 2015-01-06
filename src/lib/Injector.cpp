@@ -166,8 +166,3 @@ Injector (this will need to use a common event loop)
     it the clears the flag and goes back to business as usual.
 	 */
 }
-
-void* Injector::listen_helper(void* context) {
-	((Injector*)context)->listen();
-	return 0;
-}

@@ -8,7 +8,6 @@
 
 #include <unistd.h>
 #include <signal.h>
-#include <pthread.h>
 #include <errno.h>
 
 #include "Manager.h"
@@ -105,8 +104,12 @@ Manager::~Manager() {
 	if (injectorThreads) {
 		for (i=0;i<injectorCount;i++) {
 			if (injectorThreads[i]) {
-				pthread_cancel(injectorThreads[i]);
-				injectorThreads[i]=0;
+				if (injectorThreads[i]->joinable()) {
+					injectors[i]->please_stop();
+					injectorThreads[i]->join();
+				}
+				delete injectorThreads[i];
+				injectorThreads[i] = 0;
 			}
 		}
 		free(injectorThreads);
@@ -336,10 +339,10 @@ void Manager::start_control_relaying(){
 
 	//create injector threads
 	if (injectorCount) {
-		injectorThreads=(pthread_t *)calloc(injectorCount,sizeof(pthread_t));
+		injectorThreads=(std::thread**)calloc(injectorCount,sizeof(std::thread*));
 		for(i=0;i<injectorCount;i++) {
 			if (status!=USBM_SETUP) {stop_relaying();return;}
-			pthread_create(&injectorThreads[i],NULL,&Injector::listen_helper,injectors[i]);
+			injectorThreads[i] = new std::thread(&Injector::listen, injectors[i]);
 		}
 	}
 
@@ -519,7 +522,10 @@ void Manager::stop_relaying(){
 	if (injectorThreads) {
 		for(i=0;i<injectorCount;i++) {
 			if (injectorThreads[i]) {
-				pthread_join(injectorThreads[i],NULL);
+				if (injectorThreads[i]->joinable()) {
+					injectorThreads[i]->join();
+				}
+				delete injectorThreads[i];
 				injectorThreads[i]=0;
 			}
 		}

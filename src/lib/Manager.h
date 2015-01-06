@@ -8,7 +8,6 @@
 #include <thread>
 
 #include <linux/usb/ch9.h>
-#include <pthread.h>
 
 class PluginManager;
 class ConfigParser;
@@ -49,7 +48,7 @@ private:
 	Injector** injectors;
 	__u8 injectorCount;
 
-	pthread_t* injectorThreads;
+	std::thread** injectorThreads;
 
 	Endpoint* in_endpoints[16];
 	RelayReader* in_readers[16];
