@@ -25,6 +25,20 @@ USB_DT_OTHER_SPEED_CONFIG = 0x07
 
 callback_strings = [None, 'ubertooth', 'bt_rxtx', '0001']
 
+device_desc = [
+	18, 1, 0x02, 0x00, 0xff, 0x00, 0x00,
+	0x00, 64, 0x1d, 0x50, 0x60, 0x02,
+	0x01, 0x00, 0x00, 0x00, 1
+	#0x01, 0x01, 0x02, 0x03, 1
+]
+
+config_desc = [
+	9, 2, 32, 0, 1, 1, 0, 0x80, 1,
+	9, 4, 0, 0, 2, 0xff, 0, 0, 0,
+	7, 5, 0x82, 2, 0x00, 0x40, 0,
+	7, 5, 0x05, 2, 0x00, 0x40, 0
+]
+
 def control_req(p_ctrl_req, p_nbytes, p_dataptr, timeout):
 	setup_packet = p_ctrl_req[0]
 	#dataptr = p_dataptr[0]
@@ -33,18 +47,19 @@ def control_req(p_ctrl_req, p_nbytes, p_dataptr, timeout):
 		print "value:", value
 		if value == USB_DT_DEVICE:
 			print "USB_DT_DEVICE"
-			response = [
-				18, 1, 0x02, 0x00, 0xff, 0x00, 0x00, 0x00,
-				64, 0x1d, 0x50, 0x60, 0x02, 0x01,
-				#0x01, 0x02, 0x03, 1]
-				0x00, 0x00, 0x00, 1]
-			for i in range(len(response)):
-				p_dataptr[i] = c_ubyte(response[i])
-			p_nbytes[0] = len(response)
+			p_nbytes[0] = len(device_desc)
+			for i in range(p_nbytes[0]):
+				p_dataptr[i] = c_ubyte(device_desc[i])
+			
 		elif value == USB_DT_CONFIG:
 			print "USB_DT_CONFIG"
-			pass
-		
+			p_nbytes[0] = config_desc[2] | config_desc[3] << 8
+			print p_nbytes[0]
+			if p_nbytes[0] > setup_packet.wLength:
+				p_nbytes[0] = setup_packet.wLength
+			for i in range(p_nbytes[0]):
+				p_dataptr[i] = c_ubyte(config_desc[i])
+			
 		elif value == USB_DT_STRING:
 			print "USB_DT_STRING"
 			idx = setup_packet.wValue & 0xff
