@@ -243,7 +243,7 @@ int open_endpoint(__u8 epAddress, const char * gadget_filename) {
 	if (number==0) return -1;
 	char* direction=NULL;
 
-	if(gadget_filename == "sw_usb_udc") {
+	if(!strcmp(gadget_filename, "sw_usb_udc")) {
 		direction="-bulk";
 	}
 	else {
