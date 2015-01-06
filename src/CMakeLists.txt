@@ -14,7 +14,7 @@ set(INSTALL_DEFAULT_BINDIR "bin" CACHE STRING "Appended to CMAKE_INSTALL_PREFIX"
 # Comment the following out for releases.
 set(CMAKE_C_FLAGS "$ENV{CFLAGS}")
 
-set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} $ENV{CPPFLAGS} -std=gnu++11 -pthread -pedantic -felide-constructors -fno-exceptions")
+set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} $ENV{CPPFLAGS} -std=gnu++11 -pthread -pedantic -Wall -felide-constructors -fno-exceptions")
 
 add_subdirectory(lib)
 add_subdirectory(Plugins)
