@@ -22,6 +22,7 @@ extern "C" {
 	{
 		sleep(1);
 		kill( 0, SIGHUP);
+		return 0;
 	}
 
 	DeviceProxy * get_deviceproxy_plugin(ConfigParser *cfg) {
@@ -379,12 +380,11 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 }
 
 void DeviceProxy_LibUSB::claim_interface(__u8 interface) {
-	int rc;
+	/*
 	__u8 buf[256];
 	usb_ctrlrequest setup_packet;
 	int len=0;
 
-	/*
 	setup_packet.bRequestType=USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
 	setup_packet.bRequest=USB_REQ_GET_CONFIGURATION;
 	setup_packet.wValue= 0;
