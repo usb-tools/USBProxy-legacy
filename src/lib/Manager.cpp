@@ -4,6 +4,7 @@
 
 #include <iomanip> // setfill etc.
 #include <sstream> // ostringstream
+#include <iostream>
 
 #include <unistd.h>
 #include <signal.h>
@@ -284,8 +285,16 @@ void Manager::start_control_relaying(){
 	mqa.mq_msgsize=4;
 	mqname = "/USBProxy(" + std::to_string(getpid()) + ")-00-EP";
 	mqd_t mq_readersend=mq_open(mqname.c_str(),O_RDWR | O_CREAT,S_IRWXU,&mqa);
+	if (mq_readersend == -1) {
+		std::cerr << "Error creating message queue '" << mqname << "'!\n";
+		exit(1);
+	}
 	mqname = "/USBProxy(" + std::to_string(getpid()) + ")-80-EP";
 	mqd_t mq_writersend=mq_open(mqname.c_str(),O_RDWR | O_CREAT,S_IRWXU,&mqa);
+	if (mq_writersend == -1) {
+		std::cerr << "Error creating message queue '" << mqname << "'!\n";
+		exit(1);
+	}
 
 	if (status!=USBM_SETUP) {stop_relaying();return;}
 	//setup EP0 Reader & Writer
@@ -314,8 +323,16 @@ void Manager::start_control_relaying(){
 			if (out_endpoints[0] && injectors[i]->endpoint.test(out_endpoints[0])) {
 				mqname = "/USBProxy(" + std::to_string(getpid()) + ")-00-" + shex(i);
 				mqd_t mq_out=mq_open(mqname.c_str(),O_RDWR | O_CREAT,S_IRWXU,&mqa);
+				if (mq_out == -1) {
+					std::cerr << "Error creating message queue '" << mqname << "'!\n";
+					exit(1);
+				}
 				mqname = "/USBProxy(" + std::to_string(getpid()) + ")-80-" + shex(i);
 				mqd_t mq_in=mq_open(mqname.c_str(),O_RDWR | O_CREAT,S_IRWXU,&mqa);
+				if (mq_in == -1) {
+					std::cerr << "Error creating message queue '" << mqname << "'!\n";
+					exit(1);
+				}
 				injectors[i]->set_queue(0x80,mq_in);
 				injectors[i]->set_queue(0,mq_out);
 				out_writers[0]->add_setup_queue(mq_out,mq_in);
@@ -398,6 +415,10 @@ void Manager::start_data_relaying() {
 		if (in_endpoints[i]) {
 			mqname = "/USBProxy(" + std::to_string(getpid()) + ")-" + shex(i|0x80) + "-EP";
 			mqd_t mq=mq_open(mqname.c_str(),O_RDWR | O_CREAT,S_IRWXU,&mqa);
+			if (mq == -1) {
+				std::cerr << "Error creating message queue '" << mqname << "'!\n";
+				exit(1);
+			}
 			//RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
 			in_readers[i]=new RelayReader(in_endpoints[i],(Proxy*)deviceProxy,mq);
 			//RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
@@ -406,6 +427,10 @@ void Manager::start_data_relaying() {
 		if (out_endpoints[i]) {
 			mqname = "/USBProxy(" + std::to_string(getpid()) + ")-" + shex(i) + "-EP";
 			mqd_t mq=mq_open(mqname.c_str(),O_RDWR | O_CREAT,S_IRWXU,&mqa);
+			if (mq == -1) {
+				std::cerr << "Error creating message queue '" << mqname << "'!\n";
+				exit(1);
+			}
 			//RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
 			out_readers[i]=new RelayReader(out_endpoints[i],(Proxy*)hostProxy,mq);
 			//RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
@@ -438,12 +463,20 @@ void Manager::start_data_relaying() {
 				if (in_endpoints[j] && injectors[i]->endpoint.test(in_endpoints[j]) && injectors[i]->interface.test(in_endpoints[j]->get_interface())) {
 					mqname = "/USBProxy(" + std::to_string(getpid()) + ")-" + shex(j|0x80) + '-' + shex(i);
 					mqd_t mq=mq_open(mqname.c_str(),O_RDWR | O_CREAT,S_IRWXU,&mqa);
+					if (mq == -1) {
+						std::cerr << "Error creating message queue '" << mqname << "'!\n";
+						exit(1);
+					}
 					injectors[i]->set_queue(j|0x80,mq);
 					in_writers[j]->add_queue(mq);
 				}
 				if (out_endpoints[j] && injectors[i]->endpoint.test(out_endpoints[j]) && injectors[i]->interface.test(out_endpoints[j]->get_interface())) {
 					mqname = "/USBProxy(" + std::to_string(getpid()) + ")-" + shex(j) + '-' + shex(i);
 					mqd_t mq=mq_open(mqname.c_str(),O_RDWR | O_CREAT,S_IRWXU,&mqa);
+					if (mq == -1) {
+						std::cerr << "Error creating message queue '" << mqname << "'!\n";
+						exit(1);
+					}
 					injectors[i]->set_queue(j,mq);
 					out_writers[j]->add_queue(mq);
 				}
