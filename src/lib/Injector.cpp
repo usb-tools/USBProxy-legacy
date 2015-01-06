@@ -130,8 +130,8 @@ void Injector::listen() {
 								int pollIndex=(epAddress&0x80)?inPollIndex[epAddress&0x0f]:outPollIndex[epAddress&0x0f];
 								if (!pollIndex) { //set up a new poll entry for this queue and store the packet in the buffer
 									pollIndex=polllistsize++;
-									struct pollfd* poll_list=(struct pollfd*)realloc(poll_list,polllistsize*sizeof(pollfd));
-									Packet** poll_buffer=(Packet**)realloc(poll_buffer,polllistsize*sizeof(Packet*));
+									poll_list=(struct pollfd*)realloc(poll_list,polllistsize*sizeof(pollfd));
+									poll_buffer=(Packet**)realloc(poll_buffer,polllistsize*sizeof(Packet*));
 									if (epAddress&0x80) {inPollIndex[epAddress&0x0f]=pollIndex;} else {outPollIndex[epAddress&0x0f]=pollIndex;}
 									poll_list[pollIndex].fd=queue;
 									poll_buffer[pollIndex]=packet;
