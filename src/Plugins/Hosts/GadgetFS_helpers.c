@@ -169,7 +169,7 @@ int open_gadget(const char * gadget_filename ) {
 	}
 
 	char path[256];
-	int ret, status;
+	int ret;
 	sprintf(path, "%s/%s", gadgetfs_path, filename);
 
 	ret = open(path, O_CLOEXEC | O_RDWR);
