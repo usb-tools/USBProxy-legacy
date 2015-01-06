@@ -44,13 +44,13 @@ ConfigParser::ConfigParser() {
 /* Very much inspired by Kismet's config parser */
 void ConfigParser::parse_file(char* filename) {
 	if(debugLevel)
-		fprintf(stderr, "Reading confilg file: %s\n", filename);
+		std::cerr << "Reading confilg file: " << filename << "\n";
 
 	std::ifstream configfile;
 	configfile.open(filename, std::ifstream::in);
 	if (!configfile) {
-		fprintf(stderr, "ERROR: Reading config file '%s': %d (%s)\n", filename,
-				errno, strerror(errno));
+		std::cerr << "ERROR: Reading config file '" << filename << "': ";
+		std::cerr << errno << " (" << strerror(errno) << ")\n";
 		return;
 	}
 
@@ -81,7 +81,7 @@ void ConfigParser::parse_file(char* filename) {
 
 void ConfigParser::set(std::string key, std::string value) {
 	if(debugLevel)
-		fprintf(stderr, "CP: String %s = %s\n", key.c_str(), value.c_str());
+		std::cerr << "CP: String " << key << " = " << value << "/n";
 	strings[key] = value;
 }
 
@@ -99,7 +99,7 @@ std::string ConfigParser::get(std::string key) {
 
 void ConfigParser::add_to_vector(std::string key, std::string value) {
 	if(debugLevel)
-		fprintf(stderr, "CP: Vector %s\n", key.c_str());
+		std::cerr << "CP: Vector " << key << "/n";
 	std::map<std::string, std::vector<std::string>>::iterator vitr = vectors.find(key);
 	// No such key
 	if (vitr == vectors.end()) {
@@ -122,7 +122,7 @@ std::vector<std::string> ConfigParser::get_vector(std::string key) {
 
 void ConfigParser::add_pointer(std::string key, void *value) {
 	if(debugLevel)
-		fprintf(stderr, "CP: Pointer %s\n", key.c_str());
+		std::cerr << "CP: Pointer " << key << "/n";
 	pointers[key] = value;
 }
 
