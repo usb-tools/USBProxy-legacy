@@ -42,7 +42,6 @@ private:
 	HostProxy* hostProxy;
 	PluginManager *plugin_manager;
 	Device* device;
-	__u8 haltSignal;
 
 	PacketFilter** filters;
 	__u8 filterCount;

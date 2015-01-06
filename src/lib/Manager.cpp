@@ -31,7 +31,6 @@
 #include "Injector.h"
 
 Manager::Manager() {
-	haltSignal=0;
 	status=USBM_IDLE;
 	plugin_manager = new PluginManager();
 	deviceProxy=NULL;
@@ -234,7 +233,6 @@ inline std::string shex(unsigned num)
 void Manager::start_control_relaying(){
 	clean_mqueue();
 
-	haltSignal=SIGRTMIN;
 	//TODO this should exit immediately if already started, and wait (somehow) is stopping or setting up
 	status=USBM_SETUP;
 
