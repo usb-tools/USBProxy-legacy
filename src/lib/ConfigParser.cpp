@@ -16,7 +16,7 @@ std::string StrStrip(std::string in_str) {
     start = 0;
     end = in_str.length();
 
-    if (in_str[0] == '/n')
+    if (in_str[0] == '\n')
         return "";
 
     for (x = 0; x < in_str.length(); x++) {
@@ -27,7 +27,7 @@ std::string StrStrip(std::string in_str) {
     }
     for (x = in_str.length(); x > 1; ) {
 		x--;
-        if (in_str[x] != ' ' && in_str[x] != '\t' && in_str[x] != '/n') {
+        if (in_str[x] != ' ' && in_str[x] != '\t' && in_str[x] != '\n') {
             end = x;
             break;
         }
@@ -50,7 +50,7 @@ void ConfigParser::parse_file(char* filename) {
 	configfile.open(filename, std::ifstream::in);
 	if (!configfile) {
 		std::cerr << "ERROR: Reading config file '" << filename << "': ";
-		std::cerr << errno << " (" << strerror(errno) << ")/n";
+		std::cerr << errno << " (" << strerror(errno) << ")" << std::endl;
 		return;
 	}
 
