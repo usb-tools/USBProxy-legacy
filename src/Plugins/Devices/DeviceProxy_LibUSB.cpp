@@ -357,7 +357,6 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 				free(*dataptr);
 				*dataptr=NULL;
 				*length=0;
-				fprintf(stderr,"Timeout error (%d) on Device EP%02x\n",rc,endpoint);
 				break;
 			}
 			if (rc) {
