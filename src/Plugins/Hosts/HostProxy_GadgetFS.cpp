@@ -483,6 +483,7 @@ void HostProxy_GadgetFS::setConfig(Configuration* fs_cfg,Configuration* hs_cfg,b
 				int fd=open_endpoint(epAddress, device_filename);
 				if (fd<0) {
 					fprintf(stderr,"Fail on open EP%02x %d %s\n",epAddress,errno,strerror(errno));
+					free(buf);
 					return;
 				}
 				if (epAddress & 0x80) {

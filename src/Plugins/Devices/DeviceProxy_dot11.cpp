@@ -114,7 +114,6 @@ static int dot11_stringMaxIndex;
 	
 	DeviceProxy_dot11::~DeviceProxy_dot11() {
 		disconnect();
-		delete[] dot11_strings;
 		free(dot11_strings);
 	}
 	

@@ -2,6 +2,8 @@
  * This file is part of USBProxy.
  */
 
+#include <iostream>
+
 #include <stdio.h>
 #include <sched.h>
 #include <poll.h>
@@ -93,7 +95,12 @@ void RelayReader::relay_read_setup() {
 		} else {
 			if (!p) {
 				if (poll(&poll_recv,1,500) && (poll_recv.revents&POLLIN)) {
-					mq_receive(recvQueue,(char*)&p,sizeof(SetupPacket*),0);
+					ssize_t rc = mq_receive(recvQueue, (char*)&p, sizeof(p), 0);
+					if (rc != sizeof(p)) {
+						p = nullptr;
+						std::cerr << "Error receiving from mq (thread " << gettid() << ")!\n";
+						continue;
+					}
 					poll_recv.revents=0;
 					if (p->transmit_in) {
 						if (p->ctrl_req.wLength) {

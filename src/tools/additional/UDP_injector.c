@@ -71,6 +71,8 @@ int main(int argc, char**argv)
    if (argc != 2)
    {
       printf("usage:  udpcli <IP address>\n");
+      fclose(file);
+      free(file_bytes);
       exit(1);
    }
 
@@ -97,6 +99,8 @@ int main(int argc, char**argv)
             //something isn't right if it gets here
             printf("something is wrong, found %c in front", file_bytes[index]);
             index++;
+	    fclose(file);
+	    free(file_bytes);
             return 1;
         }
         if (file_bytes[index] == '[') {
@@ -113,6 +117,8 @@ int main(int argc, char**argv)
         }
         else {
             printf("something is wrong");
+	    fclose(file);
+	    free(file_bytes);
             return 1;
         }	
         
@@ -160,7 +166,7 @@ int main(int argc, char**argv)
         }
         free(chunk);
    }
-   
+   fclose(file);
    free(file_bytes);
    return 0;
 }

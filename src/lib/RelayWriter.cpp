@@ -2,6 +2,8 @@
  * This file is part of USBProxy.
  */
 
+#include <iostream>
+
 #include <unistd.h>
 #include <poll.h>
 #include <stdio.h>
@@ -63,8 +65,12 @@ RelayWriter::~RelayWriter() {
 		if (mqa.mq_curmsgs>0) {
 			Packet *p;
 			for (j=0;j<mqa.mq_curmsgs;j++) {
-				 mq_receive(recvQueues[i],(char*)&p,4,NULL);
-				 delete(p);
+				ssize_t rc = mq_receive(recvQueues[i], (char*)&p, sizeof(p), NULL);
+				if (rc != sizeof(p)) {
+					std::cerr << "Error receiving from mq!\n";
+					continue;
+				}
+				delete(p);
 			}
 		}
 		mq_close(recvQueues[i]);
@@ -76,8 +82,12 @@ RelayWriter::~RelayWriter() {
 		if (mqa.mq_curmsgs>0) {
 			Packet *p;
 			for (j=0;j<mqa.mq_curmsgs;j++) {
-				 mq_receive(sendQueues[i],(char*)&p,4,NULL);
-				 delete(p);
+				ssize_t rc = mq_receive(sendQueues[i], (char*)&p, sizeof(p), NULL);
+				if (rc != sizeof(p)) {
+					std::cerr << "Error receiving from mq!\n";
+					continue;
+				}
+				delete(p);
 			}
 		}
 		mq_close(sendQueues[i]);
@@ -130,7 +140,13 @@ void RelayWriter::relay_write_setup_valgrind() {
 				}
 				while(i<numEvents && (!(pollfds[i].revents&POLLIN))) {i++;}
 				if (i<numEvents) {
-					mq_receive(pollfds[i].fd,(char*)&p,4,NULL);
+					ssize_t rc = mq_receive(pollfds[i].fd, (char*)&p, sizeof(p), NULL);
+					if (rc != sizeof(p)) {
+						p = nullptr;
+						numEvents = 0;
+						std::cerr << "Error receiving from mq!\n";
+						continue;
+					}
 					pollfds[i].revents=0;
 					p->source=sendQueues[i];
 				}
@@ -213,7 +229,13 @@ void RelayWriter::relay_write_valgrind() {
 				}
 				while(i<numEvents && (!(pollfds[i].revents&POLLIN))) {i++;}
 				if (i<numEvents) {
-					mq_receive(pollfds[i].fd,(char*)&p,4,NULL);
+					ssize_t rc = mq_receive(pollfds[i].fd, (char*)&p, sizeof(p), NULL);
+					if (rc != sizeof(p)) {
+						p = nullptr;
+						numEvents = 0;
+						std::cerr << "Error receiving from mq (thread " << gettid() << ")!\n";
+						continue;
+					}
 					pollfds[i].revents=0;
 				}
 				if (i>=numEvents) numEvents=0;
@@ -289,7 +311,13 @@ void RelayWriter::relay_write_setup() {
 				if (i<numEvents && (events[i].events&EPOLLIN)) {
 					int recvQueue=events[i].data.u64>>32;
 					int sendQueue=events[i].data.u64&(__u64)0xffffffff;
-					mq_receive(recvQueue,(char*)&p,4,NULL);
+					ssize_t rc = mq_receive(recvQueue, (char*)&p, sizeof(p), NULL);
+					if (rc != sizeof(p)) {
+						p = nullptr;
+						numEvents = 0;
+						std::cerr << "Error receiving from mq (thread " << gettid() << ")!\n";
+						continue;
+					}
 					p->source=sendQueue;
 					i++;
 				}
@@ -374,7 +402,15 @@ void RelayWriter::relay_write() {
 					numEvents=epoll_wait(efd,events,recvQueues.size(),500);
 					idle=!numEvents;
 				}
-				if (i<numEvents && (events[i].events&EPOLLIN)) mq_receive(events[i++].data.fd,(char*)&p,4,NULL);
+				if (i<numEvents && (events[i].events&EPOLLIN)) {
+					ssize_t rc = mq_receive(events[i++].data.fd, (char*)&p, sizeof(p), NULL);
+					if (rc != sizeof(p)) {
+						p = nullptr;
+						numEvents = 0;
+						std::cerr << "Error receiving from mq (thread " << gettid() << ")!\n";
+						continue;
+					}
+				}
 				if (i>=numEvents) numEvents=0;
 			}
 			if (p) {
