@@ -18,8 +18,8 @@ class RelayWriter;
 class Device;
 class Endpoint;
 
-class Packet;
-class SetupPacket;
+struct Packet;
+struct SetupPacket;
 class DeviceProxy;
 class HostProxy;
 class PacketFilter;
