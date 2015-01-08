@@ -6,7 +6,7 @@ lib = cdll.LoadLibrary("libUSBProxyAPI.so")
 def set_config():
 	# Put in some dummy config so that it works for now
 	lib.set_config("HostProxy", "HostProxy_GadgetFS");
-	lib.set_config("DeviceProxy", "DeviceProxy_LibUSB");
+	#lib.set_config("DeviceProxy", "DeviceProxy_LibUSB");
 	#lib.set_config("HostProxy", "HostProxy_TCP");
 	#lib.set_config("HostProxy_TCP::TCPAddress", "127.0.0.1");
 
@@ -56,19 +56,6 @@ def register_deviceproxy(connect_func=None, disconnect_func=None,
 						 reset_func=None, control_request_func=None,
 						 send_data_func=None, receive_data_func=None,
 						 toString_func=None):
-	
-	if control_request_func:
-		control_request_func_cb = DEVICE_CONTROL_FUNC(control_request_func)
-	else:
-		control_request_func_cb = None
-	if send_data_func:
-		send_data_func_cb = DEVICE_SEND_FUNC(send_data_func)
-	else:
-		send_data_func_cb = None
-	if receive_data_func:
-		receive_data_func_cb = DEVICE_RECEIVE_FUNC(receive_data_func)
-	else:
-		receive_data_func_cb = None
 	if connect_func:
 		connect_func_cb = DEVICE_CONNECT_FUNC(connect_func)
 	else:
@@ -81,6 +68,18 @@ def register_deviceproxy(connect_func=None, disconnect_func=None,
 		reset_func_cb = DEVICE_VOID_VOID_FUNC(reset_func)
 	else:
 		reset_func_cb = None
+	if control_request_func:
+		control_request_func_cb = DEVICE_CONTROL_FUNC(control_request_func)
+	else:
+		control_request_func_cb = None
+	if send_data_func:
+		send_data_func_cb = DEVICE_SEND_FUNC(send_data_func)
+	else:
+		send_data_func_cb = None
+	if receive_data_func:
+		receive_data_func_cb = DEVICE_RECEIVE_FUNC(receive_data_func)
+	else:
+		receive_data_func_cb = None
 	if toString_func:
 		toString_func_cb = DEVICE_VOID_VOID_FUNC(toString_func)
 	else:
@@ -94,3 +93,7 @@ def register_deviceproxy(connect_func=None, disconnect_func=None,
 		send_data_func_cb,
 		receive_data_func_cb,
 		toString_func_cb)
+
+	return (connect_func_cb, disconnect_func_cb, reset_func_cb,
+			control_request_func_cb, send_data_func_cb, receive_data_func_cb,
+			toString_func_cb)

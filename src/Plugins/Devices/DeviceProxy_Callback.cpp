@@ -34,9 +34,13 @@ DeviceProxy_Callback::~DeviceProxy_Callback() {
 }
 
 int DeviceProxy_Callback::connect(int timeout) {
+	int rv = 0;
 	if(connect_cb)
-		return connect_cb(timeout);
-	return -1;
+		rv = connect_cb(timeout);
+	if(rv == 0)
+		p_is_connected = true;
+	// No connect method - assume always connected
+	return rv;
 }
 
 void DeviceProxy_Callback::disconnect() {
@@ -58,14 +62,15 @@ bool DeviceProxy_Callback::is_highspeed() {
 }
 
 int DeviceProxy_Callback::control_request(const usb_ctrlrequest* setup_packet, int* nbytes, __u8* dataptr, int timeout) {
-	int rv, i;
+	int i, rv = -1;
 	fprintf(stdout, "control_request_cb: %d bytes\n", *nbytes);
 	if(control_request_cb)
 		rv = control_request_cb(setup_packet, nbytes, dataptr, timeout);
-	fprintf(stdout, "control_request_cb: %d, %d bytes\n", rv, *nbytes);
+
 	for(i=0; i<*nbytes; i++)
 		fprintf(stdout, "%02x ", dataptr[i]);
 	fprintf(stdout, "\n\n");
+	
 	return rv;
 }
 

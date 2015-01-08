@@ -110,5 +110,5 @@ def control_req(p_ctrl_req, p_nbytes, p_dataptr, timeout):
 	
 	return 0
 
-def connect(timeout):
+def connect_f(timeout):
 	return 0
