@@ -23,92 +23,103 @@ USB_DT_ENDPOINT = 0x05
 USB_DT_DEVICE_QUALIFIER = 0x06
 USB_DT_OTHER_SPEED_CONFIG = 0x07
 
-callback_strings = [None, 'ubertooth', 'bt_rxtx', '0001']
+USB_TYPE_VENDOR = 0x40
 
-device_desc = [
-	18, 1, 0x02, 0x00, 0xff, 0x00, 0x00,
-	0x00, 64, 0x1d, 0x50, 0x60, 0x02,
-	0x01, 0x00, 0x00, 0x00, 1
-	#0x01, 0x01, 0x02, 0x03, 1
-]
+class DeviceProxy:
+	def __init__(self, device_desc, config_desc, callback_strings=None):
+		self.device_desc = device_desc
+		self.config_desc = config_desc
+		self.callback_strings = callback_strings
 
-config_desc = [
-	9, 2, 32, 0, 1, 1, 0, 0x80, 1,
-	9, 4, 0, 0, 2, 0xff, 0, 0, 0,
-	7, 5, 0x82, 2, 0x00, 0x40, 0,
-	7, 5, 0x05, 2, 0x00, 0x40, 0
-]
-
-def control_req(p_ctrl_req, p_nbytes, p_dataptr, timeout):
-	setup_packet = p_ctrl_req[0]
-	#dataptr = p_dataptr[0]
-	if setup_packet.bRequestType & USB_DIR_IN and setup_packet.bRequest == USB_REQ_GET_DESCRIPTOR:
-		value = setup_packet.wValue >> 8
-		print "value:", value
-		if value == USB_DT_DEVICE:
-			print "USB_DT_DEVICE"
-			p_nbytes[0] = len(device_desc)
-			for i in range(p_nbytes[0]):
-				p_dataptr[i] = c_ubyte(device_desc[i])
-			
-		elif value == USB_DT_CONFIG:
-			print "USB_DT_CONFIG"
-			p_nbytes[0] = config_desc[2] | config_desc[3] << 8
-			print p_nbytes[0]
-			if p_nbytes[0] > setup_packet.wLength:
-				p_nbytes[0] = setup_packet.wLength
-			for i in range(p_nbytes[0]):
-				p_dataptr[i] = c_ubyte(config_desc[i])
-			
-		elif value == USB_DT_STRING:
-			print "USB_DT_STRING"
-			idx = setup_packet.wValue & 0xff
-			print "idx: ", idx
-			if idx == 0:
-				p_nbytes[0] = 4
-				p_dataptr[0] = c_ubyte(0x00)
-				p_dataptr[1] = c_ubyte(0x00)
-				p_dataptr[2] = c_ubyte(0x04)
-				p_dataptr[3] = c_ubyte(0x09)
-				return 0
-			if idx>0 and setup_packet.wIndex!=0x409:
-				print "wIndex: %x" % setup_packet.wIndex
-				print type(setup_packet.wIndex)
+	def control_req(self, p_ctrl_req, p_nbytes, p_dataptr, timeout):
+		setup_packet = p_ctrl_req[0]
+		#dataptr = p_dataptr[0]
+		if setup_packet.bRequestType & USB_DIR_IN and setup_packet.bRequest == USB_REQ_GET_DESCRIPTOR:
+			value = setup_packet.wValue >> 8
+			print "value:", value
+			if value == USB_DT_DEVICE:
+				print "USB_DT_DEVICE"
+				p_nbytes[0] = len(self.device_desc)
+				for i in range(p_nbytes[0]):
+					p_dataptr[i] = c_ubyte(self.device_desc[i])
+				
+			elif value == USB_DT_CONFIG:
+				print "USB_DT_CONFIG"
+				p_nbytes[0] = self.config_desc[2] | self.config_desc[3] << 8
+				print p_nbytes[0]
+				if p_nbytes[0] > setup_packet.wLength:
+					p_nbytes[0] = setup_packet.wLength
+				for i in range(p_nbytes[0]):
+					p_dataptr[i] = c_ubyte(self.config_desc[i])
+				
+			elif value == USB_DT_STRING:
+				print "USB_DT_STRING"
+				idx = setup_packet.wValue & 0xff
+				print "idx: ", idx
+				if idx == 0:
+					p_nbytes[0] = 4
+					p_dataptr[0] = c_ubyte(0x00)
+					p_dataptr[1] = c_ubyte(0x00)
+					p_dataptr[2] = c_ubyte(0x04)
+					p_dataptr[3] = c_ubyte(0x09)
+					return 0
+				if idx>0 and setup_packet.wIndex!=0x409:
+					print "wIndex: %x" % setup_packet.wIndex
+					print type(setup_packet.wIndex)
+					return -1
+				if idx>=len(callback_strings):
+					return -1
+				self.string_desc=callback_strings[idx]
+				print self.string_desc
+				if len(self.string_desc)>setup_packet.wLength:
+					p_nbytes[0] = setup_packet.wLength
+				else:
+					p_nbytes[0] = len(self.string_desc)
+				for i in range(p_nbytes[0]):
+					p_dataptr[i] = c_ubyte(ord(self.string_desc[i]))
+	
+			elif value == USB_DT_DEVICE_QUALIFIER:
 				return -1
-			if idx>=len(callback_strings):
+			
+			elif value == USB_DT_OTHER_SPEED_CONFIG:
 				return -1
-			string_desc=callback_strings[idx]
-			print string_desc
-			if len(string_desc)>setup_packet.wLength:
-				p_nbytes[0] = setup_packet.wLength
-			else:
-				p_nbytes[0] = len(string_desc)
-			for i in range(p_nbytes[0]):
-				p_dataptr[i] = c_ubyte(ord(string_desc[i]))
-
-		elif value == USB_DT_DEVICE_QUALIFIER:
-			return -1
 		
-		elif value == USB_DT_OTHER_SPEED_CONFIG:
-			return -1
+		elif setup_packet.bRequest == USB_REQ_GET_CONFIGURATION:
+			p_nbytes[0] = 1
+			p_dataptr[0] = c_ubyte(1)
+		
+		elif setup_packet.bRequest == USB_REQ_SET_CONFIGURATION:
+			print "Setting config %d (As if that does anything)\n" % setup_packet.wValue
+		
+		elif setup_packet.bRequest == USB_REQ_GET_INTERFACE:
+			p_nbytes[0] = 1
+			p_dataptr[0] = c_ubyte(1)
+		
+		elif setup_packet.bRequestType == USB_TYPE_VENDOR:
+			self.vendor_request(p_ctrl_req, p_nbytes, p_dataptr, timeout)
+		else:
+			print "Unhandled control request: 0x%02x, 0x%02x, %d, %d\n" % \
+					(setup_packet.bRequestType, setup_packet.bRequest,
+					setup_packet.wValue, setup_packet.wIndex)
+		
+		return 0
 	
-	elif setup_packet.bRequest == USB_REQ_GET_CONFIGURATION:
-		p_nbytes[0] = 1
-		p_dataptr[0] = c_ubyte(1)
+	def connect(self, timeout):
+		return 0
 	
-	elif setup_packet.bRequest == USB_REQ_SET_CONFIGURATION:
-		print "Setting config %d (As if that does anything)\n" % setup_packet.wValue
-	
-	elif setup_packet.bRequest == USB_REQ_GET_INTERFACE:
-		p_nbytes[0] = 1
-		p_dataptr[0] = c_ubyte(1)
-	
-	else:
-		print "Unhandled control request: 0x%02x, 0x%02x, %d, %d\n" % \
-				(setup_packet.bRequestType, setup_packet.bRequest,
-				setup_packet.wValue, setup_packet.wIndex)
-	
-	return 0
+	def vendor_request(self, p_ctrl_req, p_nbytes, p_dataptr, timeout):
+		raise Error("Not implemented")
 
-def connect_f(timeout):
-	return 0
+dev = None
+
+def connect(*args):
+	if dev:
+		return dev.connect(*args)
+
+def control_req(*args):
+	if dev:
+		return dev.control_req(*args)
+
+def init(device):
+	global dev
+	dev = device
