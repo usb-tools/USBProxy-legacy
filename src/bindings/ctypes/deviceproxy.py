@@ -85,6 +85,7 @@ class DeviceProxy:
 				return -1
 		
 		elif setup_packet.bRequest == USB_REQ_GET_CONFIGURATION:
+			print "USB_REQ_GET_CONFIGURATION"
 			p_nbytes[0] = 1
 			p_dataptr[0] = c_ubyte(1)
 		
@@ -92,8 +93,9 @@ class DeviceProxy:
 			print "Setting config %d (As if that does anything)\n" % setup_packet.wValue
 		
 		elif setup_packet.bRequest == USB_REQ_GET_INTERFACE:
-			p_nbytes[0] = 1
-			p_dataptr[0] = c_ubyte(1)
+			print "USB_REQ_GET_INTERFACE"
+			#p_nbytes[0] = 1
+			#p_dataptr[0] = c_ubyte(1)
 		
 		elif setup_packet.bRequestType == USB_TYPE_VENDOR:
 			self.vendor_request(p_ctrl_req, p_nbytes, p_dataptr, timeout)
