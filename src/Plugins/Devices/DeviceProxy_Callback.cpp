@@ -62,15 +62,9 @@ bool DeviceProxy_Callback::is_highspeed() {
 }
 
 int DeviceProxy_Callback::control_request(const usb_ctrlrequest* setup_packet, int* nbytes, __u8* dataptr, int timeout) {
-	int i, rv = -1;
-	fprintf(stdout, "control_request_cb: %d bytes\n", *nbytes);
+	int rv = -1;
 	if(control_request_cb)
 		rv = control_request_cb(setup_packet, nbytes, dataptr, timeout);
-
-	for(i=0; i<*nbytes; i++)
-		fprintf(stdout, "%02x ", dataptr[i]);
-	fprintf(stdout, "\n\n");
-	
 	return rv;
 }
 
@@ -80,8 +74,19 @@ void DeviceProxy_Callback::send_data(__u8 endpoint,__u8 attributes, __u16 maxPac
 }
 
 void DeviceProxy_Callback::receive_data(__u8 endpoint,__u8 attributes, __u16 maxPacketSize, __u8** dataptr, int* length, int timeout) {
-	if(receive_data_cb)
-		receive_data_cb(endpoint, attributes, maxPacketSize, dataptr, length, timeout);
+	if(receive_data_cb) {
+		*dataptr = (__u8*) malloc(maxPacketSize);
+		receive_data_cb(endpoint, attributes, maxPacketSize, *dataptr, length, timeout);
+		if(*length == 0)
+			free(*dataptr);
+		else {
+			int i;
+			for(i=0; i<*length; i++) {
+				fprintf(stderr, "%02x ", (*dataptr)[i]);
+			}
+			fprintf(stderr, "\n");
+		}
+	}
 
 }
 

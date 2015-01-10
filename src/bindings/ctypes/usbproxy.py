@@ -50,50 +50,50 @@ DEVICE_VOID_VOID_FUNC = CFUNCTYPE(None)
 DEVICE_CONNECT_FUNC = CFUNCTYPE(c_int, c_int)
 DEVICE_CONTROL_FUNC = CFUNCTYPE(c_int, POINTER(USB_CtrlRequest), POINTER(c_int), POINTER(c_uint8), c_int)
 DEVICE_SEND_FUNC = CFUNCTYPE(None, c_uint8, c_uint8, c_uint16, POINTER(c_uint8), c_int)
-DEVICE_RECEIVE_FUNC = CFUNCTYPE(None, c_uint8, c_uint8, c_uint16, POINTER(POINTER(c_uint8)), POINTER(c_int), c_int)
+DEVICE_RECEIVE_FUNC = CFUNCTYPE(None, c_uint8, c_uint8, c_uint16, POINTER(c_uint8), POINTER(c_int), c_int)
 
-def register_deviceproxy(connect_func=None, disconnect_func=None,
-						 reset_func=None, control_request_func=None,
-						 send_data_func=None, receive_data_func=None,
-						 toString_func=None):
-	if connect_func:
-		connect_func_cb = DEVICE_CONNECT_FUNC(connect_func)
+def register_deviceproxy(connect=None, disconnect=None,
+						 reset=None, control_request=None,
+						 send_data=None, receive_data=None,
+						 toString=None):
+	if connect:
+		connect_cb = DEVICE_CONNECT_FUNC(connect)
 	else:
-		connect_func_cb = None
-	if disconnect_func:
-		disconnect_func_cb = DEVICE_VOID_VOID_FUNC(disconnect_func)
+		connect_cb = None
+	if disconnect:
+		disconnect_cb = DEVICE_VOID_VOID_FUNC(disconnect)
 	else:
-		disconnect_func_cb = None
-	if reset_func:
-		reset_func_cb = DEVICE_VOID_VOID_FUNC(reset_func)
+		disconnect_cb = None
+	if reset:
+		reset_cb = DEVICE_VOID_VOID_FUNC(reset)
 	else:
-		reset_func_cb = None
-	if control_request_func:
-		control_request_func_cb = DEVICE_CONTROL_FUNC(control_request_func)
+		reset_cb = None
+	if control_request:
+		control_request_cb = DEVICE_CONTROL_FUNC(control_request)
 	else:
-		control_request_func_cb = None
-	if send_data_func:
-		send_data_func_cb = DEVICE_SEND_FUNC(send_data_func)
+		control_request_cb = None
+	if send_data:
+		send_data_cb = DEVICE_SEND_FUNC(send_data)
 	else:
-		send_data_func_cb = None
-	if receive_data_func:
-		receive_data_func_cb = DEVICE_RECEIVE_FUNC(receive_data_func)
+		send_data_cb = None
+	if receive_data:
+		receive_data_cb = DEVICE_RECEIVE_FUNC(receive_data)
 	else:
-		receive_data_func_cb = None
-	if toString_func:
-		toString_func_cb = DEVICE_VOID_VOID_FUNC(toString_func)
+		receive_data_cb = None
+	if toString:
+		toString_cb = DEVICE_VOID_VOID_FUNC(toString)
 	else:
-		toString_func_cb = None
+		toString_cb = None
 	
 	lib.register_deviceproxy(
-		connect_func_cb,
-		disconnect_func_cb,
-		reset_func_cb,
-		control_request_func_cb,
-		send_data_func_cb,
-		receive_data_func_cb,
-		toString_func_cb)
+		connect_cb,
+		disconnect_cb,
+		reset_cb,
+		control_request_cb,
+		send_data_cb,
+		receive_data_cb,
+		toString_cb)
 
-	return (connect_func_cb, disconnect_func_cb, reset_func_cb,
-			control_request_func_cb, send_data_func_cb, receive_data_func_cb,
-			toString_func_cb)
+	return (connect_cb, disconnect_cb, reset_cb,
+			control_request_cb, send_data_cb, receive_data_cb,
+			toString_cb)

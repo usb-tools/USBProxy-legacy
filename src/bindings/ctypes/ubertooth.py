@@ -27,8 +27,8 @@ if __name__ == '__main__':
 	device = Ubertooth(device_desc, config_desc)
 	deviceproxy.init(device)
 	x = usbproxy.register_deviceproxy(
-		connect_func=deviceproxy.connect,
-		control_request_func=deviceproxy.control_req
+		connect=deviceproxy.connect,
+		control_request=deviceproxy.control_req
 		)
 	
 	usbproxy.lib.print_config()

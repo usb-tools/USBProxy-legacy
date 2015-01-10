@@ -21,7 +21,7 @@ typedef void (*f_disconnect)(void);
 typedef void (*f_reset)(void);
 typedef int (*f_control_request)(const usb_ctrlrequest*,int*,__u8*,int);
 typedef void (*f_send_data)(__u8,__u8,__u16,__u8*,int);
-typedef void (*f_receive_data)(__u8,__u8,__u16,__u8**,int*,int);
+typedef void (*f_receive_data)(__u8,__u8,__u16,__u8*,int*,int);
 typedef char* (*f_toString)(void);
 
 
