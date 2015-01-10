@@ -12,6 +12,7 @@
 API void usbproxy_init();
 
 API void set_config(char* key, char* value);
+API void enable_logging();
 
 API void register_deviceproxy(
 		f_connect connect_cb,

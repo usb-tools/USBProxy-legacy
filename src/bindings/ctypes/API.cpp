@@ -15,10 +15,11 @@ API void usbproxy_init() {
 
 API void set_config(char *key, char *value) {
 	cfg->set(key,value);
-	//cfg->set("HostProxy", "HostProxy_GadgetFS");
-	//cfg->set("DeviceProxy", "DeviceProxy_LibUSB");
-	//cfg->set("HostProxy", "HostProxy_TCP");
-	//cfg->set("HostProxy_TCP::TCPAddress", "127.0.0.1");
+}
+
+API void enable_logging() {
+	cfg->add_to_vector("Plugins", "PacketFilter_StreamLog");
+	cfg->add_pointer("PacketFilter_StreamLog::file", stderr);
 }
 
 API void register_deviceproxy(
