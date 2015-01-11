@@ -16,12 +16,12 @@
 int DeviceProxy_TCP::debugLevel = 0;
 
 DeviceProxy_TCP::DeviceProxy_TCP(const char* address) {
-	network = new TCP_Helper(address);
 	p_is_connected = false;
 }
 
 /* FIXME pull settings from config parser */
 DeviceProxy_TCP::DeviceProxy_TCP(ConfigParser *cfg) {
+	network = new TCP_Helper(NULL);
 	p_is_connected = false;
 }
 
