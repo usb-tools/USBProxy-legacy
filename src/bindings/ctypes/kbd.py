@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import usbproxy
 import deviceproxy
@@ -91,7 +91,7 @@ class Keyboard(deviceproxy.DeviceProxy):
 			p_length[0] = len(pkt)
 	
 	def get_interface(self, p_ctrl_req, p_nbytes, dataptr, timeout):
-		print "USB_REQ_GET_INTERFACE"
+		print("USB_REQ_GET_INTERFACE")
 		setup_packet = p_ctrl_req[0]
 		p_nbytes[0] = 1
 		if setup_packet.bRequestType & deviceproxy.USB_DIR_IN:

@@ -159,10 +159,10 @@ shiftKeyMap[0x64] = "|"
 charMap = {}
 shiftCharMap = {}
 
-for k, v in keyMap.iteritems():
+for k, v in keyMap.items():
 	charMap[v] = k
 
-for k, v in shiftKeyMap.iteritems():
+for k, v in shiftKeyMap.items():
 	shiftCharMap[v] = k
 
 def get_keycode(char):

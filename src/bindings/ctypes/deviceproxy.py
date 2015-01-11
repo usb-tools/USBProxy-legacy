@@ -36,26 +36,26 @@ class DeviceProxy(object):
 		#dataptr = dataptr[0]
 		if setup_packet.bRequestType & USB_DIR_IN and setup_packet.bRequest == USB_REQ_GET_DESCRIPTOR:
 			value = setup_packet.wValue >> 8
-			print "value: %02x" % value
+			print("value: %02x" % value)
 			if value == USB_DT_DEVICE:
-				print "USB_DT_DEVICE"
+				print("USB_DT_DEVICE")
 				p_nbytes[0] = len(self.device_desc)
 				for i in range(p_nbytes[0]):
 					dataptr[i] = c_ubyte(self.device_desc[i])
 				
 			elif value == USB_DT_CONFIG:
-				print "USB_DT_CONFIG"
+				print("USB_DT_CONFIG")
 				p_nbytes[0] = self.config_desc[2] | self.config_desc[3] << 8
-				print p_nbytes[0]
+				print(p_nbytes[0])
 				if p_nbytes[0] > setup_packet.wLength:
 					p_nbytes[0] = setup_packet.wLength
 				for i in range(p_nbytes[0]):
 					dataptr[i] = c_ubyte(self.config_desc[i])
 				
 			elif value == USB_DT_STRING:
-				print "USB_DT_STRING"
+				print("USB_DT_STRING")
 				idx = setup_packet.wValue & 0xff
-				print "idx: ", idx
+				print("idx: ", idx)
 				if idx == 0:
 					p_nbytes[0] = 4
 					dataptr[0] = c_ubyte(0x04)
@@ -64,13 +64,13 @@ class DeviceProxy(object):
 					dataptr[3] = c_ubyte(0x04)
 					return 0
 				elif idx>0 and setup_packet.wIndex!=0x0409:
-					print "wIndex: %x" % setup_packet.wIndex
-					print type(setup_packet.wIndex)
+					print("wIndex: %x" % setup_packet.wIndex)
+					print(type(setup_packet.wIndex))
 					return -1
 				elif idx>=len(callback_strings):
 					return -1
 				self.string_desc=callback_strings[idx]
-				print self.string_desc
+				print(self.string_desc)
 				if len(self.string_desc)>setup_packet.wLength:
 					p_nbytes[0] = setup_packet.wLength
 				else:
@@ -85,12 +85,12 @@ class DeviceProxy(object):
 				return -1
 		
 		elif  setup_packet.bRequestType & USB_DIR_IN and setup_packet.bRequest == USB_REQ_GET_CONFIGURATION:
-			print "USB_REQ_GET_CONFIGURATION"
+			print("USB_REQ_GET_CONFIGURATION")
 			p_nbytes[0] = 1
 			dataptr[0] = c_ubyte(1)
 		
 		elif setup_packet.bRequest == USB_REQ_SET_CONFIGURATION:
-			print "Setting config %d (As if that does anything)\n" % setup_packet.wValue
+			print("Setting config %d (As if that does anything)\n" % setup_packet.wValue)
 		
 		elif setup_packet.bRequest == USB_REQ_GET_INTERFACE:
 			self.get_interface(p_ctrl_req, p_nbytes, dataptr, timeout)
@@ -98,9 +98,9 @@ class DeviceProxy(object):
 		elif setup_packet.bRequestType == USB_TYPE_VENDOR:
 			self.vendor_request(p_ctrl_req, p_nbytes, dataptr, timeout)
 		else:
-			print "Unhandled control request: 0x%02x, 0x%02x, %d, %d\n" % \
+			print("Unhandled control request: 0x%02x, 0x%02x, %d, %d\n" % \
 					(setup_packet.bRequestType, setup_packet.bRequest,
-					setup_packet.wValue, setup_packet.wIndex)
+					setup_packet.wValue, setup_packet.wIndex))
 		
 		return 0
 	
@@ -108,22 +108,22 @@ class DeviceProxy(object):
 		return 0
 	
 	def send_data(self, endpoint, attributes, maxPacketSize, dataptr, length):
-		print "send"
+		print("send")
 	
 	def receive_data(self, endpoint, attributes, maxPacketSize, dataptr, p_length, timeout):
-		print "receive"
+		print("receive")
 	
 	def get_interface(self, p_ctrl_req, p_nbytes, dataptr, timeout):
 		setup_packet = p_ctrl_req[0]
-		print "Unhandled get_interface request: 0x%02x, 0x%02x, %d, %d\n" % \
+		print("Unhandled get_interface request: 0x%02x, 0x%02x, %d, %d\n" % \
 				(setup_packet.bRequestType, setup_packet.bRequest,
-				setup_packet.wValue, setup_packet.wIndex)
+				setup_packet.wValue, setup_packet.wIndex))
 	
 	def vendor_request(self, p_ctrl_req, p_nbytes, dataptr, timeout):
 		setup_packet = p_ctrl_req[0]
-		print "Unhandled vendor request: 0x%02x, 0x%02x, %d, %d\n" % \
+		print("Unhandled vendor request: 0x%02x, 0x%02x, %d, %d\n" % \
 				(setup_packet.bRequestType, setup_packet.bRequest,
-				setup_packet.wValue, setup_packet.wIndex)
+				setup_packet.wValue, setup_packet.wIndex))
 
 dev = None
 

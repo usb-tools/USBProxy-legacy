@@ -1,9 +1,9 @@
 
 def log_filter(p_pkt):
 	pkt = p_pkt[0]
-	print "Packet:\n\tlength:%d\n\tEP:%02X" % (pkt.wLength, pkt.bEndpoint)
+	print("Packet:\n\tlength:%d\n\tEP:%02X" % (pkt.wLength, pkt.bEndpoint))
 	x = ["%02x" % pkt.data[i] for i in range(pkt.wLength)]
-	print x
+	print(x)
 
 def rot13_filter(p_pkt):
 	pkt = p_pkt[0]
