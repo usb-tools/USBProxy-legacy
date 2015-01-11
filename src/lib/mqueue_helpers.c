@@ -95,7 +95,7 @@ int clean_mqueue() {
 	}
 
 	while(1) {
-		if (readdir_r(dir, entry, &result) < 0) break;
+		if (readdir_r(dir, entry, &result)) break;
 		if (!result) {break;}
 		//format is USBProxy(PID)-[0-9A-F]{2}-(EP|([0-9A-F]{2}))
 		if (strlen(entry->d_name)>=17 && strncmp(entry->d_name,"USBProxy(",9)==0) {
