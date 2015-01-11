@@ -36,7 +36,7 @@ class DeviceProxy(object):
 		#dataptr = dataptr[0]
 		if setup_packet.bRequestType & USB_DIR_IN and setup_packet.bRequest == USB_REQ_GET_DESCRIPTOR:
 			value = setup_packet.wValue >> 8
-			print "value:", value
+			print "value: %02x" % value
 			if value == USB_DT_DEVICE:
 				print "USB_DT_DEVICE"
 				p_nbytes[0] = len(self.device_desc)
@@ -89,8 +89,8 @@ class DeviceProxy(object):
 			p_nbytes[0] = 1
 			dataptr[0] = c_ubyte(1)
 		
-		#elif setup_packet.bRequest == USB_REQ_SET_CONFIGURATION:
-		#	print "Setting config %d (As if that does anything)\n" % setup_packet.wValue
+		elif setup_packet.bRequest == USB_REQ_SET_CONFIGURATION:
+			print "Setting config %d (As if that does anything)\n" % setup_packet.wValue
 		
 		elif setup_packet.bRequest == USB_REQ_GET_INTERFACE:
 			self.get_interface(p_ctrl_req, p_nbytes, dataptr, timeout)
