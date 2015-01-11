@@ -83,6 +83,9 @@ class DeviceProxy(object):
 			
 			elif value == USB_DT_OTHER_SPEED_CONFIG:
 				return -1
+			
+			else:
+				self.get_extended_descriptor(p_ctrl_req, p_nbytes, dataptr, timeout)
 		
 		elif  setup_packet.bRequestType & USB_DIR_IN and setup_packet.bRequest == USB_REQ_GET_CONFIGURATION:
 			print("USB_REQ_GET_CONFIGURATION")
@@ -107,6 +110,9 @@ class DeviceProxy(object):
 	def connect(self, timeout):
 		return 0
 	
+	def disconnect(self, timeout):
+		pass
+	
 	def send_data(self, endpoint, attributes, maxPacketSize, dataptr, length):
 		print("send")
 	
@@ -125,11 +131,21 @@ class DeviceProxy(object):
 				(setup_packet.bRequestType, setup_packet.bRequest,
 				setup_packet.wValue, setup_packet.wIndex))
 
+	def get_extended_descriptor(p_ctrl_req, p_nbytes, dataptr, timeout):
+		setup_packet = p_ctrl_req[0]
+		print("Unhandled descriptor request: 0x%02x, 0x%02x, %d, %d\n" % \
+				(setup_packet.bRequestType, setup_packet.bRequest,
+				setup_packet.wValue, setup_packet.wIndex))
+
 dev = None
 
 def connect(*args):
 	if dev:
 		return dev.connect(*args)
+
+def disconnect(*args):
+	if dev:
+		dev.disconnect(*args)
 
 def control_req(*args):
 	if dev:

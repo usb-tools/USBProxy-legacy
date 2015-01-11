@@ -5,10 +5,10 @@ lib = cdll.LoadLibrary("libUSBProxyAPI.so")
 
 def set_config():
 	# Put in some dummy config so that it works for now
-	lib.set_config(b"HostProxy", b"HostProxy_GadgetFS");
+	#lib.set_config(b"HostProxy", b"HostProxy_GadgetFS");
 	#lib.set_config("DeviceProxy", "DeviceProxy_LibUSB");
-	#lib.set_config("HostProxy", "HostProxy_TCP");
-	#lib.set_config("HostProxy_TCP::TCPAddress", "127.0.0.1");
+	lib.set_config(b"HostProxy", b"HostProxy_TCP");
+	lib.set_config(b"HostProxy_TCP::TCPAddress", b"10.42.0.49");
 
 def init():
 	lib.usbproxy_init()
