@@ -147,7 +147,7 @@ void ConfigParser::print_config() {
 	std::clog << "\tVectors: " << vectors.size() << std::endl;
 	for(std::map<std::string, std::vector<std::string>>::iterator it = vectors.begin();
 		it != vectors.end(); ++it) {
-		std::clog << "\t\t" << it->first << ":/n";
+		std::clog << "\t\t" << it->first << ":\n";
 		for(std::vector<std::string>::iterator itv = it->second.begin();
 			itv != it->second.end(); ++itv) {
 			std::clog << "\t\t\t" << *itv << std::endl;
