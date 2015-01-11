@@ -85,7 +85,7 @@ int clean_mqueue() {
 	dir = opendir(mqueue_path);
 	if (!dir) return 1;
 
-	entry = (struct dirent*)malloc(offsetof(struct dirent, d_name) + pathconf("/tmp", _PC_NAME_MAX) + 1);
+	entry = (struct dirent*)malloc(offsetof(struct dirent, d_name) + fpathconf(dirfd(dir), _PC_NAME_MAX) + 1);
 
 	fprintf(stderr,"cleaning up %s\n",mqueue_path);
 
