@@ -45,9 +45,10 @@ class USBProxyDevice(object):
 	def receive_data(self, endpoint, attributes, maxPacketSize, dataptr,
 					 p_length, timeout):
 		# call handler
-		self.app.connected_device.handle_buffer_available(endpoint)
+		ep_num = endpoint & 0x7f
+		self.app.connected_device.handle_buffer_available(ep_num)
 		# Copy from queue to buffer
-		data = self.read_data(endpoint)
+		data = self.read_data(ep_num)
 		if data:
 			p_length[0] = len(data)
 			for i, b in enumerate(data):
