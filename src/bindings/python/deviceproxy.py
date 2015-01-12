@@ -58,6 +58,7 @@ class DeviceProxy(object):
 				print("idx: ", idx)
 				if idx == 0:
 					p_nbytes[0] = 4
+					# FIXME: don't hard-code this
 					dataptr[0] = c_ubyte(0x04)
 					dataptr[1] = c_ubyte(0x03)
 					dataptr[2] = c_ubyte(0x09)

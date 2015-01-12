@@ -4,13 +4,13 @@ from USBDevice import USBDeviceRequest
 
 import usbproxy
 import deviceproxy
-from ctypes import c_ubyte
 
 class USBProxyDevice(object):
 	
 	def __init__(self, app):
 		self.ep_queues = {}
 		self.app = app
+		self.stall_flag = False
 	
 	def control_req(self, p_ctrl_req, p_nbytes, dataptr, timeout):
 		# call handler
@@ -27,6 +27,11 @@ class USBProxyDevice(object):
 		]
 		req = USBDeviceRequest(b)
 		self.app.connected_device.handle_request(req)
+		# Check for stall
+		if self.stall_flag:
+			print("Stalling EP0")
+			self.stall_flag = False
+			return -1
 		# Copy from queue to buffer
 		data = self.read_data(0)
 		if data:
@@ -53,17 +58,15 @@ class USBProxyDevice(object):
 	def send_data(self, endpoint, attributes, maxPacketSize, dataptr, length):
 		# Copy data to queue
 		data = [dataptr[i] for i in range(length)]
-		#self.write_data(data)
 		# call handler
 		self.app.connected_device.handle_data_available(endpoint, data)
 	
 	def read_data(self, endpoint):
-		print("read_data")
 		if endpoint in self.ep_queues and len(self.ep_queues[endpoint]):
+			print(len(self.ep_queues[endpoint]))
 			return self.ep_queues[endpoint].pop(0)
 	
 	def write_data(self, endpoint, data):
-		print("write_data")
 		if endpoint not in self.ep_queues:
 			self.ep_queues[endpoint] = []
 		self.ep_queues[endpoint].append(data)
@@ -110,17 +113,14 @@ class USBProxyApp(object):
 		print("ack_status_stage()")
 
 	def send_on_endpoint(self, endpoint, data):
-		print("send_on_endpoint")
 		if data:
-			c_data = [c_ubyte(x) for x in data]
 			self.usbproxy_dev.write_data(endpoint, data)
 
 	def read_from_endpoint(self, endpoint):
-		print("read_from_endpoint")
 		data = self.usbproxy_dev.read_data(endpoint)
-		if data:
-			data = bytes(data)
+		#if data:
+		#	data = bytes(data)
 		return data
 
 	def stall_ep0(self):
-		print("stall_ep0")
+		self.usbproxy_dev.stall_flag = True

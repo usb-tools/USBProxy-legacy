@@ -63,8 +63,14 @@ bool DeviceProxy_Callback::is_highspeed() {
 
 int DeviceProxy_Callback::control_request(const usb_ctrlrequest* setup_packet, int* nbytes, __u8* dataptr, int timeout) {
 	int rv = -1;
-	if(control_request_cb)
+	if(control_request_cb) {
 		rv = control_request_cb(setup_packet, nbytes, dataptr, timeout);
+		int i;
+			for(i=0; i<*nbytes; i++) {
+				fprintf(stderr, "%02x ", (dataptr)[i]);
+			}
+			fprintf(stderr, "\n");
+	}
 	return rv;
 }
 

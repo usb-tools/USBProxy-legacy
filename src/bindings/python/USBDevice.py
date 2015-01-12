@@ -277,6 +277,16 @@ class USBDevice:
     def handle_get_configuration_request(self, req):
         print(self.name, "received GET_CONFIGURATION request with data 0x%02x" \
                 % req.value)
+        if self.configuration:
+            self.send_control_message(bytes([
+                self.configuration.configuration_index
+                ]))
+        elif self.configurations:
+            self.send_control_message(bytes([
+                self.configurations[0].configuration_index
+                ]))
+        else:
+            self.send_control_message(b'\x00')
 
     # USB 2.0 specification, section 9.4.7 (p 285 of pdf)
     def handle_set_configuration_request(self, req):
