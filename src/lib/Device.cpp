@@ -2,6 +2,8 @@
  * This file is part of USBProxy.
  */
 
+#include <iostream>
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <memory.h>
@@ -34,7 +36,10 @@ Device::Device(DeviceProxy* _proxy) {
 	setup_packet.wIndex=0;
 	setup_packet.wLength=18;
 	int len=0;
-	proxy->control_request(&setup_packet,&len,buf);
+	if (proxy->control_request(&setup_packet,&len,buf) < 0) {
+		std::cerr << "Error sending control request!\n";
+		exit(1);
+	}
 	memcpy(&descriptor,buf,len);
 	int i;
 	configurations=(Configuration **)calloc(descriptor.bNumConfigurations,sizeof(*configurations));
@@ -92,7 +97,10 @@ Device::Device(DeviceProxy* _proxy) {
 		setup_packet.wIndex=0;
 		setup_packet.wLength=1;
 		__u8 result;
-		proxy->control_request(&setup_packet,&len,&result);
+		if (proxy->control_request(&setup_packet,&len,&result) < 0) {
+			std::cerr << "Error sending control request!\n";
+			exit(1);
+		}
 		deviceConfigurationIndex=result;
 		deviceState=deviceConfigurationIndex?USB_STATE_CONFIGURED:USB_STATE_ADDRESS;
 	} else {

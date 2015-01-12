@@ -2,6 +2,8 @@
  * This file is part of USBProxy.
  */
 
+#include <iostream>
+
 #include <stdlib.h>
 #include <memory.h>
 #include <stdio.h>
@@ -19,12 +21,18 @@ USBString::USBString(DeviceProxy* proxy,__u8 _index,__u16 _languageId) {
 	setup_packet.wIndex=languageId;
 	setup_packet.wLength=8;
 	int len=0;
-	proxy->control_request(&setup_packet,&len,(__u8*)descriptor);
+	if (proxy->control_request(&setup_packet,&len,(__u8*)descriptor) < 0) {
+		std::cerr << "Error sending control request!\n";
+		exit(1);
+	}
 	len=descriptor->bLength;
 	descriptor=(usb_string_descriptor*)realloc(descriptor,len);
 	if (len>8) {
 		setup_packet.wLength=len;
-		proxy->control_request(&setup_packet,&len,(__u8*)descriptor);
+		if (proxy->control_request(&setup_packet,&len,(__u8*)descriptor) < 0) {
+			std::cerr << "Error sending control request!\n";
+			exit(1);
+		}
 	}
 }
 

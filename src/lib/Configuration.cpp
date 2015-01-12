@@ -2,6 +2,8 @@
  * This file is part of USBProxy.
  */
 
+#include <iostream>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
@@ -29,11 +31,17 @@ Configuration::Configuration(Device* _device,DeviceProxy* proxy, int idx,bool ot
 	setup_packet.wIndex=0;
 	setup_packet.wLength=9;
 	int len=0;
-	proxy->control_request(&setup_packet,&len,buf);
+	if (proxy->control_request(&setup_packet,&len,buf) < 0) {
+		std::cerr << "Error sending control request!\n";
+		exit(1);
+	}
 	len = ( buf[3] << 8) + buf[2];
 	buf=(__u8*)realloc(buf,len);
 	setup_packet.wLength=len;
-	proxy->control_request(&setup_packet,&len,buf);
+	if (proxy->control_request(&setup_packet,&len,buf) < 0) {
+		std::cerr << "Error sending control request!\n";
+		exit(1);
+	}
 	//copy descriptor
 	memcpy(&descriptor,buf,9);
 	interfaceGroups=(InterfaceGroup **)calloc(descriptor.bNumInterfaces,sizeof(*interfaceGroups));
@@ -58,7 +66,10 @@ Configuration::Configuration(Device* _device,DeviceProxy* proxy, int idx,bool ot
 			setup_packet.wIndex=i;
 			setup_packet.wLength=1;
 			__u8 result;
-			proxy->control_request(&setup_packet,&len,&result);
+			if (proxy->control_request(&setup_packet,&len,&result) < 0) {
+				std::cerr << "Error sending control request!\n";
+				exit(1);
+			}
 			interfaceGroups[i]->activeAlternateIndex=result;
 		}
 	}

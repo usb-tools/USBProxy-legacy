@@ -52,7 +52,7 @@ void clean_tmp() {
 	dir = opendir("/tmp");
 	if (!dir) return;
 
-	entry = malloc(offsetof(struct dirent, d_name) + pathconf("/tmp", _PC_NAME_MAX) + 1);
+	entry = malloc(offsetof(struct dirent, d_name) + fpathconf(dirfd(dir), _PC_NAME_MAX) + 1);
 
 	fprintf(stderr,"cleaning up /tmp\n");
 
@@ -62,7 +62,7 @@ void clean_tmp() {
 	}
 
 	while(1) {
-		if (readdir_r(dir, entry, &result) < 0) break;
+		if (readdir_r(dir, entry, &result)) break;
 		if (!result) {break;}
 		if (strlen(entry->d_name)==13 && strncmp(entry->d_name,"gadget-",7)==0) {
 			rmCount++;
@@ -211,7 +211,7 @@ const char * find_gadget_filename()
 		return NULL;
 
 	entry = malloc(offsetof(struct dirent, d_name)
-				   + pathconf(gadgetfs_path, _PC_NAME_MAX)
+				   + fpathconf(dirfd(dir), _PC_NAME_MAX)
 				   + 1);
 
 	fprintf(stderr,"searching in [%s]\n",gadgetfs_path);
@@ -222,7 +222,7 @@ const char * find_gadget_filename()
 	}
 
 	while(1) {
-		if (readdir_r(dir, entry, &result) < 0) break;
+		if (readdir_r(dir, entry, &result)) break;
 		if (!result) {
 			fprintf(stderr,"%s device file not found.\n", gadgetfs_path);
 			break;
