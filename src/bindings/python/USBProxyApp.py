@@ -29,7 +29,6 @@ class USBProxyDevice(object):
 		self.app.connected_device.handle_request(req)
 		# Check for stall
 		if self.stall_flag:
-			print("Stalling EP0")
 			self.stall_flag = False
 			return -1
 		# Copy from queue to buffer
@@ -100,18 +99,17 @@ class USBProxyApp(object):
 		usbproxy.lib.load_plugins()
 	
 	def connect(self, usb_device):
-		print("connect()")
 		self.connected_device = usb_device
 	
 	def disconnect(self):
-		print("disconnect()")
 		self.connected_device = None
 	
 	def service_irqs(self):
 		usbproxy.run()
 
 	def ack_status_stage(self):
-		print("ack_status_stage()")
+		# We do this by default - function here for compatibility
+		pass
 
 	def send_on_endpoint(self, endpoint, data):
 		if data:
