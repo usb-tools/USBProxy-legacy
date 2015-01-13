@@ -44,7 +44,7 @@ int PluginManager::load_plugins(ConfigParser *cfg)
 		return PLUGIN_MANAGER_CANNOT_FIND_FILE;
 	plugin_func = dlsym(plugin_lib, "get_deviceproxy_plugin");
 	handleList.push_back(plugin_func);
-	dp_ptr = (device_plugin_getter) plugin_func;
+	dp_ptr = *reinterpret_cast<device_plugin_getter*>(&plugin_func);
 	device_proxy = (*(dp_ptr))(cfg);
 	
 	// Host Proxy
@@ -53,7 +53,7 @@ int PluginManager::load_plugins(ConfigParser *cfg)
 		return PLUGIN_MANAGER_CANNOT_FIND_FILE;
 	plugin_func = dlsym(plugin_lib, "get_hostproxy_plugin");
 	handleList.push_back(plugin_func);
-	hp_ptr = (host_plugin_getter) plugin_func;
+	hp_ptr = *reinterpret_cast<host_plugin_getter*>(&plugin_func);
 	host_proxy = (*(hp_ptr))(cfg);
 	
 	// Plugins
@@ -69,19 +69,19 @@ int PluginManager::load_plugins(ConfigParser *cfg)
 			case PLUGIN_FILTER:
 				plugin_func = dlsym(plugin_lib, "get_plugin");
 				handleList.push_back(plugin_func);
-				f_ptr = (filter_plugin_getter) plugin_func;
+				f_ptr = *reinterpret_cast<filter_plugin_getter*>(&plugin_func);
 				filters.push_back((*(f_ptr))(cfg));
 				break;
 			case PLUGIN_INJECTOR:
 				plugin_func = dlsym(plugin_lib, "get_plugin");
 				handleList.push_back(plugin_func);
-				i_ptr = (injector_plugin_getter) plugin_func;
+				i_ptr = *reinterpret_cast<injector_plugin_getter*>(&plugin_func);
 				injectors.push_back((*(i_ptr))(cfg));
 				break;
 			case (PLUGIN_FILTER|PLUGIN_INJECTOR):
 				plugin_func = dlsym(plugin_lib, "get_plugin");
 				handleList.push_back(plugin_func);
-				f_ptr = (filter_plugin_getter) plugin_func;
+				f_ptr = *reinterpret_cast<filter_plugin_getter*>(&plugin_func);
 				filter = (*(f_ptr))(cfg);
 				filters.push_back(filter);
 				injectors.push_back(dynamic_cast<Injector*>(filter));
