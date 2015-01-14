@@ -3,6 +3,7 @@
  */
 
 #include <iostream>
+#include <thread>
 
 #include <stdio.h>
 #include <sched.h>
@@ -91,7 +92,7 @@ void RelayReader::relay_read_setup() {
 					ssize_t rc = mq_receive(recvQueue, (char*)&p, sizeof(p), 0);
 					if (rc != sizeof(p)) {
 						p = nullptr;
-						std::cerr << "Error receiving from mq (thread " << gettid() << ")!\n";
+						std::cerr << "Error receiving from mq (thread " << std::this_thread::get_id() << ")!\n";
 						continue;
 					}
 					poll_recv.revents=0;

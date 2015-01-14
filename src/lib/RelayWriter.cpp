@@ -221,7 +221,7 @@ void RelayWriter::relay_write_valgrind() {
 					if (rc != sizeof(p)) {
 						p = nullptr;
 						numEvents = 0;
-						std::cerr << "Error receiving from mq (thread " << gettid() << ")!\n";
+						std::cerr << "Error receiving from mq (thread " << std::this_thread::get_id() << ")!\n";
 						continue;
 					}
 					pollfds[i].revents=0;
@@ -298,7 +298,7 @@ void RelayWriter::relay_write_setup() {
 					if (rc != sizeof(p)) {
 						p = nullptr;
 						numEvents = 0;
-						std::cerr << "Error receiving from mq (thread " << gettid() << ")!\n";
+						std::cerr << "Error receiving from mq (thread " << std::this_thread::get_id() << ")!\n";
 						continue;
 					}
 					p->source=sendQueue;
@@ -386,7 +386,7 @@ void RelayWriter::relay_write() {
 					if (rc != sizeof(p)) {
 						p = nullptr;
 						numEvents = 0;
-						std::cerr << "Error receiving from mq (thread " << gettid() << ")!\n";
+						std::cerr << "Error receiving from mq (thread " << std::this_thread::get_id() << ")!\n";
 						continue;
 					}
 				}
