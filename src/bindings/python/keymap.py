@@ -167,7 +167,9 @@ for k, v in shiftKeyMap.items():
 
 def get_keycode(char):
 	if char in charMap:
-		return charMap[char], None
+		return charMap[char], 0
 	if char in shiftCharMap:
 		return shiftCharMap[char], MOD_LSHIFT
-	return None, None
+	if char is None:
+		return 0, 0
+	raise Exception("Unable to find keycode for %s" % char)

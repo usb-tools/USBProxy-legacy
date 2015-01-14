@@ -4,10 +4,16 @@
 
 from USBProxyApp import USBProxyApp
 from USBKeyboard import USBKeyboardDevice
+import sys
 
 u = USBProxyApp(verbose=1)
 
-d = USBKeyboardDevice(u, verbose=4)
+if len(sys.argv) > 1:
+    text = ' '.join(sys.argv[1:])
+else:
+    text = None
+print(text)
+d = USBKeyboardDevice(u, verbose=4, text=text)
 
 d.connect()
 

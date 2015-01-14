@@ -7,6 +7,7 @@ from USBDevice import *
 from USBConfiguration import *
 from USBInterface import *
 from USBEndpoint import *
+from keymap import get_keycode
 
 class USBKeyboardInterface(USBInterface):
     name = "USB keyboard interface"
@@ -14,7 +15,7 @@ class USBKeyboardInterface(USBInterface):
     hid_descriptor = b'\x09\x21\x10\x01\x00\x01\x22\x2b\x00'
     report_descriptor = b'\x05\x01\x09\x06\xA1\x01\x05\x07\x19\xE0\x29\xE7\x15\x00\x25\x01\x75\x01\x95\x08\x81\x02\x95\x01\x75\x08\x81\x01\x19\x00\x29\x65\x15\x00\x25\x65\x75\x08\x95\x01\x81\x00\xC0'
 
-    def __init__(self, verbose=0):
+    def __init__(self, verbose=0, text=None):
         descriptors = { 
                 USB.desc_type_hid    : self.hid_descriptor,
                 USB.desc_type_report : self.report_descriptor
@@ -46,23 +47,31 @@ class USBKeyboardInterface(USBInterface):
         )
 
         # "l<KEY UP>s<KEY UP><ENTER><KEY UP>"
-        empty_preamble = [ 0x00 ] * 10
-        text = [ 0x0f, 0x00, 0x16, 0x00, 0x28, 0x00 ]
+        #text = [ 0x0f, 0x00, 0x16, 0x00, 0x28, 0x00 ]
+        empty_preamble = [ chr(0x00) ] * 2
 
-        self.keys = [ chr(x) for x in empty_preamble + text ]
+        if text:
+            chars = list(text)
+        else:
+            chars = list(b"Hello there")
+        print(empty_preamble)
+        print(chars)
+        self.keys = empty_preamble + chars
 
     def handle_buffer_available(self):
         if not self.keys:
             return
 
         letter = self.keys.pop(0)
-        self.type_letter(letter)
+        keycode, mod = get_keycode(letter)
+        self.type_letter(keycode, mod)
+        self.type_letter(0, 0)
 
-    def type_letter(self, letter, modifiers=0):
-        data = bytes([ 0, 0, ord(letter) ])
+    def type_letter(self, keycode, modifiers=0):
+        data = bytes([ modifiers, 0, keycode ])
 
         if self.verbose > 2:
-            print(self.name, "sending keypress 0x%02x" % ord(letter))
+            print(self.name, "sending keypress 0x%02x" % keycode)
 
         self.endpoint.send(data)
 
@@ -70,11 +79,11 @@ class USBKeyboardInterface(USBInterface):
 class USBKeyboardDevice(USBDevice):
     name = "USB keyboard device"
 
-    def __init__(self, maxusb_app, verbose=0):
+    def __init__(self, maxusb_app, verbose=0, text=None):
         config = USBConfiguration(
                 1,                                          # index
                 "Emulated Keyboard",    # string desc
-                [ USBKeyboardInterface() ]                  # interfaces
+                [ USBKeyboardInterface(text=text) ]         # interfaces
         )
 
         USBDevice.__init__(
