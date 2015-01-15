@@ -39,7 +39,6 @@ Manager::Manager() {
 	filterCount=0;
 	injectors=NULL;
 	injectorCount=0;
-	injectorThreads=NULL;
 
 	int i;
 	for(i=0;i<16;i++) {
@@ -101,20 +100,12 @@ Manager::~Manager() {
 			out_writers[i]=NULL;
 		}
 	}
-	if (injectorThreads) {
-		for (i=0;i<injectorCount;i++) {
-			if (injectorThreads[i]) {
-				if (injectorThreads[i]->joinable()) {
-					injectors[i]->please_stop();
-					injectorThreads[i]->join();
-				}
-				delete injectorThreads[i];
-				injectorThreads[i] = 0;
-			}
-		}
-		free(injectorThreads);
-		injectorThreads=NULL;
-	}
+	for (i = 0; i < injectorCount; ++i)
+		if (injectors[i])
+			injectors[i]->please_stop();
+	for (auto& i_thread: injectorThreads)
+		i_thread.join();
+	injectorThreads.clear();
 	if (injectors) {
 		free(injectors);
 		injectors=NULL;
@@ -339,10 +330,10 @@ void Manager::start_control_relaying(){
 
 	//create injector threads
 	if (injectorCount) {
-		injectorThreads=(std::thread**)calloc(injectorCount,sizeof(std::thread*));
+		injectorThreads.reserve(injectorCount);
 		for(i=0;i<injectorCount;i++) {
 			if (status!=USBM_SETUP) {stop_relaying();return;}
-			injectorThreads[i] = new std::thread(&Injector::listen, injectors[i]);
+			injectorThreads.push_back(std::thread(&Injector::listen, injectors[i]));
 		}
 	}
 
@@ -507,7 +498,7 @@ void Manager::stop_relaying(){
 	int i;
 	//signal all injector threads to stop ASAP
 	for(i=0;i<injectorCount;i++) {
-		if (injectorThreads && injectorThreads[i]) injectors[i]->please_stop();
+		if (injectors[i]) injectors[i]->please_stop();
 	}
 
 	//signal all relayer threads to stop ASAP
@@ -519,19 +510,9 @@ void Manager::stop_relaying(){
 	}
 
 	//wait for all injector threads to stop
-	if (injectorThreads) {
-		for(i=0;i<injectorCount;i++) {
-			if (injectorThreads[i]) {
-				if (injectorThreads[i]->joinable()) {
-					injectorThreads[i]->join();
-				}
-				delete injectorThreads[i];
-				injectorThreads[i]=0;
-			}
-		}
-		free(injectorThreads);
-		injectorThreads=NULL;
-	}
+	for (auto& i_thread: injectorThreads)
+		i_thread.join();
+	injectorThreads.clear();
 
 
 	//wait for all relayer threads to stop, then delete relayer objects

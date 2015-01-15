@@ -6,6 +6,7 @@
 #define USBPROXY_MANAGER_H
 
 #include <thread>
+#include <vector>
 
 #include <linux/usb/ch9.h>
 
@@ -48,7 +49,7 @@ private:
 	Injector** injectors;
 	__u8 injectorCount;
 
-	std::thread** injectorThreads;
+	std::vector<std::thread> injectorThreads;
 
 	Endpoint* in_endpoints[16];
 	RelayReader* in_readers[16];
