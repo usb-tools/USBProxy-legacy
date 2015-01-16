@@ -96,9 +96,9 @@ class USBKeyboardDevice(USBDevice):
                 0x610b,                 # vendor id
                 0x4653,                 # product id
                 0x3412,                 # device revision
-                "Maxim",                # manufacturer string
-                "MAX3420E Enum Code",   # product string
-                "S/N3420E",             # serial number string
+                "Move along",                # manufacturer string
+                "This is not the USB device you're looking for",   # product string
+                "00001",             # serial number string
                 [ config ],
                 verbose=verbose
         )
