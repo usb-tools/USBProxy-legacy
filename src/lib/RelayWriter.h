@@ -42,11 +42,6 @@ public:
 	void relay_write();
 	void relay_write_setup();
 
-#ifndef NVALGRIND
-	void relay_write_valgrind();
-	void relay_write_setup_valgrind();
-#endif //NVALGRIND
-
 	void please_stop(void) {
 		_please_stop = true;
 	}
