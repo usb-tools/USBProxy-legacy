@@ -16,7 +16,25 @@ typedef HostProxy* (*host_plugin_getter)(ConfigParser *);
 typedef PacketFilter* (*filter_plugin_getter)(ConfigParser *);
 typedef Injector* (*injector_plugin_getter)(ConfigParser *);
 
-void *PluginManager::load_shared_lib(std::string plugin_name) {
+struct RustPlugin {
+};
+
+typedef void (*handle_func)(__u8*);
+typedef handle_func (*handle_func_getter)(ConfigParser*);
+
+
+class RustShim : public PacketFilter {
+private:
+	handle_func func;
+public:
+	RustShim(handle_func f) : func(f) {};
+	virtual char* toString() { return (char*)"Rust Filter"; }
+	void filter_packet(Packet* packet) {
+		func(packet->data);
+	}
+};
+
+void* PluginManager::load_shared_lib(std::string plugin_name) {
 	std::string plugin_file = PLUGIN_PATH + plugin_name + ".so";
 	void* plugin_lib = dlopen(plugin_file.c_str(), RTLD_LAZY);
 	if(!plugin_lib)
@@ -64,25 +82,40 @@ int PluginManager::load_plugins(ConfigParser *cfg)
 		if(plugin_lib==NULL)
 			return PLUGIN_MANAGER_CANNOT_FIND_FILE;
 		plugin_type = *(int *) dlsym(plugin_lib, "plugin_type");
+		int c_abi = *(int *) dlsym(plugin_lib, "c_abi");
 
 		switch (plugin_type) {
 			case PLUGIN_FILTER:
 				plugin_func = dlsym(plugin_lib, "get_plugin");
 				handleList.push_back(plugin_func);
-				f_ptr = (filter_plugin_getter) plugin_func;
-				filters.push_back((*(f_ptr))(cfg));
+				if (c_abi) {
+					handle_func_getter getter = (handle_func_getter) plugin_func;
+					handle_func f = ((*(getter))(cfg));
+					filters.push_back(new RustShim(f));
+				} else {
+					f_ptr = (filter_plugin_getter) plugin_func;
+					filters.push_back((*(f_ptr))(cfg));
+				}
 				break;
 			case PLUGIN_INJECTOR:
 				plugin_func = dlsym(plugin_lib, "get_plugin");
 				handleList.push_back(plugin_func);
 				i_ptr = (injector_plugin_getter) plugin_func;
-				injectors.push_back((*(i_ptr))(cfg));
+				if (c_abi) {
+					// Lol good luck
+				} else {
+					injectors.push_back((*(i_ptr))(cfg));
+				}
 				break;
 			case (PLUGIN_FILTER|PLUGIN_INJECTOR):
 				plugin_func = dlsym(plugin_lib, "get_plugin");
 				handleList.push_back(plugin_func);
 				f_ptr = (filter_plugin_getter) plugin_func;
-				filter = (*(f_ptr))(cfg);
+				if (c_abi) {
+					// Lol good luck
+				} else {
+					filter = (*(f_ptr))(cfg);
+				}
 				filters.push_back(filter);
 				injectors.push_back(dynamic_cast<Injector*>(filter));
 				break;
