@@ -5,6 +5,7 @@
 #include <dlfcn.h>
 #include <sys/types.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include "Plugins.h"
 #include "PluginManager.h"
@@ -21,6 +22,7 @@ struct RustPlugin {
 
 typedef void (*handle_func)(__u8*);
 typedef handle_func (*handle_func_getter)(ConfigParser*);
+using namespace std;
 
 
 class RustShim : public PacketFilter {
@@ -144,4 +146,22 @@ void PluginManager::destroy_plugins()
 	{
 		dlclose(*it);
 	}
+}
+
+int main(int argc, char** argv) {
+	// Load a plugin, then pass a dummy packet through it
+	void* lib = dlopen(argv[1], RTLD_LAZY);
+	/* assert(dlsym(lib, "c_abi")); */
+	void* plugin_func = dlsym(lib, "get_plugin");
+
+	handle_func_getter getter = (handle_func_getter) plugin_func;
+	handle_func f = ((*(getter))(NULL));
+	PacketFilter *filter = new RustShim(f);
+
+	__u8 _data[9] = {0x41, 0x41, 0, 0, 0, 0, 0, 0, 0};
+	__u8 *data = (__u8*) &_data;
+	Packet *packet = new Packet(0, data, 0, 8);
+
+	filter->filter_packet(packet);
+	printf("%s\n", data);
 }
