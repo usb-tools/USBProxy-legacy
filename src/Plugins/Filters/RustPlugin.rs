@@ -16,7 +16,7 @@ pub struct Packet<'a> {
 }
 
 #[no_mangle]
-pub const c_abi: libc::c_int = 1;
+pub static c_abi: libc::c_int = 1;
 
 pub unsafe fn filter_packet(mut payload: Packet) {
     let mut buf = payload.data;

@@ -151,7 +151,7 @@ void PluginManager::destroy_plugins()
 int main(int argc, char** argv) {
 	// Load a plugin, then pass a dummy packet through it
 	void* lib = dlopen(argv[1], RTLD_LAZY);
-	/* assert(dlsym(lib, "c_abi")); */
+	assert(dlsym(lib, "c_abi"));
 	void* plugin_func = dlsym(lib, "get_plugin");
 
 	handle_func_getter getter = (handle_func_getter) plugin_func;
