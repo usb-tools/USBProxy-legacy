@@ -20,7 +20,7 @@ typedef Injector* (*injector_plugin_getter)(ConfigParser *);
 struct RustPlugin {
 };
 
-typedef void (*handle_func)(__u8*);
+typedef void (*handle_func)(Packet*);
 typedef handle_func (*handle_func_getter)(ConfigParser*);
 using namespace std;
 
@@ -32,7 +32,7 @@ public:
 	RustShim(handle_func f) : func(f) {};
 	virtual char* toString() { return (char*)"Rust Filter"; }
 	void filter_packet(Packet* packet) {
-		func(packet->data);
+		func(packet);
 	}
 };
 

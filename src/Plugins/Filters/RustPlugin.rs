@@ -6,13 +6,20 @@ struct Plugin {
     cfg: *mut libc::c_void,
 }
 
-type Packet = libc::c_void;
-pub type Data<'a> = &'a mut [u8; 8];
+#[repr(C)]
+pub struct Packet<'a> {
+    endpoint: u8,
+    length: u16,
+    filter: bool,
+    transmit: bool,
+    data: &'a mut [u8; 8],
+}
 
 #[no_mangle]
 pub const c_abi: libc::c_int = 1;
 
-pub unsafe fn filter_packet(mut buf: Data) {
+pub unsafe fn filter_packet(mut payload: Packet) {
+    let mut buf = payload.data;
     (*buf)[2] = b'r';
     (*buf)[3] = b'u';
     (*buf)[4] = b's';
@@ -22,6 +29,6 @@ pub unsafe fn filter_packet(mut buf: Data) {
 }
 
 #[no_mangle]
-pub fn get_plugin(cfg: *const libc::c_void) -> unsafe fn(Data) {
+pub fn get_plugin(cfg: *const libc::c_void) -> unsafe fn(Packet) {
     return filter_packet;
 }
