@@ -17,9 +17,6 @@ typedef HostProxy* (*host_plugin_getter)(ConfigParser *);
 typedef PacketFilter* (*filter_plugin_getter)(ConfigParser *);
 typedef Injector* (*injector_plugin_getter)(ConfigParser *);
 
-struct RustPlugin {
-};
-
 typedef void (*handle_func)(Packet*);
 typedef handle_func (*handle_func_getter)(ConfigParser*);
 using namespace std;
