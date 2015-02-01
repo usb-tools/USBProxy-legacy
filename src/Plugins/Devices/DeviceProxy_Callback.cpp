@@ -19,13 +19,20 @@
 int DeviceProxy_Callback::debugLevel = 2;
 
 DeviceProxy_Callback::DeviceProxy_Callback(ConfigParser *cfg) {
-	connect_cb = (f_connect) cfg->get_pointer("DeviceProxy_Callback::connect");
-	disconnect_cb = (f_disconnect) cfg->get_pointer("DeviceProxy_Callback::disconnect");
-	reset_cb = (f_reset) cfg->get_pointer("DeviceProxy_Callback::reset");
-	control_request_cb = (f_control_request) cfg->get_pointer("DeviceProxy_Callback::control_request");
-	send_data_cb = (f_send_data) cfg->get_pointer("DeviceProxy_Callback::send_data");
-	receive_data_cb = (f_receive_data) cfg->get_pointer("DeviceProxy_Callback::receive_data");
-	toString_cb = (f_toString) cfg->get_pointer("DeviceProxy_Callback::toString");
+	void *vf = cfg->get_pointer("DeviceProxy_Callback::connect");
+	connect_cb = *reinterpret_cast<f_connect*>(&vf);
+	vf = cfg->get_pointer("DeviceProxy_Callback::disconnect");
+	disconnect_cb = *reinterpret_cast<f_disconnect*>(&vf);
+	vf = cfg->get_pointer("DeviceProxy_Callback::reset");
+	reset_cb = *reinterpret_cast<f_reset*>(&vf);
+	vf = cfg->get_pointer("DeviceProxy_Callback::control_request");
+	control_request_cb = *reinterpret_cast<f_control_request*>(&vf);
+	vf = cfg->get_pointer("DeviceProxy_Callback::send_data");
+	send_data_cb = *reinterpret_cast<f_send_data*>(&vf);
+	vf = cfg->get_pointer("DeviceProxy_Callback::receive_data");
+	receive_data_cb = *reinterpret_cast<f_receive_data*>(&vf);
+	vf = cfg->get_pointer("DeviceProxy_Callback::toString");
+	toString_cb = *reinterpret_cast<f_toString*>(&vf);
 	p_is_connected = false;
 }
 
