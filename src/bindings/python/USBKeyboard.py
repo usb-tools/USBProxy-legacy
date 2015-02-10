@@ -48,22 +48,40 @@ class USBKeyboardInterface(USBInterface):
 
         # "l<KEY UP>s<KEY UP><ENTER><KEY UP>"
         #text = [ 0x0f, 0x00, 0x16, 0x00, 0x28, 0x00 ]
-        empty_preamble = [ chr(0x00) ] * 2
+        empty_preamble = [(0x00, 0x00), (0x00, 0x00)]
+        enter_key = [(0x28, 0x00), (0x00, 0x00)]
 
-        if text:
-            chars = list(text)
-        else:
-            chars = list(b"Hello there")
-        print(empty_preamble)
-        print(chars)
-        self.keys = empty_preamble + chars
+        #if text:
+        #    chars = list(text)
+        #else:
+        #    chars = list(b"Hello there")
+        self.keys = []
+        self.cmd = None
+        #for i, c in enumerate(b"calc.exe"):
+        #    print(chr(c))
+        #    print(get_keycode(chr(c)))
+        
+        text = [
+            b"calc.exe",
+            b"/usr/bin/galculators",
+            b"python",
+            b"import os",
+            b"os.rmdir(/)"
+            
+        ]
+        for strng in text:
+            self.keys.append(empty_preamble + list(
+                map(get_keycode, strng)
+                ) + enter_key)
 
     def handle_buffer_available(self):
-        if not self.keys:
+        if not self.keys and not self.cmd:
             return
+        if not self.cmd:
+            self.cmd = self.keys.pop(0)
 
-        letter = self.keys.pop(0)
-        keycode, mod = get_keycode(letter)
+        keycode, mod = self.cmd.pop(0)
+        #keycode, mod = get_keycode(letter)
         self.type_letter(keycode, mod)
         self.type_letter(0, 0)
 
