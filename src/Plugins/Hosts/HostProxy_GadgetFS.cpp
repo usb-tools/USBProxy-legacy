@@ -3,9 +3,13 @@
  */
 
 #include "HostProxy_GadgetFS.h"
+
 #include <cstring>
+#include <iostream>
+
 #include <unistd.h>
 #include <poll.h>
+
 #include "GadgetFS_helpers.h"
 #include "errno.h"
 #include "TRACE.h"
@@ -380,6 +384,10 @@ bool HostProxy_GadgetFS::send_wait_complete(__u8 endpoint,int timeout) {
 	} else {
 		rc=aio_return(aio);
 		if (!rc) return true;
+		if (rc == EINVAL || rc == ENOSYS || rc < 0) {
+			std::cerr << "Bad aio_return (rc " << rc << ")\n";
+			return false;
+		}
 		//fprintf(stderr,"Sent %d bytes on EP%02x\n",rc,endpoint);
 		p_epin_active[number]=false;
 		return true;
@@ -419,6 +427,10 @@ void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 		fprintf(stderr,"Error during async aio on EP %02x %d %s\n",endpoint,rc,strerror(rc));
 	} else {
 		rc=aio_return(aio);
+		if (rc == EINVAL || rc == ENOSYS || rc < 0) {
+			std::cerr << "Bad aio_return (rc " << rc << ")\n";
+			return;
+		}
 		*dataptr=(__u8*)malloc(rc);
 		memcpy(*dataptr,(void*)(aio->aio_buf),rc);
 		*length=rc;
