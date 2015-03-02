@@ -170,7 +170,7 @@ int open_gadget(const char * gadget_filename ) {
 
 	char path[256];
 	int ret;
-	sprintf(path, "%s/%s", gadgetfs_path, filename);
+	snprintf(path, sizeof(path), "%s/%s", gadgetfs_path, filename);
 
 	ret = open(path, O_CLOEXEC | O_RDWR);
 
@@ -255,7 +255,7 @@ int open_endpoint(__u8 epAddress, const char * gadget_filename) {
 	}
 
 	char path[256];
-	sprintf(path, "%s/ep%d%s", gadgetfs_path, number,direction);
+	snprintf(path, sizeof(path), "%s/ep%d%s", gadgetfs_path, number,direction);
 
 	return open(path, O_CLOEXEC | O_RDWR);
 }
