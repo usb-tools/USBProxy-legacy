@@ -44,7 +44,7 @@ src_compile() {
 }
 
 src_install() {
-    dodoc doc/inode.c.patch README.md
+    dodoc doc/inode.c.patch README.md doc/gadgetfs_kernel_above_3.15.patch
     newdoc doc/README.md README_kernel.md
 	cmake-utils_src_install
 }
