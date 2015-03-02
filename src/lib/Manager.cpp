@@ -8,7 +8,6 @@
 
 #include <unistd.h>
 #include <signal.h>
-#include <pthread.h>
 #include <errno.h>
 
 #include "Manager.h"
@@ -31,7 +30,6 @@
 #include "Injector.h"
 
 Manager::Manager() {
-	haltSignal=0;
 	status=USBM_IDLE;
 	plugin_manager = new PluginManager();
 	deviceProxy=NULL;
@@ -41,21 +39,16 @@ Manager::Manager() {
 	filterCount=0;
 	injectors=NULL;
 	injectorCount=0;
-	injectorThreads=NULL;
 
 	int i;
 	for(i=0;i<16;i++) {
 		in_endpoints[i]=NULL;
 		in_readers[i]=NULL;
 		in_writers[i]=NULL;
-		in_readerThreads[i]=0;
-		in_writerThreads[i]=0;
 
 		out_endpoints[i]=NULL;
 		out_readers[i]=NULL;
 		out_writers[i]=NULL;
-		out_readerThreads[i]=0;
-		out_writerThreads[i]=0;
 	}
 }
 
@@ -71,52 +64,48 @@ Manager::~Manager() {
 
 	int i;
 	for (i=0;i<16;i++) {
-		if (in_readerThreads[i]) {
-			pthread_cancel(in_readerThreads[i]);
-			in_readerThreads[i]=0;
-		}
 		if (in_readers[i]) {
+			if (in_readerThreads[i].joinable()) {
+				in_readers[i]->please_stop();
+				in_readerThreads[i].join();
+			}
 			delete(in_readers[i]);
 			in_readers[i]=NULL;
 		}
 
-		if (in_writerThreads[i]) {
-			pthread_cancel(in_writerThreads[i]);
-			in_writerThreads[i]=0;
-		}
 		if (in_writers[i]) {
+			if (in_writerThreads[i].joinable()) {
+				in_writers[i]->please_stop();
+				in_writerThreads[i].join();
+			}
 			delete(in_writers[i]);
 			in_writers[i]=NULL;
 		}
 
-		if (out_readerThreads[i]) {
-			pthread_cancel(out_readerThreads[i]);
-			out_readerThreads[i]=0;
-		}
 		if (out_readers[i]) {
+			if (out_readerThreads[i].joinable()) {
+				out_readers[i]->please_stop();
+				out_readerThreads[i].join();
+			}
 			delete(out_readers[i]);
 			out_readers[i]=NULL;
 		}
 
-		if (out_writerThreads[i]) {
-			pthread_cancel(out_writerThreads[i]);
-			out_writerThreads[i]=0;
-		}
 		if (out_writers[i]) {
+			if (out_writerThreads[i].joinable()) {
+				out_writers[i]->please_stop();
+				out_writerThreads[i].join();
+			}
 			delete(out_writers[i]);
 			out_writers[i]=NULL;
 		}
 	}
-	if (injectorThreads) {
-		for (i=0;i<injectorCount;i++) {
-			if (injectorThreads[i]) {
-				pthread_cancel(injectorThreads[i]);
-				injectorThreads[i]=0;
-			}
-		}
-		free(injectorThreads);
-		injectorThreads=NULL;
-	}
+	for (i = 0; i < injectorCount; ++i)
+		if (injectors[i])
+			injectors[i]->please_stop();
+	for (auto& i_thread: injectorThreads)
+		i_thread.join();
+	injectorThreads.clear();
 	if (injectors) {
 		free(injectors);
 		injectors=NULL;
@@ -238,7 +227,6 @@ inline std::string shex(unsigned num)
 void Manager::start_control_relaying(){
 	clean_mqueue();
 
-	haltSignal=SIGRTMIN;
 	//TODO this should exit immediately if already started, and wait (somehow) is stopping or setting up
 	status=USBM_SETUP;
 
@@ -342,11 +330,10 @@ void Manager::start_control_relaying(){
 
 	//create injector threads
 	if (injectorCount) {
-		injectorThreads=(pthread_t *)calloc(injectorCount,sizeof(pthread_t));
+		injectorThreads.reserve(injectorCount);
 		for(i=0;i<injectorCount;i++) {
 			if (status!=USBM_SETUP) {stop_relaying();return;}
-			injectors[i]->set_haltsignal(haltSignal);
-			pthread_create(&injectorThreads[i],NULL,&Injector::listen_helper,injectors[i]);
+			injectorThreads.push_back(std::thread(&Injector::listen, injectors[i]));
 		}
 	}
 
@@ -363,13 +350,11 @@ void Manager::start_control_relaying(){
 	}
 
 	if (out_readers[0]) {
-		out_readers[0]->set_haltsignal(haltSignal);
-		pthread_create(&out_readerThreads[0],NULL,&RelayReader::relay_read_helper,out_readers[0]);
+		out_readerThreads[0] = std::thread(&RelayReader::relay_read, out_readers[0]);
 	}
 	if (status!=USBM_SETUP) {status=USBM_SETUP_ABORT;stop_relaying();return;}
 	if (out_writers[0]) {
-		out_writers[0]->set_haltsignal(haltSignal);
-		pthread_create(&out_writerThreads[i],NULL,&RelayWriter::relay_write_helper,out_writers[0]);
+		out_writerThreads[0] = std::thread(&RelayWriter::relay_write, out_writers[0]);
 	}
 	if (status!=USBM_SETUP) {stop_relaying();return;}
 	status=USBM_RELAYING;
@@ -491,20 +476,16 @@ void Manager::start_data_relaying() {
 
 	for(i=1;i<16;i++) {
 		if (in_readers[i]) {
-			in_readers[i]->set_haltsignal(haltSignal);
-			pthread_create(&in_readerThreads[i],NULL,&RelayReader::relay_read_helper,in_readers[i]);
+			in_readerThreads[i] = std::thread(&RelayReader::relay_read, in_readers[i]);
 		}
 		if (in_writers[i]) {
-			in_writers[i]->set_haltsignal(haltSignal);
-			pthread_create(&in_writerThreads[i],NULL,&RelayWriter::relay_write_helper,in_writers[i]);
+			in_writerThreads[i] = std::thread(&RelayWriter::relay_write, in_writers[i]);
 		}
 		if (out_readers[i]) {
-			out_readers[i]->set_haltsignal(haltSignal);
-			pthread_create(&out_readerThreads[i],NULL,&RelayReader::relay_read_helper,out_readers[i]);
+			out_readerThreads[i] = std::thread(&RelayReader::relay_read, out_readers[i]);
 		}
 		if (out_writers[i]) {
-			out_writers[i]->set_haltsignal(haltSignal);
-			pthread_create(&out_writerThreads[i],NULL,&RelayWriter::relay_write_helper,out_writers[i]);
+			out_writerThreads[i] = std::thread(&RelayWriter::relay_write, out_writers[i]);
 		}
 	}
 }
@@ -517,45 +498,36 @@ void Manager::stop_relaying(){
 	int i;
 	//signal all injector threads to stop ASAP
 	for(i=0;i<injectorCount;i++) {
-		if (injectorThreads && injectorThreads[i]) pthread_kill(injectorThreads[i],haltSignal);
+		if (injectors[i]) injectors[i]->please_stop();
 	}
 
 	//signal all relayer threads to stop ASAP
 	for(i=0;i<16;i++) {
-		if (in_readerThreads[i]) {pthread_kill(in_readerThreads[i],haltSignal);}
-		if (in_writerThreads[i]) {pthread_kill(in_writerThreads[i],haltSignal);}
-		if (out_readerThreads[i]) {pthread_kill(out_readerThreads[i],haltSignal);}
-		if (out_writerThreads[i]) {pthread_kill(out_writerThreads[i],haltSignal);}
+		if (in_readerThreads[i].joinable()) {in_readers[i]->please_stop();}
+		if (in_writerThreads[i].joinable()) {in_writers[i]->please_stop();}
+		if (out_readerThreads[i].joinable()) {out_readers[i]->please_stop();}
+		if (out_writerThreads[i].joinable()) {out_writers[i]->please_stop();}
 	}
 
 	//wait for all injector threads to stop
-	if (injectorThreads) {
-		for(i=0;i<injectorCount;i++) {
-			if (injectorThreads[i]) {
-				pthread_join(injectorThreads[i],NULL);
-				injectorThreads[i]=0;
-			}
-		}
-		free(injectorThreads);
-		injectorThreads=NULL;
-	}
+	for (auto& i_thread: injectorThreads)
+		i_thread.join();
+	injectorThreads.clear();
 
 
 	//wait for all relayer threads to stop, then delete relayer objects
 	for(i=0;i<16;i++) {
 		if (in_endpoints[i]) {in_endpoints[i]=NULL;}
 		if (in_readers[i]) {
-			if (in_readerThreads[i]) {
-				pthread_join(in_readerThreads[i],NULL);
-				in_readerThreads[i]=0;
+			if (in_readerThreads[i].joinable()) {
+				in_readerThreads[i].join();
 			}
 			delete(in_readers[i]);
 			in_readers[i]=NULL;
 		}
 		if (in_writers[i]) {
-			if (in_writerThreads[i]) {
-				pthread_join(in_writerThreads[i],NULL);
-				in_writerThreads[i]=0;
+			if (in_writerThreads[i].joinable()) {
+				in_writerThreads[i].join();
 			}
 			delete(in_writers[i]);
 			in_writers[i]=NULL;
@@ -563,17 +535,15 @@ void Manager::stop_relaying(){
 
 		if (out_endpoints[i]) {out_endpoints[i]=NULL;}
 		if (out_readers[i]) {
-			if (out_readerThreads[i]) {
-				pthread_join(out_readerThreads[i],NULL);
-				out_readerThreads[i]=0;
+			if (out_readerThreads[i].joinable()) {
+				out_readerThreads[i].join();
 			}
 			delete(out_readers[i]);
 			out_readers[i]=NULL;
 		}
 		if (out_writers[i]) {
-			if (out_writerThreads[i]) {
-				pthread_join(out_writerThreads[i],NULL);
-				out_writerThreads[i]=0;
+			if (out_writerThreads[i].joinable()) {
+				out_writerThreads[i].join();
 			}
 			delete(out_writers[i]);
 			out_writers[i]=NULL;

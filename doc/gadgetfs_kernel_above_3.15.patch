@@ -1,0 +1,50 @@
+From 0cc9769e3d091be09c6de823e59686be0ca28e04 Mon Sep 17 00:00:00 2001
+From: Alexander Holler <holler@ahsoftware.de>
+Date: Mon, 2 Mar 2015 10:28:36 +0100
+Subject: [PATCH] usb: gadgetfs: fix none working read/write since commit
+ 7f7f25e8
+
+Commit 7f7f25e82d54870df24d415a7007fbd327da027b broke dynamic changing
+of file_operations, in detail adding operations for read or write didn't
+work anymore.
+
+Fix this by setting the needed flags to file->f_mode when gadgetfs changed
+the file_operations.
+
+It's still as racy as it has always been the case, but at least it now
+works like before the above commit.
+
+Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+---
+ drivers/usb/gadget/legacy/inode.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/usb/gadget/legacy/inode.c b/drivers/usb/gadget/legacy/inode.c
+index 0e16ffa..341481a 100644
+--- a/drivers/usb/gadget/legacy/inode.c
++++ b/drivers/usb/gadget/legacy/inode.c
+@@ -860,6 +860,10 @@ ep_config (struct file *fd, const char __user *buf, size_t len, loff_t *ptr)
+ 	}
+ 	if (value == 0) {
+ 		fd->f_op = &ep_io_operations;
++		if ((fd->f_mode & FMODE_READ))
++			fd->f_mode |= FMODE_CAN_READ;
++		if ((fd->f_mode & FMODE_WRITE))
++			fd->f_mode |= FMODE_CAN_WRITE;
+ 		value = length;
+ 	}
+ gone:
+@@ -1931,6 +1935,10 @@ dev_config (struct file *fd, const char __user *buf, size_t len, loff_t *ptr)
+ 		 * kick in after the ep0 descriptor is closed.
+ 		 */
+ 		fd->f_op = &ep0_io_operations;
++		if ((fd->f_mode & FMODE_READ))
++			fd->f_mode |= FMODE_CAN_READ;
++		if ((fd->f_mode & FMODE_WRITE))
++			fd->f_mode |= FMODE_CAN_WRITE;
+ 		value = len;
+ 	}
+ 	return value;
+-- 
+2.0.5
+

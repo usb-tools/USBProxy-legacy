@@ -22,7 +22,6 @@
 #include <USBProxy/ConfigParser.h>
 #include <USBProxy/DefinitionErrors.h>
 #include <USBProxy/DeviceQualifier.h>
-#include <USBProxy/HaltSignal.h>
 #include <USBProxy/Injector.h>
 #include <USBProxy/PacketFilter.h>
 #include <USBProxy/PluginManager.h>

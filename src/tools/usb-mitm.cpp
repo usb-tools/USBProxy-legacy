@@ -5,7 +5,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <pthread.h>
 #include <signal.h>
 #include <memory.h>
 
@@ -79,7 +78,6 @@ extern "C" int main(int argc, char **argv)
 	char *host;
 	bool client=false, server=false, device_set=false, host_set=false;
 	FILE *keylog_output_file = NULL;
-	fprintf(stderr,"SIGRTMIN: %d\n",SIGRTMIN);
 
 	struct sigaction action;
 	memset(&action, 0, sizeof(struct sigaction));

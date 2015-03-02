@@ -32,7 +32,6 @@ set(cpp_sources
 set(c_sources
 	${CMAKE_CURRENT_SOURCE_DIR}/FDInfo.c
 	${CMAKE_CURRENT_SOURCE_DIR}/get_tid.c
-	${CMAKE_CURRENT_SOURCE_DIR}/HaltSignal.c
 	${CMAKE_CURRENT_SOURCE_DIR}/mqueue_helpers.c
 	CACHE INTERNAL "List of C sources")
 
@@ -40,7 +39,6 @@ set(headers
 	${CMAKE_CURRENT_SOURCE_DIR}/ConfigParser.h
 	${CMAKE_CURRENT_SOURCE_DIR}/DefinitionErrors.h
 	${CMAKE_CURRENT_SOURCE_DIR}/DeviceQualifier.h
-	${CMAKE_CURRENT_SOURCE_DIR}/HaltSignal.h
 	${CMAKE_CURRENT_SOURCE_DIR}/Injector.h
 	${CMAKE_CURRENT_SOURCE_DIR}/PacketFilter.h
 	${CMAKE_CURRENT_SOURCE_DIR}/PluginManager.h

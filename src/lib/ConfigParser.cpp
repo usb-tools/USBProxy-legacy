@@ -85,14 +85,11 @@ void ConfigParser::set(std::string key, std::string value) {
 	strings[key] = value;
 }
 
-std::string ConfigParser::get(std::string key) {
-    // Empty string to return
-    std::string errstr;
-
-    std::map<std::string, std::string>::iterator cmitr = strings.find(key);
+std::string ConfigParser::get(const std::string& key) {
+    auto cmitr = strings.find(key);
     // No such key
     if (cmitr == strings.end())
-        return errstr;
+        return "";
 
     return cmitr->second;
 }

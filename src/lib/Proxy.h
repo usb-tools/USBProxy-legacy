@@ -16,6 +16,7 @@ class Proxy {
 public:
 	static const __u8 plugin_type=0;
 
+	Proxy() {}
 	virtual ~Proxy() {}
 
 	virtual void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length)=0;
@@ -23,6 +24,17 @@ public:
 	virtual void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length,int timeout=500)=0;
 	virtual void setConfig(Configuration* fs_cfg,Configuration* hs_cfg,bool hs)=0;
 	virtual char* toString() {return NULL;}
+
+private:
+        /// \brief Disallow copying.
+        ///
+        /// This method is not implemented (besides beeing private).
+        Proxy(const Proxy&);
+
+        /// \brief Disallow assignment.
+        ///
+        /// This method is not implemented (besides beeing private).
+        void operator= (const Proxy&);
 };
 
 #endif /* USBPROXY_PROXY_H */
