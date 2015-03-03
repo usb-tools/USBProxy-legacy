@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <linux/usb/ch9.h>
 
+#include "SafeQueue.hpp"
+
 class Packet {
 public:
 	__u8	bEndpoint;
@@ -21,6 +23,8 @@ public:
 	Packet(__u8 _endpoint,__u8* _data,__u16 _length,bool _filter=true) : bEndpoint(_endpoint),wLength(_length),filter(_filter),transmit(true),data(_data) {}
 	virtual ~Packet() {if (data) {free(data);data=NULL;}}
 };
+typedef std::shared_ptr<Packet> PacketPtr;
+typedef SafeQueue<PacketPtr> PacketQueue;
 
 class SetupPacket : public Packet {
 public:
