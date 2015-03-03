@@ -45,8 +45,8 @@ public:
 	virtual void filter_packet(Packet* packet) {}
 	virtual void filter_setup_packet(SetupPacket* packet,bool direction_out) {}
 
-	bool test_packet(Packet* packet);
-	bool test_setup_packet(SetupPacket* packet,bool direction_out);
+	bool test_packet(const Packet* packet);
+	bool test_setup_packet(const SetupPacket* packet,bool direction_out);
 	void set_packet_filter(__u8 header[4],__u8 mask[4]);
 	virtual char* toString() {return (char*)"Filter";}
 };

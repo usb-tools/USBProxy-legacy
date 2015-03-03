@@ -14,8 +14,8 @@ void PacketFilter::set_packet_filter(__u8 header[8],__u8 mask[8]) {
 	}
 }
 
-bool PacketFilter::test_packet(Packet* packet) {
-	__u8* data;
+bool PacketFilter::test_packet(const Packet* packet) {
+	const __u8* data;
 	if (packet->wLength<packetHeaderMaskLength) {return false;}
 	data=packet->data;
 	int i;
@@ -25,9 +25,9 @@ bool PacketFilter::test_packet(Packet* packet) {
 	return true;
 }
 
-bool PacketFilter::test_setup_packet(SetupPacket* packet,bool direction_out) {
+bool PacketFilter::test_setup_packet(const SetupPacket* packet,bool direction_out) {
 	if (!((packetHeaderSetupOut || (!direction_out)) || (packetHeaderSetupIn || direction_out))) return false;
-	__u8* data;
+	const __u8* data;
 	data=(__u8*)&(packet->ctrl_req);
 	int i;
 	for(i=0;i<packetHeaderMaskLength;i++) {

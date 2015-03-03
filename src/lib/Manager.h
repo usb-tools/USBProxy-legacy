@@ -10,6 +10,8 @@
 
 #include <linux/usb/ch9.h>
 
+#include "Packet.h"
+
 class PluginManager;
 class ConfigParser;
 
@@ -20,11 +22,10 @@ class RelayWriter;
 class Device;
 class Endpoint;
 
-struct Packet;
-struct SetupPacket;
 class DeviceProxy;
 class HostProxy;
 class PacketFilter;
+
 
 enum Manager_status {
 	USBM_IDLE=0,
@@ -52,16 +53,20 @@ private:
 	std::vector<std::thread> injectorThreads;
 
 	Endpoint* in_endpoints[16];
+	PacketQueue* in_queues[16];
 	RelayReader* in_readers[16];
 	RelayWriter* in_writers[16];
 	std::thread in_readerThreads[16];
 	std::thread in_writerThreads[16];
 
 	Endpoint* out_endpoints[16];
+	PacketQueue* out_queues[16];
 	RelayReader* out_readers[16];
 	RelayWriter* out_writers[16];
 	std::thread out_readerThreads[16];
 	std::thread out_writerThreads[16];
+	PacketQueue _readersend;
+	PacketQueue _writersend;
 
 	void start_data_relaying();
 
