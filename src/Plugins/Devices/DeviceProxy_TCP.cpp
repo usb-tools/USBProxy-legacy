@@ -13,8 +13,6 @@
 #include "Interface.h"
 #include "Endpoint.h"
 
-int DeviceProxy_TCP::debugLevel = 0;
-
 DeviceProxy_TCP::DeviceProxy_TCP(const char* address) {
 	p_is_connected = false;
 }
@@ -22,6 +20,8 @@ DeviceProxy_TCP::DeviceProxy_TCP(const char* address) {
 /* FIXME pull settings from config parser */
 DeviceProxy_TCP::DeviceProxy_TCP(ConfigParser *cfg) {
 	network = new TCP_Helper(NULL);
+	if (network)
+		network->debugLevel = debugLevel;
 	p_is_connected = false;
 }
 

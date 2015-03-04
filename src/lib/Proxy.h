@@ -16,7 +16,9 @@ class Proxy {
 public:
 	static const __u8 plugin_type=0;
 
-	Proxy() {}
+	Proxy()
+		: debugLevel(0)
+	{}
 	virtual ~Proxy() {}
 
 	virtual void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length)=0;
@@ -24,6 +26,7 @@ public:
 	virtual void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length,int timeout=500)=0;
 	virtual void setConfig(Configuration* fs_cfg,Configuration* hs_cfg,bool hs)=0;
 	virtual char* toString() {return NULL;}
+	unsigned debugLevel;
 
 private:
         /// \brief Disallow copying.

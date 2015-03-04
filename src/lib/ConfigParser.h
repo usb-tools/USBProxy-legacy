@@ -17,7 +17,7 @@ private:
 	std::map<std::string, void*> pointers;
 
 public:
-	static int debugLevel;
+	unsigned debugLevel;
 	ConfigParser();
 	void parse_file(char* filename);
 	

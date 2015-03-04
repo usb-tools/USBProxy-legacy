@@ -20,8 +20,6 @@
 #include "Interface.h"
 #include "Endpoint.h"
 
-int HostProxy_GadgetFS::debugLevel=0;
-
 HostProxy_GadgetFS::HostProxy_GadgetFS(ConfigParser *cfg) {
 	mount_gadget();
 	p_is_connected = false;

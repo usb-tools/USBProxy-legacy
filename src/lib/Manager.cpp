@@ -27,7 +27,9 @@
 #include "RelayWriter.h"
 #include "Injector.h"
 
-Manager::Manager() {
+Manager::Manager(unsigned debug_level)
+	: _debug_level(debug_level)
+{
 	status=USBM_IDLE;
 	plugin_manager = new PluginManager();
 	deviceProxy=NULL;
@@ -113,7 +115,11 @@ Manager::~Manager() {
 void Manager::load_plugins(ConfigParser *cfg) {
 	plugin_manager->load_plugins(cfg);
 	deviceProxy = plugin_manager->device_proxy;
+	if (deviceProxy)
+		deviceProxy->debugLevel = _debug_level;
 	hostProxy = plugin_manager->host_proxy;
+	if (hostProxy)
+		hostProxy->debugLevel = _debug_level;
 	for(std::vector<PacketFilter*>::iterator it = plugin_manager->filters.begin();
 		it != plugin_manager->filters.end(); ++it) {
 		add_filter(*it);

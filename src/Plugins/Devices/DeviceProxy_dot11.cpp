@@ -16,8 +16,6 @@
 // Find the right place to pull this in from
 #define cpu_to_le16(x) (x)
 
-int DeviceProxy_dot11::debugLevel = 1;
-
 #define STRING_MANUFACTURER 1
 #define STRING_PRODUCT      2
 #define STRING_SERIAL       3

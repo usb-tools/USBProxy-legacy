@@ -24,7 +24,6 @@ private:
 	bool desired_hubs;
 
 public:
-	static int debugLevel;
 	DeviceProxy_LibUSB(int vendorId=LIBUSB_HOTPLUG_MATCH_ANY,int productId=LIBUSB_HOTPLUG_MATCH_ANY,bool includeHubs=false);
 	DeviceProxy_LibUSB(ConfigParser *cfg);
 	~DeviceProxy_LibUSB();

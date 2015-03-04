@@ -69,9 +69,10 @@ private:
 	PacketQueue _writersend;
 
 	void start_data_relaying();
+	unsigned _debug_level;
 
 public:
-	Manager();
+	Manager(unsigned debug_level);
 	virtual ~Manager();
 
 	void load_plugins(ConfigParser *cfg);
