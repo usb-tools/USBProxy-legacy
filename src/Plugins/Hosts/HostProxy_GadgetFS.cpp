@@ -20,8 +20,6 @@
 #include "Interface.h"
 #include "Endpoint.h"
 
-int HostProxy_GadgetFS::debugLevel=0;
-
 HostProxy_GadgetFS::HostProxy_GadgetFS(ConfigParser *cfg) {
 	mount_gadget();
 	p_is_connected = false;
@@ -38,35 +36,13 @@ HostProxy_GadgetFS::HostProxy_GadgetFS(ConfigParser *cfg) {
 }
 
 HostProxy_GadgetFS::~HostProxy_GadgetFS() {
-	if (p_device_file) {
-		close(p_device_file);
-		p_device_file=0;
-	}
-	int i;
-	for (i=0;i<16;i++) {
-		if (p_epin_async[i]) {
-			aiocb* aio=p_epin_async[i];
-			if (p_epin_active[i]) {aio_cancel(aio->aio_fildes,aio);}
-			if (aio->aio_fildes) {close(aio->aio_fildes);aio->aio_fildes=0;}
-			if (aio->aio_buf) {free((void*)(aio->aio_buf));aio->aio_buf=NULL;}
-			delete(aio);
-			p_epin_async[i]=NULL;
-		}
-		if (p_epout_async[i]) {
-			aiocb* aio=p_epout_async[i];
-			aio_cancel(aio->aio_fildes,aio);
-			if (aio->aio_fildes) {close(aio->aio_fildes);aio->aio_fildes=0;}
-			if (aio->aio_buf) {free((void*)(aio->aio_buf));aio->aio_buf=NULL;}
-			delete(aio);
-			p_epout_async[i]=NULL;
-		}
-	}
+	if (p_is_connected)
+		disconnect();
 	if (descriptor) {
 		free(descriptor);
 		descriptor=NULL;
 		descriptorLength=0;
 	}
-	unmount_gadget();
 }
 
 int HostProxy_GadgetFS::generate_descriptor(Device* device) {

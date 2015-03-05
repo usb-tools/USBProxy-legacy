@@ -36,10 +36,9 @@ std::string StrStrip(std::string in_str) {
     return in_str.substr(start, end-start+1);
 }
 
-int ConfigParser::debugLevel = 1;
-
-ConfigParser::ConfigParser() {
-}
+ConfigParser::ConfigParser()
+	: debugLevel(0)
+{}
 
 /* Very much inspired by Kismet's config parser */
 void ConfigParser::parse_file(char* filename) {

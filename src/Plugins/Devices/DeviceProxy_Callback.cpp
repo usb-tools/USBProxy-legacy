@@ -16,8 +16,6 @@
 
 #define BUF_LEN 100
 
-int DeviceProxy_Callback::debugLevel = 2;
-
 DeviceProxy_Callback::DeviceProxy_Callback(ConfigParser *cfg) {
 	void *vf = cfg->get_pointer("DeviceProxy_Callback::connect");
 	connect_cb = *reinterpret_cast<f_connect*>(&vf);

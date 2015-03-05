@@ -43,7 +43,6 @@ private:
 	f_toString toString_cb;
 
 public:
-	static int debugLevel;
 	DeviceProxy_Callback(ConfigParser *cfg);
 	~DeviceProxy_Callback();
 

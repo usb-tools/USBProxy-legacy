@@ -10,7 +10,7 @@ ConfigParser *cfg;
 
 API void usbproxy_init() {
 	cfg = new ConfigParser();
-    manager = new Manager();
+    manager = new Manager(0);
 }
 
 API void set_config(char *key, char *value) {

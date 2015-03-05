@@ -12,12 +12,10 @@
 
 #include "Manager.h"
 #include "TRACE.h"
-#include "mqueue_helpers.h"
 
 #include "Device.h"
 #include "DeviceQualifier.h"
 #include "Endpoint.h"
-#include "Packet.h"
 
 #include "PluginManager.h"
 #include "ConfigParser.h"
@@ -29,7 +27,9 @@
 #include "RelayWriter.h"
 #include "Injector.h"
 
-Manager::Manager() {
+Manager::Manager(unsigned debug_level)
+	: _debug_level(debug_level)
+{
 	status=USBM_IDLE;
 	plugin_manager = new PluginManager();
 	deviceProxy=NULL;
@@ -115,7 +115,11 @@ Manager::~Manager() {
 void Manager::load_plugins(ConfigParser *cfg) {
 	plugin_manager->load_plugins(cfg);
 	deviceProxy = plugin_manager->device_proxy;
+	if (deviceProxy)
+		deviceProxy->debugLevel = _debug_level;
 	hostProxy = plugin_manager->host_proxy;
+	if (hostProxy)
+		hostProxy->debugLevel = _debug_level;
 	for(std::vector<PacketFilter*>::iterator it = plugin_manager->filters.begin();
 		it != plugin_manager->filters.end(); ++it) {
 		add_filter(*it);
@@ -225,7 +229,6 @@ inline std::string shex(unsigned num)
 }
 
 void Manager::start_control_relaying(){
-	clean_mqueue();
 
 	//TODO this should exit immediately if already started, and wait (somehow) is stopping or setting up
 	status=USBM_SETUP;
@@ -266,28 +269,10 @@ void Manager::start_control_relaying(){
 	out_endpoints[0]=new Endpoint((Interface*)NULL,&desc_ep0);
 
 	if (status!=USBM_SETUP) {stop_relaying();return;}
-	//setup EP0 message queues
-	std::string mqname;
-	struct mq_attr mqa;
-	mqa.mq_maxmsg=1;
-	mqa.mq_msgsize=4;
-	mqname = "/USBProxy(" + std::to_string(getpid()) + ")-00-EP";
-	mqd_t mq_readersend=mq_open(mqname.c_str(),O_RDWR | O_CREAT,S_IRWXU,&mqa);
-	if (mq_readersend == -1) {
-		std::cerr << "Error creating message queue '" << mqname << "'!\n";
-		exit(1);
-	}
-	mqname = "/USBProxy(" + std::to_string(getpid()) + ")-80-EP";
-	mqd_t mq_writersend=mq_open(mqname.c_str(),O_RDWR | O_CREAT,S_IRWXU,&mqa);
-	if (mq_writersend == -1) {
-		std::cerr << "Error creating message queue '" << mqname << "'!\n";
-		exit(1);
-	}
 
-	if (status!=USBM_SETUP) {stop_relaying();return;}
 	//setup EP0 Reader & Writer
-	out_readers[0]=new RelayReader(out_endpoints[0],hostProxy,mq_readersend,mq_writersend);
-	out_writers[0]=new RelayWriter(out_endpoints[0],deviceProxy,this,mq_readersend,mq_writersend);
+	out_readers[0]=new RelayReader(out_endpoints[0],hostProxy, _readersend, _writersend);
+	out_writers[0]=new RelayWriter(out_endpoints[0],deviceProxy,this, _readersend, _writersend);
 
 	//apply filters to relayers
 	int i;
@@ -304,11 +289,8 @@ void Manager::start_control_relaying(){
 	for(i=0;i<injectorCount;i++) {
 		if (status!=USBM_SETUP) {stop_relaying();return;}
 		if (injectors[i]->device.test(device)) {
-			std::string mqname;
-			struct mq_attr mqa;
-			mqa.mq_maxmsg=1;
-			mqa.mq_msgsize=4;
 			if (out_endpoints[0] && injectors[i]->endpoint.test(out_endpoints[0])) {
+/*
 				mqname = "/USBProxy(" + std::to_string(getpid()) + ")-00-" + shex(i);
 				mqd_t mq_out=mq_open(mqname.c_str(),O_RDWR | O_CREAT,S_IRWXU,&mqa);
 				if (mq_out == -1) {
@@ -321,9 +303,10 @@ void Manager::start_control_relaying(){
 					std::cerr << "Error creating message queue '" << mqname << "'!\n";
 					exit(1);
 				}
-				injectors[i]->set_queue(0x80,mq_in);
-				injectors[i]->set_queue(0,mq_out);
-				out_writers[0]->add_setup_queue(mq_out,mq_in);
+*/
+				// injectors[i]->set_queue(0x80,mq_in); // TODO
+				//out_writers[0]->set_send_queue(mq_in); // TODO
+				//injectors[i]->set_queue(0, out_writers[0]->get_recv_queue()); // TODO
 			}
 		}
 	}
@@ -382,8 +365,10 @@ void Manager::start_data_relaying() {
 				const usb_endpoint_descriptor* epd=ep->get_descriptor();
 				if (epd->bEndpointAddress & 0x80) { //IN EP
 					in_endpoints[epd->bEndpointAddress&0x0f]=ep;
+					in_queues[epd->bEndpointAddress&0x0f] = new PacketQueue;
 				} else { //OUT EP
 					out_endpoints[epd->bEndpointAddress&0x0f]=ep;
+					out_queues[epd->bEndpointAddress&0x0f] = new PacketQueue;
 				}
 			}
 		}
@@ -392,34 +377,19 @@ void Manager::start_data_relaying() {
 
 	int i,j;
 	for (i=1;i<16;i++) {
-		std::string mqname;
-		struct mq_attr mqa;
-		mqa.mq_maxmsg=1;
-		mqa.mq_msgsize=4;
-
 		if (in_endpoints[i]) {
-			mqname = "/USBProxy(" + std::to_string(getpid()) + ")-" + shex(i|0x80) + "-EP";
-			mqd_t mq=mq_open(mqname.c_str(),O_RDWR | O_CREAT,S_IRWXU,&mqa);
-			if (mq == -1) {
-				std::cerr << "Error creating message queue '" << mqname << "'!\n";
-				exit(1);
-			}
 			//RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
-			in_readers[i]=new RelayReader(in_endpoints[i],(Proxy*)deviceProxy,mq);
+			in_readers[i]=new RelayReader(in_endpoints[i],(Proxy*)deviceProxy, *in_queues[i]);
 			//RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
-			in_writers[i]=new RelayWriter(in_endpoints[i],(Proxy*)hostProxy,mq);
+			//in_writers[i]=new RelayWriter(in_endpoints[i],(Proxy*)hostProxy,mq);
+			in_writers[i]=new RelayWriter(in_endpoints[i],(Proxy*)hostProxy, *in_queues[i]);
 		}
 		if (out_endpoints[i]) {
-			mqname = "/USBProxy(" + std::to_string(getpid()) + ")-" + shex(i) + "-EP";
-			mqd_t mq=mq_open(mqname.c_str(),O_RDWR | O_CREAT,S_IRWXU,&mqa);
-			if (mq == -1) {
-				std::cerr << "Error creating message queue '" << mqname << "'!\n";
-				exit(1);
-			}
 			//RelayReader(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
-			out_readers[i]=new RelayReader(out_endpoints[i],(Proxy*)hostProxy,mq);
+			//out_readers[i]=new RelayReader(out_endpoints[i],(Proxy*)hostProxy,mq);
+			out_readers[i]=new RelayReader(out_endpoints[i],(Proxy*)hostProxy, *out_queues[i]);
 			//RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _queue);
-			out_writers[i]=new RelayWriter(out_endpoints[i],(Proxy*)deviceProxy,mq);
+			out_writers[i]=new RelayWriter(out_endpoints[i],(Proxy*)deviceProxy, *out_queues[i]);
 		}
 	}
 
@@ -440,30 +410,30 @@ void Manager::start_data_relaying() {
 	//apply injectors to relayers
 	for(i=0;i<injectorCount;i++) {
 		if (injectors[i]->device.test(device) && injectors[i]->configuration.test(cfg)) {
-			std::string mqname;
-			struct mq_attr mqa;
-			mqa.mq_maxmsg=1;
-			mqa.mq_msgsize=4;
 			for (j=1;j<16;j++) {
 				if (in_endpoints[j] && injectors[i]->endpoint.test(in_endpoints[j]) && injectors[i]->interface.test(in_endpoints[j]->get_interface())) {
+/*
 					mqname = "/USBProxy(" + std::to_string(getpid()) + ")-" + shex(j|0x80) + '-' + shex(i);
 					mqd_t mq=mq_open(mqname.c_str(),O_RDWR | O_CREAT,S_IRWXU,&mqa);
 					if (mq == -1) {
 						std::cerr << "Error creating message queue '" << mqname << "'!\n";
 						exit(1);
 					}
-					injectors[i]->set_queue(j|0x80,mq);
-					in_writers[j]->add_queue(mq);
+*/
+					//injectors[i]->set_queue(j|0x80,mq); TODO
+					//in_writers[j]->add_queue(mq); // TODO
 				}
 				if (out_endpoints[j] && injectors[i]->endpoint.test(out_endpoints[j]) && injectors[i]->interface.test(out_endpoints[j]->get_interface())) {
+/*
 					mqname = "/USBProxy(" + std::to_string(getpid()) + ")-" + shex(j) + '-' + shex(i);
 					mqd_t mq=mq_open(mqname.c_str(),O_RDWR | O_CREAT,S_IRWXU,&mqa);
 					if (mq == -1) {
 						std::cerr << "Error creating message queue '" << mqname << "'!\n";
 						exit(1);
 					}
-					injectors[i]->set_queue(j,mq);
-					out_writers[j]->add_queue(mq);
+*/
+					//injectors[i]->set_queue(j,mq); // TODO
+					// out_writers[j]->add_queue(mq); // TODO
 				}
 			}
 		}
@@ -575,8 +545,6 @@ void Manager::stop_relaying(){
 		// delete(device);
 		device=NULL;
 	}
-
-	clean_mqueue();
 
 	status=USBM_IDLE;
 }

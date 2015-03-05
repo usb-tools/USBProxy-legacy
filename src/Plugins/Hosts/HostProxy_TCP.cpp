@@ -13,8 +13,6 @@
 #include "Interface.h"
 #include "Endpoint.h"
 
-int HostProxy_TCP::debugLevel = 0;
-
 HostProxy_TCP::HostProxy_TCP(const char* address) {
 	network = new TCP_Helper(address);
 	p_is_connected = false;
@@ -23,6 +21,8 @@ HostProxy_TCP::HostProxy_TCP(const char* address) {
 HostProxy_TCP::HostProxy_TCP(ConfigParser *cfg) {
 	std::string address = cfg->get("HostProxy_TCP::TCPAddress");
 	network = new TCP_Helper(address.c_str());
+	if (network)
+		network->debugLevel = debugLevel;
 	p_is_connected = false;
 }
 

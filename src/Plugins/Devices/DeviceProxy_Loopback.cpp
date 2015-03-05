@@ -16,8 +16,6 @@
 
 #define BUF_LEN 100
 
-int DeviceProxy_Loopback::debugLevel = 1;
-
 #define STRING_MANUFACTURER             1
 #define STRING_PRODUCT                  2
 #define STRING_SERIAL                   3

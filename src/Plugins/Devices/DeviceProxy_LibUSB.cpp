@@ -11,7 +11,6 @@
 #include "TRACE.h"
 #include "HexString.h"
 
-int DeviceProxy_LibUSB::debugLevel=0;
 int resetCount = 1;
 
 static DeviceProxy_LibUSB *proxy;

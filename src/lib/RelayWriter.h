@@ -19,8 +19,12 @@ class Manager;
 class RelayWriter {
 private:
 	std::atomic_bool _please_stop;
-	std::vector<mqd_t> recvQueues;
-	std::vector<mqd_t> sendQueues;
+	//std::vector<mqd_t> recvQueues;
+	//std::vector<mqd_t> sendQueues;
+	PacketQueue* _recvQueue;
+	PacketQueue* _sendQueue;
+	//std::vector<PacketQueue*> _sendQueues;
+
 	__u8 endpoint;
 	__u8 attributes;
 	__u16 maxPacketSize;
@@ -31,19 +35,25 @@ private:
 	Manager* manager;
 
 public:
-	RelayWriter(Endpoint* _endpoint,Proxy* _proxy,mqd_t _recvQueue);
-	RelayWriter(Endpoint* _endpoint,DeviceProxy* _deviceProxy,Manager* _manager,mqd_t _recvQueue,mqd_t _sendQueue);
+	RelayWriter(Endpoint* _endpoint,Proxy* _proxy, PacketQueue& recvQueue);
+	//RelayWriter(Endpoint* _endpoint,DeviceProxy* _deviceProxy,Manager* _manager,mqd_t _recvQueue,mqd_t _sendQueue);
+	RelayWriter(Endpoint* _endpoint,DeviceProxy* _deviceProxy,Manager* _manager, PacketQueue& recvQueue, PacketQueue& sendQueue);
 	virtual ~RelayWriter();
 
+	PacketQueue& get_recv_queue(void) {
+		return *_recvQueue;
+	}
 	void add_filter(PacketFilter* filter);
-	void add_queue(mqd_t inQueue);
-	void add_setup_queue(mqd_t recvQueue,mqd_t sendQueue);
+	//void add_setup_queue(mqd_t recvQueue,mqd_t sendQueue);
+	void set_send_queue(PacketQueue& sendQueue);
 
 	void relay_write();
 	void relay_write_setup();
 
 	void please_stop(void) {
 		_please_stop = true;
+		if (_recvQueue)
+			_recvQueue->enqueue(PacketPtr());
 	}
 };
 
