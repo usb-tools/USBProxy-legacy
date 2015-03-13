@@ -354,7 +354,7 @@ bool HostProxy_GadgetFS::send_wait_complete(__u8 endpoint,int timeout) {
 	aio->aio_buf=NULL;
 	aio->aio_nbytes=0;
 	if (rc) {
-		fprintf(stderr,"Error during async aio on EP %02x %d %s\n",endpoint,rc,strerror(rc));
+		fprintf(stderr,"Error during async aio on EP %02x %d %s (%s)\n",endpoint,rc,strerror(rc), __func__);
 		p_epin_active[number]=false;
 		return true;
 	} else {
@@ -400,7 +400,7 @@ void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 	}
 	if (rc) {
 		if (rc==EINPROGRESS) {return;}
-		fprintf(stderr,"Error during async aio on EP %02x %d %s\n",endpoint,rc,strerror(rc));
+		fprintf(stderr,"Error during async aio on EP %02x %d %s (%s)\n",endpoint,rc,strerror(rc), __func__);
 	} else {
 		rc=aio_return(aio);
 		if (rc == EINVAL || rc == ENOSYS || rc < 0) {
