@@ -474,25 +474,19 @@ void HostProxy_GadgetFS::setConfig(Configuration* fs_cfg,Configuration* hs_cfg,b
 					free(buf);
 					return;
 				}
+				aiocb* aio=new aiocb;
+				std::memset(aio, 0, sizeof(struct aiocb));
+				aio->aio_fildes = fd;
+				aio->aio_sigevent.sigev_notify = SIGEV_NONE;
 				if (epAddress & 0x80) {
-					aiocb* aio=new aiocb();
-					aio->aio_fildes=fd;
-					aio->aio_offset=0;
-					aio->aio_nbytes=0;
-					aio->aio_buf=NULL;
-					aio->aio_sigevent.sigev_notify=SIGEV_NONE;
 					p_epin_async[epAddress&0x0f]=aio;
 				} else {
-					aiocb* aio=new aiocb();
-					aio->aio_fildes=fd;
-					aio->aio_offset=0;
 					if (hs) {
 						aio->aio_nbytes=(hs_ep->bmAttributes&0x02)?hs_ep->wMaxPacketSize:hs_ep->wMaxPacketSize;
 					} else {
 						aio->aio_nbytes=(fs_ep->bmAttributes&0x02)?fs_ep->wMaxPacketSize:fs_ep->wMaxPacketSize;
 					}
 					aio->aio_buf=malloc(aio->aio_nbytes);
-					aio->aio_sigevent.sigev_notify=SIGEV_NONE;
 					int rc=aio_read(aio);
 					if (rc) {
 						delete(aio);fprintf(stderr,"Error submitting aio for EP%02x %d %s\n",epAddress,errno,strerror(errno));
