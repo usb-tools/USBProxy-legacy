@@ -25,7 +25,6 @@ private:
 	bool monitor;
 
 public:
-	static int debugLevel;
 	DeviceProxy_dot11(ConfigParser *cfg);
 	~DeviceProxy_dot11();
 

@@ -34,7 +34,6 @@ private:
 	usb_ctrlrequest lastControl;
 
 public:
-	static int debugLevel;
 	HostProxy_GadgetFS(ConfigParser *cfg);
 	virtual ~HostProxy_GadgetFS();
 

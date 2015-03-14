@@ -3,9 +3,13 @@
  */
 
 #include "HostProxy_GadgetFS.h"
+
 #include <cstring>
+#include <iostream>
+
 #include <unistd.h>
 #include <poll.h>
+
 #include "GadgetFS_helpers.h"
 #include "errno.h"
 #include "TRACE.h"
@@ -15,8 +19,6 @@
 #include "Configuration.h"
 #include "Interface.h"
 #include "Endpoint.h"
-
-int HostProxy_GadgetFS::debugLevel=0;
 
 HostProxy_GadgetFS::HostProxy_GadgetFS(ConfigParser *cfg) {
 	mount_gadget();
@@ -34,35 +36,13 @@ HostProxy_GadgetFS::HostProxy_GadgetFS(ConfigParser *cfg) {
 }
 
 HostProxy_GadgetFS::~HostProxy_GadgetFS() {
-	if (p_device_file) {
-		close(p_device_file);
-		p_device_file=0;
-	}
-	int i;
-	for (i=0;i<16;i++) {
-		if (p_epin_async[i]) {
-			aiocb* aio=p_epin_async[i];
-			if (p_epin_active[i]) {aio_cancel(aio->aio_fildes,aio);}
-			if (aio->aio_fildes) {close(aio->aio_fildes);aio->aio_fildes=0;}
-			if (aio->aio_buf) {free((void*)(aio->aio_buf));aio->aio_buf=NULL;}
-			delete(aio);
-			p_epin_async[i]=NULL;
-		}
-		if (p_epout_async[i]) {
-			aiocb* aio=p_epout_async[i];
-			aio_cancel(aio->aio_fildes,aio);
-			if (aio->aio_fildes) {close(aio->aio_fildes);aio->aio_fildes=0;}
-			if (aio->aio_buf) {free((void*)(aio->aio_buf));aio->aio_buf=NULL;}
-			delete(aio);
-			p_epout_async[i]=NULL;
-		}
-	}
+	if (p_is_connected)
+		disconnect();
 	if (descriptor) {
 		free(descriptor);
 		descriptor=NULL;
 		descriptorLength=0;
 	}
-	unmount_gadget();
 }
 
 int HostProxy_GadgetFS::generate_descriptor(Device* device) {
@@ -380,6 +360,10 @@ bool HostProxy_GadgetFS::send_wait_complete(__u8 endpoint,int timeout) {
 	} else {
 		rc=aio_return(aio);
 		if (!rc) return true;
+		if (rc == EINVAL || rc == ENOSYS || rc < 0) {
+			std::cerr << "Bad aio_return (rc " << rc << ")\n";
+			return false;
+		}
 		//fprintf(stderr,"Sent %d bytes on EP%02x\n",rc,endpoint);
 		p_epin_active[number]=false;
 		return true;
@@ -419,6 +403,10 @@ void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 		fprintf(stderr,"Error during async aio on EP %02x %d %s\n",endpoint,rc,strerror(rc));
 	} else {
 		rc=aio_return(aio);
+		if (rc == EINVAL || rc == ENOSYS || rc < 0) {
+			std::cerr << "Bad aio_return (rc " << rc << ")\n";
+			return;
+		}
 		*dataptr=(__u8*)malloc(rc);
 		memcpy(*dataptr,(void*)(aio->aio_buf),rc);
 		*length=rc;
@@ -483,6 +471,7 @@ void HostProxy_GadgetFS::setConfig(Configuration* fs_cfg,Configuration* hs_cfg,b
 				int fd=open_endpoint(epAddress, device_filename);
 				if (fd<0) {
 					fprintf(stderr,"Fail on open EP%02x %d %s\n",epAddress,errno,strerror(errno));
+					free(buf);
 					return;
 				}
 				if (epAddress & 0x80) {

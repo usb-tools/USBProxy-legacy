@@ -52,7 +52,7 @@ void clean_tmp() {
 	dir = opendir("/tmp");
 	if (!dir) return;
 
-	entry = malloc(offsetof(struct dirent, d_name) + pathconf("/tmp", _PC_NAME_MAX) + 1);
+	entry = malloc(offsetof(struct dirent, d_name) + fpathconf(dirfd(dir), _PC_NAME_MAX) + 1);
 
 	fprintf(stderr,"cleaning up /tmp\n");
 
@@ -62,7 +62,7 @@ void clean_tmp() {
 	}
 
 	while(1) {
-		if (readdir_r(dir, entry, &result) < 0) break;
+		if (readdir_r(dir, entry, &result)) break;
 		if (!result) {break;}
 		if (strlen(entry->d_name)==13 && strncmp(entry->d_name,"gadget-",7)==0) {
 			rmCount++;
@@ -169,8 +169,8 @@ int open_gadget(const char * gadget_filename ) {
 	}
 
 	char path[256];
-	int ret, status;
-	sprintf(path, "%s/%s", gadgetfs_path, filename);
+	int ret;
+	snprintf(path, sizeof(path), "%s/%s", gadgetfs_path, filename);
 
 	ret = open(path, O_CLOEXEC | O_RDWR);
 
@@ -211,7 +211,7 @@ const char * find_gadget_filename()
 		return NULL;
 
 	entry = malloc(offsetof(struct dirent, d_name)
-				   + pathconf(gadgetfs_path, _PC_NAME_MAX)
+				   + fpathconf(dirfd(dir), _PC_NAME_MAX)
 				   + 1);
 
 	fprintf(stderr,"searching in [%s]\n",gadgetfs_path);
@@ -222,7 +222,7 @@ const char * find_gadget_filename()
 	}
 
 	while(1) {
-		if (readdir_r(dir, entry, &result) < 0) break;
+		if (readdir_r(dir, entry, &result)) break;
 		if (!result) {
 			fprintf(stderr,"%s device file not found.\n", gadgetfs_path);
 			break;
@@ -243,7 +243,7 @@ int open_endpoint(__u8 epAddress, const char * gadget_filename) {
 	if (number==0) return -1;
 	char* direction=NULL;
 
-	if(gadget_filename == "sw_usb_udc") {
+	if(!strcmp(gadget_filename, "sw_usb_udc")) {
 		direction="-bulk";
 	}
 	else {
@@ -255,7 +255,7 @@ int open_endpoint(__u8 epAddress, const char * gadget_filename) {
 	}
 
 	char path[256];
-	sprintf(path, "%s/ep%d%s", gadgetfs_path, number,direction);
+	snprintf(path, sizeof(path), "%s/ep%d%s", gadgetfs_path, number,direction);
 
 	return open(path, O_CLOEXEC | O_RDWR);
 }

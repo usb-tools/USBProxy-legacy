@@ -16,15 +16,19 @@
 // Find the right place to pull this in from
 #define cpu_to_le16(x) (x)
 
-int DeviceProxy_dot11::debugLevel = 1;
-
 #define STRING_MANUFACTURER 1
 #define STRING_PRODUCT      2
 #define STRING_SERIAL       3
 #define STRING_DOT11	    4
 
 extern "C" {
+// lorcon.h defines
+//   unsigned int from_ds, to_ds, protected, fragmented, retry;
+// which ends up with an error because protected is a keyword.
+// Use a hack to avoid that.
+#define protected protected_flag
 #include <lorcon2/lorcon.h>
+#undef protected
 
 static lorcon_driver_t *drvlist, *driver; // Needed to set up interface/context
 static lorcon_t *context; // LORCON context
@@ -108,7 +112,6 @@ static int dot11_stringMaxIndex;
 	
 	DeviceProxy_dot11::~DeviceProxy_dot11() {
 		disconnect();
-		delete[] dot11_strings;
 		free(dot11_strings);
 	}
 	

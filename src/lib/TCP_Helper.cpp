@@ -19,9 +19,9 @@
 #define BASE_PORT 10400
 #define TCP_BUFFER_SIZE 1456
 
-int TCP_Helper::debugLevel=0;
-
-TCP_Helper::TCP_Helper(const char* address) {
+TCP_Helper::TCP_Helper(const char* address)
+	: debugLevel(0)
+{
 	p_server = address==NULL;
 	if (address) p_address = strdup(address);
 	p_is_connected = false;

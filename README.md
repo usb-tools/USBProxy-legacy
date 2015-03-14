@@ -7,6 +7,8 @@ This project is in the very early stages (alpha), it should be assumed that it
 is currently non-functional. In fact, there are many occasions on which git
 head doesn't even compile.
 
+To keep up to date with the project you can join the mailing list at
+http://www.freelists.org/list/usbproxy or join us on IRC (#usbproxy on Freenode).
 Build
 -----
 Dependencies:
@@ -73,7 +75,7 @@ Q. I need support!
 
 A. Me too buddy, me too.  Let's hug it out.  Your best chance of getting
 support is to contact me on IRC (#USBProxy on freenode.net), raise an issue on
-GitHub or email me directly.
+GitHub or join the mailing list (http://www.freelists.org/list/usbproxy).
 
 Q. How is this different to using usbmon on the host?
 

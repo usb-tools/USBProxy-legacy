@@ -54,7 +54,7 @@ char* hex_string_wide(const void* buf,int length,int width) {
 	  *result=0;
 	  return result;
 	}
-	int lines=length/width;
+	int lines=length/width + 1;
 
 	result = (char *)malloc(length * 3 + lines+2);
 	__u8* inbuf=(__u8*)buf;

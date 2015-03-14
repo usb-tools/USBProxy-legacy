@@ -27,7 +27,7 @@ private:
 	int server_open_endpoints(__u8* eps,__u8 num_eps,int timeout);
 
 public:
-	static int debugLevel;
+	unsigned debugLevel;
 	TCP_Helper(const char* address=NULL);
 	virtual ~TCP_Helper();
 

@@ -19,7 +19,7 @@
    if ( fl_flags == -1 ) return;
 
    char path[256];
-   sprintf( path, "/proc/self/fd/%d", fd );
+   snprintf( path, sizeof(path), "/proc/self/fd/%d", fd );
 
    memset( &buf[0], 0, 256 );
    ssize_t s = readlink( path, &buf[0], 256 );

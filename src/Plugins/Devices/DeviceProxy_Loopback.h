@@ -29,7 +29,6 @@ private:
 	struct usb_string ;
 
 public:
-	static int debugLevel;
 	DeviceProxy_Loopback(int vendorId, int productId);
 	DeviceProxy_Loopback(ConfigParser *cfg);
 	~DeviceProxy_Loopback();

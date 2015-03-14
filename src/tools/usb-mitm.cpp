@@ -5,7 +5,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <pthread.h>
 #include <signal.h>
 #include <memory.h>
 
@@ -18,7 +17,7 @@
 #include "Manager.h"
 #include "ConfigParser.h"
 
-static int debug=0;
+static unsigned debug=0;
 
 Manager* manager;
 
@@ -79,7 +78,6 @@ extern "C" int main(int argc, char **argv)
 	char *host;
 	bool client=false, server=false, device_set=false, host_set=false;
 	FILE *keylog_output_file = NULL;
-	fprintf(stderr,"SIGRTMIN: %d\n",SIGRTMIN);
 
 	struct sigaction action;
 	memset(&action, 0, sizeof(struct sigaction));
@@ -111,6 +109,7 @@ extern "C" int main(int argc, char **argv)
 			break;
 		case 'd':		/* verbose */
 			debug++;
+			cfg->debugLevel = debug;
 			break;
 		case 's':
 			server=true;
@@ -181,7 +180,7 @@ extern "C" int main(int argc, char **argv)
 
 	int status;
 	do {
-		manager=new Manager();
+		manager=new Manager(debug);
 		manager->load_plugins(cfg);
 		cfg->print_config();
 

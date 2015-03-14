@@ -11,10 +11,17 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
 set(INSTALL_DEFAULT_BINDIR "bin" CACHE STRING "Appended to CMAKE_INSTALL_PREFIX")
 
-# Comment the following out for releases.
-set(CMAKE_C_FLAGS "$ENV{CFLAGS}")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
+		message(FATAL_ERROR
+		"GCC version must be at least 4.7! \nTry: CC=gcc-4.7 CXX=g++-4.7 cmake")
+	endif()
+endif()
 
-set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} $ENV{CPPFLAGS} -std=gnu++0x -pedantic -felide-constructors -fno-exceptions")
+# Comment the following out for releases.
+set(CMAKE_C_FLAGS "$ENV{CFLAGS} -pthread -Wall")
+
+set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} $ENV{CPPFLAGS} -std=gnu++11 -pthread -pedantic -Wall -felide-constructors -fno-exceptions")
 
 add_subdirectory(lib)
 add_subdirectory(Plugins)

@@ -13,16 +13,16 @@
 class ConfigParser {
 private:
 	std::map<std::string, std::string> strings;
-	std::map<std::string, std::vector<std::string>> vectors;
+	std::map<std::string, std::vector<std::string> > vectors;
 	std::map<std::string, void*> pointers;
 
 public:
-	static int debugLevel;
+	unsigned debugLevel;
 	ConfigParser();
 	void parse_file(char* filename);
 	
 	void set(std::string key, std::string value);
-	std::string get(std::string key);
+	std::string get(const std::string& key);
 	
 	void add_to_vector(std::string key, std::string value);
 	std::vector<std::string> get_vector(std::string key);

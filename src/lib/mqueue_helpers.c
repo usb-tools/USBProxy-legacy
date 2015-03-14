@@ -85,7 +85,7 @@ int clean_mqueue() {
 	dir = opendir(mqueue_path);
 	if (!dir) return 1;
 
-	entry = (struct dirent*)malloc(offsetof(struct dirent, d_name) + pathconf("/tmp", _PC_NAME_MAX) + 1);
+	entry = (struct dirent*)malloc(offsetof(struct dirent, d_name) + fpathconf(dirfd(dir), _PC_NAME_MAX) + 1);
 
 	fprintf(stderr,"cleaning up %s\n",mqueue_path);
 
@@ -95,7 +95,7 @@ int clean_mqueue() {
 	}
 
 	while(1) {
-		if (readdir_r(dir, entry, &result) < 0) break;
+		if (readdir_r(dir, entry, &result)) break;
 		if (!result) {break;}
 		//format is USBProxy(PID)-[0-9A-F]{2}-(EP|([0-9A-F]{2}))
 		if (strlen(entry->d_name)>=17 && strncmp(entry->d_name,"USBProxy(",9)==0) {
@@ -112,10 +112,16 @@ int clean_mqueue() {
 
 	fprintf(stderr,"removing %d\n",rmCount);
 	for (i=0;i<rmCount;i++) {
-		char buf[22]={0x0};
+		char *buf = malloc(strlen(rmQueues[i]) + 2);
+		if (!buf) {
+			fprintf(stderr, "Out of memory!\n");
+			exit(1);
+		}
+		*buf = 0;
 		strcat(buf,"/");
 		strcat(buf,rmQueues[i]);
 		mq_unlink(buf);
+		free(buf);
 		free(rmQueues[i]);
 	}
 	free(rmQueues);

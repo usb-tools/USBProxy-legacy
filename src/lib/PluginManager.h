@@ -36,6 +36,8 @@ class PluginManager
 		
 		PluginManager(){};
 		int load_plugins(ConfigParser *cfg);
+		void add_plugin(PacketFilter* plugin);
+		void add_plugin(Injector* plugin);
 		void destroy_plugins();
 	
 };

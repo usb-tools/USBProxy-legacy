@@ -15,10 +15,9 @@ class PacketFilter_Callback : public PacketFilter {
 private:
 	f_cb cb;
 	f_cb_setup cb_setup;
-	//void (*cb)(Packet*);
-	//void (*cb_setup)(SetupPacket*,bool);
 public:
 	PacketFilter_Callback(ConfigParser *cfg);
+	PacketFilter_Callback(f_cb _cb, f_cb_setup _cb_setup);
 	void filter_packet(Packet* packet);
 	void filter_setup_packet(SetupPacket* packet,bool direction_out);
 	virtual char* toString() {return (char*)"Filter";}

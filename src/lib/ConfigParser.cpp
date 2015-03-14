@@ -36,21 +36,20 @@ std::string StrStrip(std::string in_str) {
     return in_str.substr(start, end-start+1);
 }
 
-int ConfigParser::debugLevel = 1;
-
-ConfigParser::ConfigParser() {
-}
+ConfigParser::ConfigParser()
+	: debugLevel(0)
+{}
 
 /* Very much inspired by Kismet's config parser */
 void ConfigParser::parse_file(char* filename) {
 	if(debugLevel)
-		fprintf(stderr, "Reading confilg file: %s\n", filename);
+		std::cerr << "Reading confilg file: " << filename << std::endl;
 
 	std::ifstream configfile;
 	configfile.open(filename, std::ifstream::in);
 	if (!configfile) {
-		fprintf(stderr, "ERROR: Reading config file '%s': %d (%s)\n", filename,
-				errno, strerror(errno));
+		std::cerr << "ERROR: Reading config file '" << filename << "': ";
+		std::cerr << errno << " (" << strerror(errno) << ")" << std::endl;
 		return;
 	}
 
@@ -81,25 +80,22 @@ void ConfigParser::parse_file(char* filename) {
 
 void ConfigParser::set(std::string key, std::string value) {
 	if(debugLevel)
-		fprintf(stderr, "CP: String %s = %s\n", key.c_str(), value.c_str());
+		std::cerr << "CP: String " << key << " = " << value << std::endl;
 	strings[key] = value;
 }
 
-std::string ConfigParser::get(std::string key) {
-    // Empty string to return
-    std::string errstr;
-
-    std::map<std::string, std::string>::iterator cmitr = strings.find(key);
+std::string ConfigParser::get(const std::string& key) {
+    auto cmitr = strings.find(key);
     // No such key
     if (cmitr == strings.end())
-        return errstr;
+        return "";
 
     return cmitr->second;
 }
 
 void ConfigParser::add_to_vector(std::string key, std::string value) {
 	if(debugLevel)
-		fprintf(stderr, "CP: Vector %s\n", key.c_str());
+		std::cerr << "CP: Vector " << key << std::endl;
 	std::map<std::string, std::vector<std::string>>::iterator vitr = vectors.find(key);
 	// No such key
 	if (vitr == vectors.end()) {
@@ -122,7 +118,7 @@ std::vector<std::string> ConfigParser::get_vector(std::string key) {
 
 void ConfigParser::add_pointer(std::string key, void *value) {
 	if(debugLevel)
-		fprintf(stderr, "CP: Pointer %s\n", key.c_str());
+		std::cerr << "CP: Pointer " << key << std::endl;
 	pointers[key] = value;
 }
 
@@ -137,26 +133,26 @@ void *ConfigParser::get_pointer(std::string key) {
 
 /* Iterate over strings/vectors/pointers to print config */
 void ConfigParser::print_config() {
-	std::clog << "Printing Config data\n";
-	std::clog << "\tStrings: " << strings.size() << "\n";
+	std::clog << "Printing Config data" << std::endl;
+	std::clog << "\tStrings: " << strings.size() << std::endl;
 	for(std::map<std::string, std::string>::iterator it = strings.begin();
 		it != strings.end(); ++it) {
-		std::clog << "\t\t" << it->first << ": " << it->second << "\n";
+		std::clog << "\t\t" << it->first << ": " << it->second << std::endl;
 	}
 	
-	std::clog << "\tVectors: " << vectors.size() << "\n";
+	std::clog << "\tVectors: " << vectors.size() << std::endl;
 	for(std::map<std::string, std::vector<std::string>>::iterator it = vectors.begin();
 		it != vectors.end(); ++it) {
 		std::clog << "\t\t" << it->first << ":\n";
 		for(std::vector<std::string>::iterator itv = it->second.begin();
 			itv != it->second.end(); ++itv) {
-			std::clog << "\t\t\t" << *itv << "\n";
+			std::clog << "\t\t\t" << *itv << std::endl;
 		}
 	}
 	
-	std::clog << "Pointer: " << pointers.size() << "\n";
+	std::clog << "Pointer: " << pointers.size() << std::endl;
 	for(std::map<std::string, void*>::iterator it = pointers.begin();
 		it != pointers.end(); ++it) {
-		std::clog << "\t\t" << it->first << ": " << it->second << "\n";
+		std::clog << "\t\t" << it->first << ": " << it->second << std::endl;
 	}
 }
