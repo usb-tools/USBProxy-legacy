@@ -474,6 +474,10 @@ void HostProxy_GadgetFS::setConfig(Configuration* fs_cfg,Configuration* hs_cfg,b
 					free(buf);
 					return;
 				}
+				int rc = write(fd, buf, bufSize);
+				free(buf);
+				if (rc != bufSize)
+					std::cerr << "Error writing to EP 0x" << std::hex << epAddress << std::dec << '\n';
 				aiocb* aio=new aiocb;
 				std::memset(aio, 0, sizeof(struct aiocb));
 				aio->aio_fildes = fd;
@@ -487,16 +491,13 @@ void HostProxy_GadgetFS::setConfig(Configuration* fs_cfg,Configuration* hs_cfg,b
 						aio->aio_nbytes=(fs_ep->bmAttributes&0x02)?fs_ep->wMaxPacketSize:fs_ep->wMaxPacketSize;
 					}
 					aio->aio_buf=malloc(aio->aio_nbytes);
-					int rc=aio_read(aio);
+					rc=aio_read(aio);
 					if (rc) {
 						delete(aio);fprintf(stderr,"Error submitting aio for EP%02x %d %s\n",epAddress,errno,strerror(errno));
 					} else {
 						p_epout_async[epAddress&0x0f]=aio;
 					}
 				}
-				
-				write(fd,buf,bufSize);
-				free(buf);
 				fprintf(stderr,"Opened EP%02x\n",epAddress);
 			}
 		}
