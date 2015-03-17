@@ -1,6 +1,7 @@
 /*
  * This file is part of USBProxy.
  */
+#include <iostream>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -337,7 +338,7 @@ void DeviceProxy_LibUSB::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacket
 }
 
 void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length,int timeout) {
-	int rc;
+	int rc(0);
 
 	if (timeout<10) timeout=10;
 	switch (attributes & USB_ENDPOINT_XFERTYPE_MASK) {
@@ -352,29 +353,19 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 			timeout=100;
 			*dataptr=(__u8*)malloc(maxPacketSize*8);
 			rc=libusb_bulk_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,timeout);
-			if (rc==LIBUSB_ERROR_TIMEOUT){
-				free(*dataptr);
-				*dataptr=NULL;
-				*length=0;
-				break;
-			}
-			if (rc) {
-				free(*dataptr);
-				*dataptr=NULL;
-				*length=0;
-				fprintf(stderr,"%s error on Device EP%02x\n",libusb_error_name(rc),endpoint);
-			}
 			break;
-	  case USB_ENDPOINT_XFER_INT:
+		case USB_ENDPOINT_XFER_INT:
 			*dataptr=(__u8*)malloc(maxPacketSize);
 			rc=libusb_interrupt_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,timeout);
-			if (rc==LIBUSB_ERROR_TIMEOUT){
-				free(*dataptr);
-				*dataptr=NULL;
-				*length=0;
-				break;
-			}
+			break;
 	}
+	if (rc) {
+		free(*dataptr);
+		*dataptr = nullptr;
+		*length = 0;
+	}
+	if (rc != LIBUSB_ERROR_TIMEOUT || (rc && debugLevel > 2))
+		std::cerr << libusb_error_name(rc) << " error on device EP" << std::hex << (unsigned)endpoint << std::dec << '\n';
 }
 
 void DeviceProxy_LibUSB::claim_interface(__u8 interface) {
