@@ -353,10 +353,14 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 			timeout=100;
 			*dataptr=(__u8*)malloc(maxPacketSize*8);
 			rc=libusb_bulk_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,timeout);
+			if (!rc && debugLevel > 2)
+				std::cerr << "received bulk msg (" << *length << " bytes)\n";
 			break;
 		case USB_ENDPOINT_XFER_INT:
 			*dataptr=(__u8*)malloc(maxPacketSize);
 			rc=libusb_interrupt_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,timeout);
+			if (!rc && debugLevel > 2)
+				std::cerr << "received int msg (" << *length << " bytes)\n";
 			break;
 	}
 	if (rc) {
