@@ -369,7 +369,8 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 		*length = 0;
 	}
 	if (rc != LIBUSB_ERROR_TIMEOUT || (rc && debugLevel > 2))
-		std::cerr << libusb_error_name(rc) << " error on device EP" << std::hex << (unsigned)endpoint << std::dec << '\n';
+		std::cerr << libusb_error_name(rc) << " error on device EP" << std::hex << (unsigned)endpoint << std::dec
+			<< " (xfertype " << unsigned(attributes & USB_ENDPOINT_XFERTYPE_MASK) << ")\n";
 }
 
 void DeviceProxy_LibUSB::claim_interface(__u8 interface) {
