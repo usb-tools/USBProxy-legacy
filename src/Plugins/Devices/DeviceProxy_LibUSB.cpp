@@ -326,13 +326,19 @@ void DeviceProxy_LibUSB::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacket
 			rc=libusb_bulk_transfer(dev_handle,endpoint,dataptr,length,&transferred,0);
 			if (rc) {fprintf(stderr,"Transfer error (%d) on Device EP%d\n",rc,endpoint);}
 			//TODO retry transfer if incomplete
-			if (transferred!=length) {fprintf(stderr,"Incomplete Bulk transfer on EP%02x\n",endpoint);}
+			if (transferred != length)
+				std::cerr << "Incomplete Bulk transfer on EP" << std::hex << (unsigned)endpoint << std::dec << '\n';
+			if (debugLevel > 2)
+				std::cerr << "Sent " << transferred << " bytes (Bulk) to libusb EP" << std::hex << (unsigned)endpoint << std::dec << '\n';
 			break;
 		case USB_ENDPOINT_XFER_INT:
 			rc=libusb_interrupt_transfer(dev_handle,endpoint,dataptr,length,&transferred,0);
 			if (rc) {fprintf(stderr,"Transfer error (%d) on Device EP%d\n",rc,endpoint);}
 			//TODO retry transfer if incomplete
-			if (transferred!=length) {fprintf(stderr,"Incomplete Interrupt transfer on EP%02x\n",endpoint);}
+			if (transferred != length)
+				std::cerr << "Incomplete Interrupt transfer on EP" << std::hex << (unsigned)endpoint << std::dec << '\n';
+			if (debugLevel > 2)
+				std::cerr << "Sent " << transferred << " bytes (Int) to libusb EP" << std::hex << (unsigned)endpoint << std::dec << '\n';
 			break;
 	}
 }
