@@ -186,7 +186,7 @@ extern "C" int main(int argc, char **argv)
 
 		manager->start_control_relaying();
 		while ( ( status = manager->get_status()) == USBM_RELAYING) {
-			usleep(10000);
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
 
 		manager->stop_relaying();
