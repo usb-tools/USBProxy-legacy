@@ -318,6 +318,8 @@ void HostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacket
 	if (rc) {
 		fprintf(stderr,"Error submitting aio for EP%02x %d %s\n",endpoint,errno,strerror(errno));
 	} else {
+		if (debugLevel > 2)
+			std::cerr << "Submitted " << length << " bytes to gadgetfs EP" << std::hex << (unsigned)endpoint << std::dec << '\n';
 		p_epin_active[number]=true;
 	}
 }
@@ -364,7 +366,8 @@ bool HostProxy_GadgetFS::send_wait_complete(__u8 endpoint,int timeout) {
 			std::cerr << "Bad aio_return (rc " << errno << ", '" << std::strerror(errno) << "')\n";
 			return false;
 		}
-		//fprintf(stderr,"Sent %d bytes on EP%02x\n",rc,endpoint);
+		if (debugLevel > 2)
+			std::cerr << "Sent " << rc << " bytes to gadgetfs EP" << std::hex << (unsigned)endpoint << std::dec << '\n';
 		p_epin_active[number]=false;
 		return true;
 	}
@@ -407,11 +410,12 @@ void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 			std::cerr << "Bad aio_return (rc " << errno << ", '" << std::strerror(errno) << "')\n";
 			return;
 		}
+		if (debugLevel > 2)
+			std::cerr << "Received " << rc << " bytes from gadgetfs EP" << std::hex << (unsigned)endpoint << std::dec << '\n';
 		*dataptr=(__u8*)malloc(rc);
 		memcpy(*dataptr,(void*)(aio->aio_buf),rc);
 		*length=rc;
-		//fprintf(stderr,"Read %d bytes on EP%02x\n",rc,number);
-		int rc=aio_read(aio);
+		rc=aio_read(aio);
 		if (rc) {
 			delete(aio);fprintf(stderr,"Error submitting aio for EP%02x %d %s\n",endpoint,errno,strerror(errno));
 			p_epout_async[number]=NULL;
@@ -490,6 +494,8 @@ void HostProxy_GadgetFS::setConfig(Configuration* fs_cfg,Configuration* hs_cfg,b
 					} else {
 						aio->aio_nbytes=(fs_ep->bmAttributes&0x02)?fs_ep->wMaxPacketSize:fs_ep->wMaxPacketSize;
 					}
+					if (debugLevel > 2)
+						std::cerr << "gadgetfs: max. packet size is " << aio->aio_nbytes << " bytes for EP" << std::hex << (unsigned)epAddress << std::dec << '\n';
 					aio->aio_buf=malloc(aio->aio_nbytes);
 					rc=aio_read(aio);
 					if (rc) {
