@@ -22,6 +22,8 @@
 #include "PacketFilter.h"
 #include "Manager.h"
 
+#define TRANSMIT_TIMEOUT_MS 500
+#define READ_TIMEOUT_MS 500
 
 RelayWriter::RelayWriter(Endpoint* _endpoint,Proxy* _proxy, PacketQueue& recvQueue)
 	: _please_stop(false)
@@ -99,12 +101,12 @@ void RelayWriter::relay_write_setup() {
 			continue;
 		if (ctrl_req.bRequestType&0x80) { //device->host
 			s->data=(__u8*)malloc(ctrl_req.wLength);
-			s->transmit_in = (deviceProxy->control_request(&(s->ctrl_req), &length, s->data, 500) >= 0);
+			s->transmit_in = (deviceProxy->control_request(&(s->ctrl_req), &length, s->data, TRANSMIT_TIMEOUT_MS) >= 0);
 			j=0;
 			s->ctrl_req.wLength=length;
 		} else { //host->device
 			length=ctrl_req.wLength;
-			s->transmit_in = (deviceProxy->control_request(&(s->ctrl_req), &length, s->data, 500) >= 0);
+			s->transmit_in = (deviceProxy->control_request(&(s->ctrl_req), &length, s->data, TRANSMIT_TIMEOUT_MS) >= 0);
 			if (s->ctrl_req.bRequest==9 && s->ctrl_req.bRequestType==0) {manager->setConfig(s->ctrl_req.wValue);}
 			s->ctrl_req.wLength=0;
 		}
@@ -142,7 +144,7 @@ void RelayWriter::relay_write() {
 				writing=true;
 			}
 		} else {
-			writing=!(proxy->send_wait_complete(endpoint,500));
+			writing=!(proxy->send_wait_complete(endpoint, READ_TIMEOUT_MS));
 		}
 	}
 	fprintf(stderr,"Finished writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
