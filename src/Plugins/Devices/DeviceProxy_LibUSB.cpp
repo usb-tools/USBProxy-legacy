@@ -356,7 +356,6 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 			fprintf(stderr,"Isochronous endpoints unhandled.");
 			break;
 		case USB_ENDPOINT_XFER_BULK:
-			timeout=100;
 			*dataptr=(__u8*)malloc(maxPacketSize*8);
 			rc=libusb_bulk_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,timeout);
 			if (!rc && debugLevel > 2)
