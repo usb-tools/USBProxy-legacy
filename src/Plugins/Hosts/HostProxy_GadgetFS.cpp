@@ -360,8 +360,8 @@ bool HostProxy_GadgetFS::send_wait_complete(__u8 endpoint,int timeout) {
 	} else {
 		rc=aio_return(aio);
 		if (!rc) return true;
-		if (rc == EINVAL || rc == ENOSYS || rc < 0) {
-			std::cerr << "Bad aio_return (rc " << rc << ")\n";
+		if (rc == -1) {
+			std::cerr << "Bad aio_return (rc " << errno << ", '" << std::strerror(errno) << "')\n";
 			return false;
 		}
 		//fprintf(stderr,"Sent %d bytes on EP%02x\n",rc,endpoint);
@@ -403,8 +403,8 @@ void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 		fprintf(stderr,"Error during async aio on EP %02x %d %s (%s)\n",endpoint,rc,strerror(rc), __func__);
 	} else {
 		rc=aio_return(aio);
-		if (rc == EINVAL || rc == ENOSYS || rc < 0) {
-			std::cerr << "Bad aio_return (rc " << rc << ")\n";
+		if (rc == -1) {
+			std::cerr << "Bad aio_return (rc " << errno << ", '" << std::strerror(errno) << "')\n";
 			return;
 		}
 		*dataptr=(__u8*)malloc(rc);
