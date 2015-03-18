@@ -19,7 +19,7 @@
 #include "HostProxy.h"
 
 #define CTRL_REQUEST_TIMEOUT_MS 500
-#define READ_TIMEOUT_MS 500
+#define READ_TIMEOUT_MS 1500
 
 RelayReader::RelayReader(Endpoint* _endpoint,Proxy* _proxy, PacketQueue& sendQueue)
 	: _please_stop(false)
