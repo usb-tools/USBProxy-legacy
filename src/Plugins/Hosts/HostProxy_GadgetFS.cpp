@@ -343,8 +343,8 @@ bool HostProxy_GadgetFS::send_wait_complete(__u8 endpoint,int timeout) {
 	int rc=aio_error(aio);
 	if (rc==EINPROGRESS && timeout) {
 		struct timespec ts;
-		ts.tv_sec=0;
-		ts.tv_nsec=1000000*timeout;
+		ts.tv_sec = timeout/1000;
+		ts.tv_nsec = 1000000L * (timeout%1000);
 		if (aio_suspend(&aio,1,&ts)) {
 			rc=0;
 		} else {
@@ -393,8 +393,8 @@ void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 	int rc=aio_error(aio);
 	if (rc==EINPROGRESS && timeout) {
 		struct timespec ts;
-		ts.tv_sec=0;
-		ts.tv_nsec=1000000*timeout;
+		ts.tv_sec = timeout/1000;
+		ts.tv_nsec = 1000000L * (timeout%1000);
 		if (aio_suspend(&aio,1,&ts)) {
 			return;
 		} else {
