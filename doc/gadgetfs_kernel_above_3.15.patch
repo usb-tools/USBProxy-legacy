@@ -1,8 +1,8 @@
-From 0cc9769e3d091be09c6de823e59686be0ca28e04 Mon Sep 17 00:00:00 2001
+From 7ef69500701ead0c3767b02d29b3b623f29ab087 Mon Sep 17 00:00:00 2001
 From: Alexander Holler <holler@ahsoftware.de>
 Date: Mon, 2 Mar 2015 10:28:36 +0100
 Subject: [PATCH] usb: gadgetfs: fix none working read/write since commit
- 7f7f25e8
+ 7f7f25e8 (3.16)
 
 Commit 7f7f25e82d54870df24d415a7007fbd327da027b broke dynamic changing
 of file_operations, in detail adding operations for read or write didn't
@@ -14,16 +14,18 @@ the file_operations.
 It's still as racy as it has always been the case, but at least it now
 works like before the above commit.
 
+And commit e513cc1c (3.19) broke gadgetfs again by correctly counting ownership.
+
 Signed-off-by: Alexander Holler <holler@ahsoftware.de>
 ---
- drivers/usb/gadget/legacy/inode.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/usb/gadget/legacy/inode.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
 diff --git a/drivers/usb/gadget/legacy/inode.c b/drivers/usb/gadget/legacy/inode.c
-index 0e16ffa..341481a 100644
+index 0e16ffa..ad8e7ee 100644
 --- a/drivers/usb/gadget/legacy/inode.c
 +++ b/drivers/usb/gadget/legacy/inode.c
-@@ -860,6 +860,10 @@ ep_config (struct file *fd, const char __user *buf, size_t len, loff_t *ptr)
+@@ -860,6 +860,11 @@ ep_config (struct file *fd, const char __user *buf, size_t len, loff_t *ptr)
  	}
  	if (value == 0) {
  		fd->f_op = &ep_io_operations;
@@ -31,10 +33,11 @@ index 0e16ffa..341481a 100644
 +			fd->f_mode |= FMODE_CAN_READ;
 +		if ((fd->f_mode & FMODE_WRITE))
 +			fd->f_mode |= FMODE_CAN_WRITE;
++		__module_get(ep_io_operations.owner);
  		value = length;
  	}
  gone:
-@@ -1931,6 +1935,10 @@ dev_config (struct file *fd, const char __user *buf, size_t len, loff_t *ptr)
+@@ -1931,6 +1936,11 @@ dev_config (struct file *fd, const char __user *buf, size_t len, loff_t *ptr)
  		 * kick in after the ep0 descriptor is closed.
  		 */
  		fd->f_op = &ep0_io_operations;
@@ -42,6 +45,7 @@ index 0e16ffa..341481a 100644
 +			fd->f_mode |= FMODE_CAN_READ;
 +		if ((fd->f_mode & FMODE_WRITE))
 +			fd->f_mode |= FMODE_CAN_WRITE;
++		__module_get(ep0_io_operations.owner);
  		value = len;
  	}
  	return value;

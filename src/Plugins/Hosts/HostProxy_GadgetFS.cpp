@@ -354,7 +354,7 @@ bool HostProxy_GadgetFS::send_wait_complete(__u8 endpoint,int timeout) {
 	aio->aio_buf=NULL;
 	aio->aio_nbytes=0;
 	if (rc) {
-		fprintf(stderr,"Error during async aio on EP %02x %d %s\n",endpoint,rc,strerror(rc));
+		fprintf(stderr,"Error during async aio on EP %02x %d %s (%s)\n",endpoint,rc,strerror(rc), __func__);
 		p_epin_active[number]=false;
 		return true;
 	} else {
@@ -400,7 +400,7 @@ void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 	}
 	if (rc) {
 		if (rc==EINPROGRESS) {return;}
-		fprintf(stderr,"Error during async aio on EP %02x %d %s\n",endpoint,rc,strerror(rc));
+		fprintf(stderr,"Error during async aio on EP %02x %d %s (%s)\n",endpoint,rc,strerror(rc), __func__);
 	} else {
 		rc=aio_return(aio);
 		if (rc == EINVAL || rc == ENOSYS || rc < 0) {
@@ -474,35 +474,30 @@ void HostProxy_GadgetFS::setConfig(Configuration* fs_cfg,Configuration* hs_cfg,b
 					free(buf);
 					return;
 				}
+				int rc = write(fd, buf, bufSize);
+				free(buf);
+				if (rc != bufSize)
+					std::cerr << "Error writing to EP 0x" << std::hex << epAddress << std::dec << '\n';
+				aiocb* aio=new aiocb;
+				std::memset(aio, 0, sizeof(struct aiocb));
+				aio->aio_fildes = fd;
+				aio->aio_sigevent.sigev_notify = SIGEV_NONE;
 				if (epAddress & 0x80) {
-					aiocb* aio=new aiocb();
-					aio->aio_fildes=fd;
-					aio->aio_offset=0;
-					aio->aio_nbytes=0;
-					aio->aio_buf=NULL;
-					aio->aio_sigevent.sigev_notify=SIGEV_NONE;
 					p_epin_async[epAddress&0x0f]=aio;
 				} else {
-					aiocb* aio=new aiocb();
-					aio->aio_fildes=fd;
-					aio->aio_offset=0;
 					if (hs) {
 						aio->aio_nbytes=(hs_ep->bmAttributes&0x02)?hs_ep->wMaxPacketSize:hs_ep->wMaxPacketSize;
 					} else {
 						aio->aio_nbytes=(fs_ep->bmAttributes&0x02)?fs_ep->wMaxPacketSize:fs_ep->wMaxPacketSize;
 					}
 					aio->aio_buf=malloc(aio->aio_nbytes);
-					aio->aio_sigevent.sigev_notify=SIGEV_NONE;
-					int rc=aio_read(aio);
+					rc=aio_read(aio);
 					if (rc) {
 						delete(aio);fprintf(stderr,"Error submitting aio for EP%02x %d %s\n",epAddress,errno,strerror(errno));
 					} else {
 						p_epout_async[epAddress&0x0f]=aio;
 					}
 				}
-				
-				write(fd,buf,bufSize);
-				free(buf);
 				fprintf(stderr,"Opened EP%02x\n",epAddress);
 			}
 		}
