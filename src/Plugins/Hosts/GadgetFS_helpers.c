@@ -200,6 +200,7 @@ const char * find_gadget_filename()
 		"musb-hdrc",
 		"sw_usb_udc",
 		"2184000.usb",
+		"pch_udc",
 		NULL
 	};
 
