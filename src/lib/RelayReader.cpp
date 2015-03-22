@@ -18,6 +18,8 @@
 #include "Proxy.h"
 #include "HostProxy.h"
 
+#define CTRL_REQUEST_TIMEOUT_MS 500
+#define READ_TIMEOUT_MS 1500
 
 RelayReader::RelayReader(Endpoint* _endpoint,Proxy* _proxy, PacketQueue& sendQueue)
 	: _please_stop(false)
@@ -65,7 +67,7 @@ void RelayReader::relay_read_setup() {
 			buf=NULL;
 			length=0;
 
-			hostProxy->control_request(&ctrl_req,&length,&buf,500);
+			hostProxy->control_request(&ctrl_req, &length, &buf, CTRL_REQUEST_TIMEOUT_MS);
 			if (ctrl_req.bRequest) {
 				p = std::make_shared<SetupPacket>(ctrl_req,buf);
 			}
@@ -98,7 +100,7 @@ void RelayReader::relay_read_setup() {
 				}
 			}
 			if (p) {
-				if (hostProxy->send_wait_complete(endpoint,500)) {
+				if (hostProxy->send_wait_complete(endpoint, CTRL_REQUEST_TIMEOUT_MS)) {
 					direction_out=true;
 					p.reset();
 					idle=false;
@@ -124,7 +126,7 @@ void RelayReader::relay_read() {
 	while (!_please_stop) {
 		buf=NULL;
 		length=0;
-		proxy->receive_data(endpoint,attributes,maxPacketSize,&buf,&length,500);
+		proxy->receive_data(endpoint,attributes,maxPacketSize,&buf,&length, READ_TIMEOUT_MS);
 		if (length)
 			_sendQueue->enqueue(std::make_shared<Packet>(endpoint, buf, length));
 	}

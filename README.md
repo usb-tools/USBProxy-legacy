@@ -34,9 +34,9 @@ sudo apt-get install libpcap-dev
 Running the tool
 ----------------
 The best way to get started with USBProxy is by trying it out. Connect a device
-to the BeagleBone Black and connect the BBB to a host system. Then try running
-the following to view packets in real time as they are sent between your device
-and host.
+to your single board computer and connect it to a target host system. Then try 
+running the following to view packets in real time as they are sent between your
+device and host.
 ```
 usb-mitm -l
 ```
@@ -48,13 +48,14 @@ usb-mitm -k
 
 What?
 -----
-A USB man in the middle device using the BeagleBone Black hardware.
+A USB man in the middle device using embedded Linux devices with on the go
+controllers.
 
 Why?
 ----
-Other USB sniffers exist, but I really like the BeagleBone Black as a hardware
-platform and I wanted to tinker with the USB device side.  There was also an
-article on Hack a Day about sniffing USB with the BeagleBoard-xM, but on further
+Other USB sniffers exist, but I really like cheap ARM Linux hardware platforms
+and I wanted to tinker with the USB device side.  There was also an article on
+Hack a Day about sniffing USB with the BeagleBoard-xM, but on further 
 inspection, it would only build against a relatively old kernel version.
 
 ToDo
@@ -85,8 +86,9 @@ devices for use with closed platforms.
 
 Q. Isn't the Beagle already a USB monitor?
 
-A. The Total Phase Beagle USB monitors are excellent devices for sniffing and
-debugging USB connections, in fact, one was used by "AlexP" to reverse engineer
-the Microsoft Kinect.  However, they are completely unrelated to the BeagleBone
-Black devices produced by TI, which are open source single board computer
-systems.  The BeagleBone Black is the intended target device for this software.
+A. Initially the BeagleBone Black was intended target device for this software,
+but almost any Linux host with both a device and host port will do. The Total 
+Phase Beagle USB monitors are excellent devices for sniffing and debugging USB
+connections, in fact, one was used by "AlexP" to reverse engineer the Microsoft
+Kinect.  However, they are completely unrelated to the BeagleBone Black devices
+produced by TI, which are open source single board computer systems.  

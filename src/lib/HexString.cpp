@@ -56,9 +56,9 @@ char* hex_string_wide(const void* buf,int length,int width) {
 	}
 	int lines=length/width + 1;
 
-	result = (char *)malloc(length * 3 + lines+2);
+	result = (char *)malloc(length * 3 + lines + 1);
 	__u8* inbuf=(__u8*)buf;
-	result[length * 3+lines+1] = 0;
+	result[length * 3 + lines] = 0;
 	result[0]='\n';
 	result[1]='\t';
 
