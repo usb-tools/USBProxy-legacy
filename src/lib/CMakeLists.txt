@@ -32,7 +32,6 @@ set(cpp_sources
 set(c_sources
 	${CMAKE_CURRENT_SOURCE_DIR}/FDInfo.c
 	${CMAKE_CURRENT_SOURCE_DIR}/get_tid.c
-	${CMAKE_CURRENT_SOURCE_DIR}/mqueue_helpers.c
 	CACHE INTERNAL "List of C sources")
 
 set(headers
