@@ -186,20 +186,21 @@ const char * find_gadget_filename()
 	int i;
 
 	static const char *devices[] = {
-		"dummy_udc",
-		"net2280",
-		"gfs_udc",
-		"pxa2xx_udc",
-		"goku_udc",
-		"sh_udc",
-		"omap_udc",
-		"musb_hdrc",
-		"at91_udc",
-		"lh740x_udc",
-		"atmel_usba_udc",
-		"musb-hdrc",
-		"sw_usb_udc",
 		"2184000.usb",
+		"at91_udc",
+		"atmel_usba_udc",
+		"dummy_udc",
+		"dwc_otg_pcd",
+		"gfs_udc",
+		"goku_udc",
+		"lh740x_udc",
+		"musb-hdrc",
+		"musb_hdrc",
+		"omap_udc",
+		"net2280",
+		"pxa2xx_udc",
+		"sh_udc",
+		"sw_usb_udc",
 		NULL
 	};
 
