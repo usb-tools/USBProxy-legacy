@@ -12,6 +12,9 @@
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <sys/poll.h>
+#include <sys/utsname.h>
+
+#include <iostream>
 
 #include "TRACE.h"
 #include "Manager.h"
@@ -162,6 +165,12 @@ extern "C" int main(int argc, char **argv)
 			usage(argv[0]);
 			return 1;
 		}
+	}
+
+	if (debug) {
+		struct utsname sysinfo;
+		uname(&sysinfo);
+		std::cerr << "Running under kernel "<< sysinfo.release << '\n';
 	}
 
 	if (client) {
