@@ -16,7 +16,9 @@
 
 #define BUF_LEN 100
 
-DeviceProxy_Callback::DeviceProxy_Callback(ConfigParser *cfg) {
+DeviceProxy_Callback::DeviceProxy_Callback(ConfigParser *cfg)
+	: DeviceProxy(*cfg)
+{
 	void *vf = cfg->get_pointer("DeviceProxy_Callback::connect");
 	connect_cb = *reinterpret_cast<f_connect*>(&vf);
 	vf = cfg->get_pointer("DeviceProxy_Callback::disconnect");

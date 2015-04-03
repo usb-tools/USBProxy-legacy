@@ -12,7 +12,12 @@
 class HostProxy: public Proxy {
 public:
 	static const __u8 plugin_type=PLUGIN_HOSTPROXY;
-	
+
+	HostProxy(const ConfigParser& cfg)
+		: Proxy(cfg.debugLevel)
+	{}
+	HostProxy()
+	{}
 	virtual ~HostProxy() {}
 
 	//return ETIMEDOUT if it times out

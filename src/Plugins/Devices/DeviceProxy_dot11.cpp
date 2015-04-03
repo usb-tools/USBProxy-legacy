@@ -35,7 +35,9 @@ static lorcon_t *context; // LORCON context
 static USBString** dot11_strings;
 static int dot11_stringMaxIndex;
 
-	DeviceProxy_dot11::DeviceProxy_dot11(ConfigParser *cfg) {
+	DeviceProxy_dot11::DeviceProxy_dot11(ConfigParser *cfg)
+		: DeviceProxy(*cfg)
+	{
 		/* FIXME pull these values from the config object */
 		int vendorId = 0xffff;
 		int productId = 0x0005;

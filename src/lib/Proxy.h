@@ -19,6 +19,10 @@ public:
 	Proxy()
 		: debugLevel(0)
 	{}
+	Proxy(unsigned _debugLevel)
+		: debugLevel(_debugLevel)
+	{}
+
 	virtual ~Proxy() {}
 
 	virtual void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length)=0;

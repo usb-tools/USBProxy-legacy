@@ -14,6 +14,11 @@ class DeviceProxy : public Proxy {
 public:
 	static const __u8 plugin_type=PLUGIN_DEVICEPROXY;
 	
+	DeviceProxy(const ConfigParser& cfg)
+		: Proxy(cfg.debugLevel)
+	{}
+	DeviceProxy()
+	{}
 	virtual ~DeviceProxy() {}
 
 	//return ETIMEDOUT if it times out

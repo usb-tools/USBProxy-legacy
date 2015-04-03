@@ -20,7 +20,9 @@
 #include "Interface.h"
 #include "Endpoint.h"
 
-HostProxy_GadgetFS::HostProxy_GadgetFS(ConfigParser *cfg) {
+HostProxy_GadgetFS::HostProxy_GadgetFS(ConfigParser *cfg)
+	: HostProxy(*cfg)
+{
 	mount_gadget();
 	p_is_connected = false;
 	p_device_file=0;
