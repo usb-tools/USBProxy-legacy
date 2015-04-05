@@ -12,10 +12,14 @@
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <sys/poll.h>
+#include <sys/utsname.h>
+
+#include <iostream>
 
 #include "TRACE.h"
 #include "Manager.h"
 #include "ConfigParser.h"
+#include "version.h"
 
 static unsigned debug=0;
 
@@ -162,6 +166,13 @@ extern "C" int main(int argc, char **argv)
 			usage(argv[0]);
 			return 1;
 		}
+	}
+
+	if (debug) {
+		std::cerr << "Version " VERSION << '\n';
+		struct utsname sysinfo;
+		uname(&sysinfo);
+		std::cerr << "Running under kernel "<< sysinfo.release << '\n';
 	}
 
 	if (client) {

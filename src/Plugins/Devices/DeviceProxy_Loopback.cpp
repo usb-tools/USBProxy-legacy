@@ -96,7 +96,9 @@ DeviceProxy_Loopback::DeviceProxy_Loopback(int vendorId,int productId) {
 	head=tail=0;
 }
 
-DeviceProxy_Loopback::DeviceProxy_Loopback(ConfigParser *cfg) {
+DeviceProxy_Loopback::DeviceProxy_Loopback(ConfigParser *cfg)
+	: DeviceProxy(*cfg)
+{
 	/* FIXME pull these values from the config object */
 	int vendorId = 0xffff;
 	int productId = 0xffff;

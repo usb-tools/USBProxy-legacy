@@ -53,6 +53,7 @@ DeviceProxy_LibUSB::DeviceProxy_LibUSB(int vendorId,int productId,bool includeHu
 }
 
 DeviceProxy_LibUSB::DeviceProxy_LibUSB(ConfigParser *cfg)
+	: DeviceProxy(*cfg)
 {
 	int vendorId, productId;
 	

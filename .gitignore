@@ -23,3 +23,5 @@ cmake_install.cmake
 cmake_uninstall.cmake
 CMakeCache.txt
 Makefile
+version.h
+version

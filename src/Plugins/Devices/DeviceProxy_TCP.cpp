@@ -18,7 +18,9 @@ DeviceProxy_TCP::DeviceProxy_TCP(const char* address) {
 }
 
 /* FIXME pull settings from config parser */
-DeviceProxy_TCP::DeviceProxy_TCP(ConfigParser *cfg) {
+DeviceProxy_TCP::DeviceProxy_TCP(ConfigParser *cfg)
+	: DeviceProxy(*cfg)
+{
 	network = new TCP_Helper(NULL);
 	if (network)
 		network->debugLevel = debugLevel;
