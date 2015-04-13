@@ -107,6 +107,10 @@ void DeviceProxy_Callback::setConfig(Configuration* fs_cfg, Configuration* hs_cf
 	;
 }
 
+void DeviceProxy_Callback::set_endpoint_interface(__u8 endpoint, __u8 interface) {
+
+}
+
 void DeviceProxy_Callback::claim_interface(__u8 interface) {
 	;
 }

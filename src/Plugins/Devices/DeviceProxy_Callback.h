@@ -61,6 +61,8 @@ public:
 	void setConfig(Configuration* fs_cfg,Configuration* hs_cfg,bool hs);
 	char* toString();
 
+	void set_endpoint_interface(__u8 endpoint, __u8 interface);
+
 	void claim_interface(__u8 interface);
 	void release_interface(__u8 interface);
 

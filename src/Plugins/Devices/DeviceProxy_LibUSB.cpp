@@ -5,6 +5,7 @@
 #include <sstream>
 #include <string>
 #include <iomanip>
+#include <algorithm>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -57,6 +58,12 @@ DeviceProxy_LibUSB::DeviceProxy_LibUSB(int vendorId, int productId, bool include
 	desired_vid = vendorId;
 	desired_pid = productId;
 	desired_hubs = includeHubs;
+
+	for (unsigned int i = 0; i < sizeof(epInterfaces) / sizeof(*epInterfaces); ++i) {
+		epInterfaces[i].interface = 0;
+		epInterfaces[i].defined = false;
+		epInterfaces[i].claimed = false;
+	}
 }
 
 DeviceProxy_LibUSB::DeviceProxy_LibUSB(ConfigParser *cfg) :
@@ -90,6 +97,12 @@ DeviceProxy_LibUSB::DeviceProxy_LibUSB(ConfigParser *cfg) :
 	desired_vid = vendorId;
 	desired_pid = productId;
 	desired_hubs = includeHubs;
+
+	for (unsigned int i = 0; i < sizeof(epInterfaces) / sizeof(*epInterfaces); ++i) {
+		epInterfaces[i].interface = 0;
+		epInterfaces[i].defined = false;
+		epInterfaces[i].claimed = false;
+	}
 }
 
 DeviceProxy_LibUSB::~DeviceProxy_LibUSB() {
@@ -362,8 +375,28 @@ uint8_t DeviceProxy_LibUSB::get_address() {
 	return libusb_get_device_address(dvc);
 }
 
+bool DeviceProxy_LibUSB::endpoint_interface_claimed(uint8_t endpoint) {
+
+	if (!epInterfaces[endpoint & 0x0F].defined) {
+		cerr << "No interface defined for endpoint: " << hex2(endpoint) << endl;
+		return false;
+	}
+
+	if (!epInterfaces[endpoint & 0x0F].claimed) {
+		return false;
+	}
+
+	return true;
+}
+
 void DeviceProxy_LibUSB::send_data(uint8_t endpoint, uint8_t attributes, uint16_t maxPacketSize, uint8_t* dataptr,
 		int length) {
+
+	if (!endpoint_interface_claimed(endpoint)) {
+		//do not try to send if interface wasn't claimed successfully
+		return;
+	}
+
 	int transferred;
 	int rc = LIBUSB_SUCCESS;
 
@@ -400,6 +433,12 @@ void DeviceProxy_LibUSB::send_data(uint8_t endpoint, uint8_t attributes, uint16_
 
 void DeviceProxy_LibUSB::receive_data(uint8_t endpoint, uint8_t attributes, uint16_t maxPacketSize, uint8_t ** dataptr,
 		int* length, int timeout) {
+
+	if (!endpoint_interface_claimed(endpoint)) {
+		//do not try to receive if interface wasn't claimed successfully
+		return;
+	}
+
 	int rc = LIBUSB_SUCCESS;
 
 	if (timeout < 10)
@@ -437,11 +476,23 @@ void DeviceProxy_LibUSB::receive_data(uint8_t endpoint, uint8_t attributes, uint
 				<< libusb_strerror((libusb_error) rc) << endl;
 }
 
+void DeviceProxy_LibUSB::set_endpoint_interface(uint8_t endpoint, uint8_t interface) {
+	epInterfaces[endpoint & 0x0F].defined = true;
+	epInterfaces[endpoint & 0x0F].interface = interface;
+}
+
 void DeviceProxy_LibUSB::claim_interface(uint8_t interface) {
 	if (is_connected()) {
 		int rc = libusb_claim_interface(dev_handle, interface);
 		if (rc != LIBUSB_SUCCESS) {
-			cerr << "Error claiming interface " << (unsigned) interface << ": " << libusb_strerror((libusb_error) rc) << endl;
+			cerr << "Error claiming interface " << (unsigned) interface << ": " << libusb_strerror((libusb_error) rc)
+					<< endl;
+		} else {
+			for (unsigned int i = 0; i < sizeof(epInterfaces) / sizeof(*epInterfaces); ++i) {
+				if (epInterfaces[i].defined && epInterfaces[i].interface == interface) {
+					epInterfaces[i].claimed = true;
+				}
+			}
 		}
 	}
 }
@@ -450,7 +501,14 @@ void DeviceProxy_LibUSB::release_interface(uint8_t interface) {
 	if (is_connected()) {
 		int rc = libusb_release_interface(dev_handle, interface);
 		if (rc != LIBUSB_SUCCESS && rc != LIBUSB_ERROR_NOT_FOUND) {
-			cerr << "Error releasing interface " << (unsigned) interface << ": " << libusb_strerror((libusb_error) rc) << endl;
+			cerr << "Error releasing interface " << (unsigned) interface << ": " << libusb_strerror((libusb_error) rc)
+					<< endl;
+		} else {
+			for (unsigned int i = 0; i < sizeof(epInterfaces) / sizeof(*epInterfaces); ++i) {
+				if (epInterfaces[i].defined && epInterfaces[i].interface == interface) {
+					epInterfaces[i].claimed = false;
+				}
+			}
 		}
 	}
 }

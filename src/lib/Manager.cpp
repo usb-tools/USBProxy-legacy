@@ -366,6 +366,7 @@ void Manager::start_data_relaying() {
 					out_endpoints[epd->bEndpointAddress&0x0f]=ep;
 					out_queues[epd->bEndpointAddress&0x0f] = new PacketQueue;
 				}
+				deviceProxy->set_endpoint_interface(epd->bEndpointAddress, aifc->get_descriptor()->bInterfaceNumber);
 			}
 		}
 		// end

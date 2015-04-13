@@ -12,6 +12,8 @@
 #include <libusb-1.0/libusb.h>
 #include "DeviceProxy.h"
 
+#include <vector>
+
 class DeviceProxy_LibUSB: public DeviceProxy {
 private:
 	libusb_context* context;
@@ -22,6 +24,15 @@ private:
 	int desired_vid;
 	int desired_pid;
 	bool desired_hubs;
+
+	struct
+	{
+		uint8_t interface;
+		bool defined;
+		bool claimed;
+	} epInterfaces[0x10];
+
+	bool endpoint_interface_claimed(uint8_t endpoint);
 
 public:
 	DeviceProxy_LibUSB(int vendorId = LIBUSB_HOTPLUG_MATCH_ANY, int productId = LIBUSB_HOTPLUG_MATCH_ANY,
@@ -46,6 +57,7 @@ public:
 	void setConfig(Configuration* fs_cfg, Configuration* hs_cfg, bool hs) {
 	}
 
+	void set_endpoint_interface(uint8_t endpoint, uint8_t interface);
 	void claim_interface(uint8_t interface);
 	void release_interface(uint8_t interface);
 

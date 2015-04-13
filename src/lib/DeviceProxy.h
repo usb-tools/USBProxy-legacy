@@ -38,6 +38,7 @@ public:
 	virtual void setConfig(Configuration* fs_cfg,Configuration* hs_cfg,bool hs)=0;
 	virtual char* toString() {return NULL;}
 
+	virtual void set_endpoint_interface(__u8 endpoint, __u8 interface)=0;
 	virtual void claim_interface(__u8 interface)=0;
 	virtual void release_interface(__u8 interface)=0;
 
