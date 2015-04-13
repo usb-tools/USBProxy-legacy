@@ -118,7 +118,9 @@ int DeviceProxy_LibUSB::connect(libusb_device* dvc, libusb_context* _context) {
 		return rc;
 	}
 	if (debugLevel) {
-		fprintf(stdout, "Connected to device: %s\n", toString());
+		char * device_desc = toString();
+		fprintf(stdout, "Connected to device: %s\n", device_desc);
+		free(device_desc);
 	}
 	return 0;
 }
@@ -133,7 +135,9 @@ int DeviceProxy_LibUSB::connect(libusb_device_handle* devh, libusb_context* _con
 	context = _context;
 	dev_handle = devh;
 	if (debugLevel) {
-		fprintf(stdout, "Connected to device: %s\n", toString());
+		char * device_desc = toString();
+		fprintf(stdout, "Connected to device: %s\n", device_desc);
+		free(device_desc);
 	}
 	return 0;
 }
