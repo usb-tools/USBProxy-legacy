@@ -12,7 +12,7 @@
 #include <libusb-1.0/libusb.h>
 #include "DeviceProxy.h"
 
-class DeviceProxy_LibUSB:public DeviceProxy {
+class DeviceProxy_LibUSB: public DeviceProxy {
 private:
 	libusb_context* context;
 	libusb_hotplug_callback_handle callback_handle;
@@ -24,25 +24,27 @@ private:
 	bool desired_hubs;
 
 public:
-	DeviceProxy_LibUSB(int vendorId=LIBUSB_HOTPLUG_MATCH_ANY,int productId=LIBUSB_HOTPLUG_MATCH_ANY,bool includeHubs=false);
+	DeviceProxy_LibUSB(int vendorId = LIBUSB_HOTPLUG_MATCH_ANY, int productId = LIBUSB_HOTPLUG_MATCH_ANY,
+			bool includeHubs = false);
 	DeviceProxy_LibUSB(ConfigParser *cfg);
 	~DeviceProxy_LibUSB();
 
-	int connect(int timeout=250);
-	int connect(int vendorId,int productId,bool includeHubs);
-	int connect(libusb_device* dvc, libusb_context* _context=NULL);
-	int connect(libusb_device_handle* devh,libusb_context* _context=NULL);
+	int connect(int timeout = 250);
+	int connect(int vendorId, int productId, bool includeHubs);
+	int connect(libusb_device* dvc, libusb_context* _context = NULL);
+	int connect(libusb_device_handle* devh, libusb_context* _context = NULL);
 	void disconnect();
 	void reset();
 	bool is_connected();
 	bool is_highspeed();
 
+	int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, uint8_t* dataptr, int timeout = 500);
+	void send_data(uint8_t endpoint, uint8_t attributes, uint16_t maxPacketSize, uint8_t* dataptr, int length);
+	void receive_data(uint8_t endpoint, uint8_t attributes, uint16_t maxPacketSize, uint8_t** dataptr, int* length,
+			int timeout = 500);
 
-	int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, uint8_t* dataptr,int timeout=500);
-	void send_data(uint8_t endpoint,uint8_t attributes,uint16_t maxPacketSize,uint8_t* dataptr,int length);
-	void receive_data(uint8_t endpoint,uint8_t attributes,uint16_t maxPacketSize,uint8_t** dataptr, int* length,int timeout=500);
-
-	void setConfig(Configuration* fs_cfg,Configuration* hs_cfg,bool hs) {}
+	void setConfig(Configuration* fs_cfg, Configuration* hs_cfg, bool hs) {
+	}
 
 	void claim_interface(uint8_t interface);
 	void release_interface(uint8_t interface);
