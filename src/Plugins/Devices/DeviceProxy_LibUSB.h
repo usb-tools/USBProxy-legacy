@@ -38,16 +38,16 @@ public:
 	bool is_highspeed();
 
 
-	int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr,int timeout=500);
-	void send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length);
-	void receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length,int timeout=500);
+	int control_request(const usb_ctrlrequest *setup_packet, int *nbytes, uint8_t* dataptr,int timeout=500);
+	void send_data(uint8_t endpoint,uint8_t attributes,uint16_t maxPacketSize,uint8_t* dataptr,int length);
+	void receive_data(uint8_t endpoint,uint8_t attributes,uint16_t maxPacketSize,uint8_t** dataptr, int* length,int timeout=500);
 
 	void setConfig(Configuration* fs_cfg,Configuration* hs_cfg,bool hs) {}
 
-	void claim_interface(__u8 interface);
-	void release_interface(__u8 interface);
+	void claim_interface(uint8_t interface);
+	void release_interface(uint8_t interface);
 
-	__u8 get_address();
+	uint8_t get_address();
 	char* toString();
 };
 

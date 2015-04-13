@@ -283,7 +283,7 @@ char* DeviceProxy_LibUSB::toString() {
 	return buf;
 }
 
-int DeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, int *nbytes, __u8* dataptr,int timeout) {
+int DeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, int *nbytes, uint8_t* dataptr,int timeout) {
 	if (debugLevel>1) {
 		char* hex=hex_string((void*)setup_packet,sizeof(*setup_packet));
 		printf("LibUSB> %s\n",hex);
@@ -306,12 +306,12 @@ int DeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, int
 	return 0;
 }
 
-__u8 DeviceProxy_LibUSB::get_address() {
+uint8_t DeviceProxy_LibUSB::get_address() {
 	libusb_device* dvc=libusb_get_device(dev_handle);
 	return libusb_get_device_address(dvc);
 }
 
-void DeviceProxy_LibUSB::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length) {
+void DeviceProxy_LibUSB::send_data(uint8_t endpoint,uint8_t attributes,uint16_t maxPacketSize,uint8_t* dataptr,int length) {
 	int transferred;
 	int rc;
 
@@ -344,7 +344,7 @@ void DeviceProxy_LibUSB::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacket
 	}
 }
 
-void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length,int timeout) {
+void DeviceProxy_LibUSB::receive_data(uint8_t endpoint,uint8_t attributes,uint16_t maxPacketSize,uint8_t** dataptr, int* length,int timeout) {
 	int rc(0);
 
 	if (timeout<10) timeout=10;
@@ -357,13 +357,13 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 			fprintf(stderr,"Isochronous endpoints unhandled.");
 			break;
 		case USB_ENDPOINT_XFER_BULK:
-			*dataptr=(__u8*)malloc(maxPacketSize*8);
+			*dataptr=(uint8_t*)malloc(maxPacketSize*8);
 			rc=libusb_bulk_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,timeout);
 			if (!rc && debugLevel > 2)
 				std::cerr << "received bulk msg (" << *length << " bytes)\n";
 			break;
 		case USB_ENDPOINT_XFER_INT:
-			*dataptr=(__u8*)malloc(maxPacketSize);
+			*dataptr=(uint8_t*)malloc(maxPacketSize);
 			rc=libusb_interrupt_transfer(dev_handle,endpoint,*dataptr,maxPacketSize,length,timeout);
 			if (!rc && debugLevel > 2)
 				std::cerr << "received int msg (" << *length << " bytes)\n";
@@ -379,9 +379,9 @@ void DeviceProxy_LibUSB::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 			<< " (xfertype " << unsigned(attributes & USB_ENDPOINT_XFERTYPE_MASK) << ")\n";
 }
 
-void DeviceProxy_LibUSB::claim_interface(__u8 interface) {
+void DeviceProxy_LibUSB::claim_interface(uint8_t interface) {
 	/*
-	__u8 buf[256];
+	uint8_t buf[256];
 	usb_ctrlrequest setup_packet;
 	int len=0;
 
@@ -402,7 +402,7 @@ void DeviceProxy_LibUSB::claim_interface(__u8 interface) {
 	}
 }
 
-void DeviceProxy_LibUSB::release_interface(__u8 interface) {
+void DeviceProxy_LibUSB::release_interface(uint8_t interface) {
 	if (is_connected()) {
 		int rc=libusb_release_interface(dev_handle,interface);
 		if (rc && rc!=-5) {fprintf(stderr,"Error (%d) releasing interface %d\n",rc,interface);}
