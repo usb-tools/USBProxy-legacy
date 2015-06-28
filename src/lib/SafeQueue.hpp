@@ -1,11 +1,15 @@
 #ifndef SAFE_QUEUE
 #define SAFE_QUEUE
 
-// Taken from http://stackoverflow.com/questions/15278343/c11-thread-safe-queue
+// Based on http://stackoverflow.com/questions/15278343/c11-thread-safe-queue
 
 #include <queue>
 #include <mutex>
 #include <condition_variable>
+#include <iostream>
+
+#define QUEUE_MAX 10000
+#define QUEUE_FULL_WARNING_THRESHOLD 1000
 
 template <class T>
 class SafeQueue
@@ -22,6 +26,10 @@ public:
 
 	void enqueue(T t) {
 		std::lock_guard<std::mutex> lock(m);
+		if (!q.empty() && q.size() >= QUEUE_MAX)
+			return;
+		if (!q.empty() && q.size() == QUEUE_MAX - QUEUE_FULL_WARNING_THRESHOLD)
+			std::cerr << "Warning: queue fills up! Feel free to search the bug in either the driver or usbproxy.\n";
 		q.push(t);
 		c.notify_one();
 	}
@@ -31,7 +39,8 @@ public:
 		while(q.empty()) {
 			c.wait(lock);
 		}
-		T val = q.front();
+		T val;
+		std::swap(q.front(), val);
 		q.pop();
 		return val;
 	}
