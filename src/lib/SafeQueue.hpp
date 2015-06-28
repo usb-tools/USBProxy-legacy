@@ -39,7 +39,8 @@ public:
 		while(q.empty()) {
 			c.wait(lock);
 		}
-		T val = q.front();
+		T val;
+		std::swap(q.front(), val);
 		q.pop();
 		return val;
 	}
