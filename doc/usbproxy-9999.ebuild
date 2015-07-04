@@ -7,7 +7,7 @@ EAPI="5"
 
 EGIT_REPO_URI="git://github.com/dominicgs/USBProxy.git"
 
-inherit cmake-utils git-2
+inherit cmake-utils git-r3
 
 KEYWORDS="arm"
 
@@ -26,7 +26,7 @@ DEPEND="${RDEPEND}
 	dev-util/cmake"
 
 src_unpack() {
-	[[ ${PV} == "9999" ]] && git-2_src_unpack || default
+	[[ ${PV} == "9999" ]] && git-r3_src_unpack || default
 }
 
 CMAKE_USE_DIR="${S}/src"
