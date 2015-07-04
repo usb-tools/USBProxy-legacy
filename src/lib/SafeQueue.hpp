@@ -27,9 +27,10 @@ public:
 	void enqueue(T t) {
 		std::lock_guard<std::mutex> lock(m);
 		if (!q.empty()) {
-			if (q.size() >= QUEUE_MAX)
+			auto size(q.size());
+			if (size >= QUEUE_MAX)
 				return;
-			if (q.size() == QUEUE_MAX - QUEUE_FULL_WARNING_THRESHOLD)
+			if (size == QUEUE_MAX - QUEUE_FULL_WARNING_THRESHOLD)
 				std::cerr << "Warning: queue fills up! Feel free to search the bug in either the driver or usbproxy.\n";
 		}
 		q.push(t);
