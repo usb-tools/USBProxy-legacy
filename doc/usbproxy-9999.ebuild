@@ -7,7 +7,7 @@ EAPI="5"
 
 EGIT_REPO_URI="git://github.com/dominicgs/USBProxy.git"
 
-inherit cmake-utils git-2
+inherit cmake-utils git-r3
 
 KEYWORDS="arm"
 
@@ -26,7 +26,7 @@ DEPEND="${RDEPEND}
 	dev-util/cmake"
 
 src_unpack() {
-	[[ ${PV} == "9999" ]] && git-2_src_unpack || default
+	[[ ${PV} == "9999" ]] && git-r3_src_unpack || default
 }
 
 CMAKE_USE_DIR="${S}/src"
@@ -44,7 +44,7 @@ src_compile() {
 }
 
 src_install() {
-    dodoc doc/inode.c.patch README.md doc/gadgetfs_kernel_above_3.15.patch
+    dodoc doc/inode.c.patch README.md doc/gadgetfs_kernel_3.16-3.19.patch
     newdoc doc/README.md README_kernel.md
 	cmake-utils_src_install
 }
