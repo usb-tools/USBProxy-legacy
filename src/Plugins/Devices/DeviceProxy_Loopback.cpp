@@ -332,6 +332,9 @@ void DeviceProxy_Loopback::setConfig(Configuration* fs_cfg, Configuration* hs_cf
 	;
 }
 
+void DeviceProxy_Loopback::set_endpoint_interface(__u8 endpoint, __u8 interface) {
+}
+
 void DeviceProxy_Loopback::claim_interface(__u8 interface) {
 	;
 }

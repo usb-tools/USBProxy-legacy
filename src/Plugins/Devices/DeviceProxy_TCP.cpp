@@ -123,6 +123,9 @@ void DeviceProxy_TCP::setConfig(Configuration* fs_cfg, Configuration* hs_cfg, bo
 	free(eps);
 }
 
+void DeviceProxy_TCP::set_endpoint_interface(__u8 endpoint, __u8 interface) {
+}
+
 void DeviceProxy_TCP::claim_interface(__u8 interface) {}
 
 void DeviceProxy_TCP::release_interface(__u8 interface) {}

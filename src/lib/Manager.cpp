@@ -27,6 +27,8 @@
 #include "RelayWriter.h"
 #include "Injector.h"
 
+using namespace std;
+
 Manager::Manager(unsigned debug_level)
 	: _debug_level(debug_level)
 {
@@ -359,6 +361,13 @@ void Manager::start_data_relaying() {
 			for(ep_idx=0;ep_idx<ep_cnt;ep_idx++) {
 				Endpoint* ep=aifc->get_endpoint_by_idx(ep_idx);
 				const usb_endpoint_descriptor* epd=ep->get_descriptor();
+
+				if ((epd->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) == USB_ENDPOINT_XFER_ISOC) {
+					cerr << "Endpoint " << (unsigned) epd->bEndpointAddress
+							<< " has transfer type isochronous, which is currently not supported." << endl;
+					continue;
+				}
+
 				if (epd->bEndpointAddress & 0x80) { //IN EP
 					in_endpoints[epd->bEndpointAddress&0x0f]=ep;
 					in_queues[epd->bEndpointAddress&0x0f] = new PacketQueue;
@@ -366,6 +375,7 @@ void Manager::start_data_relaying() {
 					out_endpoints[epd->bEndpointAddress&0x0f]=ep;
 					out_queues[epd->bEndpointAddress&0x0f] = new PacketQueue;
 				}
+				deviceProxy->set_endpoint_interface(epd->bEndpointAddress, aifc->get_descriptor()->bInterfaceNumber);
 			}
 		}
 		// end
