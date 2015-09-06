@@ -201,6 +201,7 @@ const char * find_gadget_filename()
 		"pxa2xx_udc",
 		"sh_udc",
 		"sw_usb_udc",
+		"usb20_otg",
 		NULL
 	};
 
