@@ -1,0 +1,22 @@
+language: c++
+
+cache: apt
+
+sudo: false
+
+addons:
+  apt:
+    packages:
+      - libpcap-dev 
+      - libusb-1.0-0-dev
+
+compiler:
+  - clang
+  - gcc
+
+before_script:
+  - mkdir src/build
+  - cd src/build
+  - CFLAGS="-g -Wall -Wextra" cmake ..
+
+script: make
