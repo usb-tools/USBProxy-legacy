@@ -9,6 +9,8 @@ addons:
     packages:
       - libpcap-dev 
       - libusb-1.0-0-dev
+      - gcc-4.7
+      - g++-4.7
 
 compiler:
   - clang
@@ -17,6 +19,6 @@ compiler:
 before_script:
   - mkdir src/build
   - cd src/build
-  - CFLAGS="-g -Wall -Wextra" cmake ..
+  - CC=gcc-4.7 CXX=g++-4.7 CFLAGS="-g -Wall -Wextra" cmake ..
 
 script: make
