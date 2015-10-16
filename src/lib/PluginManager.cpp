@@ -20,7 +20,7 @@ void *PluginManager::load_shared_lib(std::string plugin_name) {
 	std::string plugin_file = PLUGIN_PATH + plugin_name + ".so";
 	void* plugin_lib = dlopen(plugin_file.c_str(), RTLD_LAZY);
 	if(!plugin_lib)
-		fprintf(stderr, "error opening library %s\n", plugin_file.c_str());
+		fprintf(stderr, "error opening library %s\n",  dlerror());
 	
 	return plugin_lib;
 }
