@@ -14,7 +14,6 @@ private:
 	TCP_Helper* network;
 
 public:
-	static int debugLevel;
 	HostProxy_TCP(const char* address=NULL);
 	HostProxy_TCP(ConfigParser *cfg);
 	virtual ~HostProxy_TCP();

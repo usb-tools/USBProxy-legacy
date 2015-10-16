@@ -329,7 +329,8 @@ bool TCP_Helper::is_connected() {
 void TCP_Helper::send_data(int ep,__u8* data,int length) {
 	int port=(ep&0x80)?(ep&0xf)|0x10:ep;
 	write(ep_socket[port],data,length);
-	fprintf(stderr,"Wrote %d bytes to FD %d\n",length,ep_socket[port]);
+	if(debugLevel)
+		fprintf(stderr,"Wrote %d bytes to FD %d\n",length,ep_socket[port]);
 }
 
 void TCP_Helper::receive_data(int ep,__u8** data,int *length,int timeout) {
@@ -341,7 +342,8 @@ void TCP_Helper::receive_data(int ep,__u8** data,int *length,int timeout) {
 		*data=(__u8*)malloc(TCP_BUFFER_SIZE);
 		*length=read(ep_socket[port],*data,TCP_BUFFER_SIZE);
 		*data=(__u8*)realloc(*data,*length);
-		if (*length) fprintf(stderr,"Read %d bytes from FD %d\n",*length,ep_socket[port]);
+		if(debugLevel)
+			if (*length) fprintf(stderr,"Read %d bytes from FD %d\n",*length,ep_socket[port]);
 	}
 }
 
