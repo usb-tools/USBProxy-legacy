@@ -242,6 +242,12 @@ int HostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *nbyt
 			setup_packet->wIndex=lastControl.wIndex;
 			setup_packet->wValue=lastControl.wValue;
 			setup_packet->wLength=lastControl.wLength;
+			if (lastControl.bRequest == USB_REQ_SET_CONFIGURATION
+				&& !(lastControl.bRequestType&0x80))
+			{
+				control_ack();
+			}
+
 			if (!(lastControl.bRequestType&0x80) && lastControl.wLength) {
 				*dataptr=(__u8*)malloc(lastControl.wLength);
 				*nbytes=read(p_device_file,*dataptr,lastControl.wLength);
