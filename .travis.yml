@@ -6,19 +6,27 @@ sudo: false
 
 addons:
   apt:
+    sources:
+      - ubuntu-toolchain-r-test
     packages:
-      - libpcap-dev 
-      - libusb-1.0-0-dev
+      - libpcap-dev
+      - libudev-dev
+      - cmake
       - gcc-4.7
       - g++-4.7
 
 compiler:
-  - clang
   - gcc
 
+before_install:
+  - wget https://github.com/libusb/libusb/archive/v1.0.19.tar.gz
+  - tar -xvzf v1.0.19.tar.gz
+  - cd libusb-1.0.19 && ./bootstrap.sh && ./configure --prefix=$HOME/libusb && make && make install
+  - cd -
+
 before_script:
-  - mkdir src/build
+  - mkdir -p src/build
   - cd src/build
-  - CC=gcc-4.7 CXX=g++-4.7 CFLAGS="-g -Wall -Wextra" cmake ..
+  - CC=gcc-4.7 CXX=g++-4.7 CFLAGS="-g -Wall -Wextra" cmake -DLIBUSB_INCLUDE_DIR=$HOME/libusb/include -DLIBUSB_LIBRARIES=$HOME/libusb/lib/libusb-1.0.so ..
 
 script: make
