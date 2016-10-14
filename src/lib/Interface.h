@@ -54,6 +54,8 @@ class Interface {
 		void add_generic_descriptor(GenericDescriptor* _gd);
 		const definition_error is_defined(__u8 configId,__u8 interfaceNum);
 		Configuration* get_configuration();
+		const bool has_HID();
+		size_t get_HID_descriptor_length();
 };
 
 #endif /* USBPROXY_INTERFACE_H */

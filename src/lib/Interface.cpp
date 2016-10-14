@@ -282,3 +282,11 @@ const definition_error Interface::is_defined(__u8 configId,__u8 interfaceNum) {
 }
 
 Configuration* Interface::get_configuration() {return configuration;}
+
+const bool Interface::has_HID(){
+	return (hid_descriptor!=NULL);
+}
+
+size_t Interface::get_HID_descriptor_length(){
+	return hid_descriptor->get_full_descriptor_length();
+}
