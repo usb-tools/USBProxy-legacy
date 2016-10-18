@@ -91,7 +91,7 @@ int HostProxy_GadgetFS::generate_descriptor(Device* device) {
 			buf->bmAttributes&=(~USB_CONFIG_ATT_WAKEUP);
 			buf->wTotalLength=length;
 			/* Adjust polling rate for high speed descriptor */
-			if(device->get_descriptor()->bcdUSB != 0x200){
+			if(!device->is_highspeed()) {
 			    char* pointer = (char*) buf;
 			    pointer += buf->bLength;    //move to end of cfg desc
 
