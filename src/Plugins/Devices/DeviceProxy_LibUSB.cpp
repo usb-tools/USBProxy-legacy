@@ -20,6 +20,7 @@ using namespace std;
 
 #define hex2(VALUE) setfill('0') << setw(2) << hex << (unsigned)VALUE << dec
 #define hex4(VALUE) setfill('0') << setw(4) << hex << VALUE << dec
+#define MAX_ATTEMPTS 5
 
 int resetCount = 1;
 
@@ -441,9 +442,16 @@ void DeviceProxy_LibUSB::receive_data(uint8_t endpoint, uint8_t attributes, uint
 
 	int rc = LIBUSB_SUCCESS;
 
-	if (timeout < 10)
-		timeout = 10;	//TODO: explain this!
+	//if (timeout < 10)
+		//timeout = 10;	//TODO: explain this!
 
+	/* Skazza 20-10-2016
+	 * Infinite timeout to avoid stalling with mass storages, temporarily assigned here.
+	 * Need to check if this is useful or only do-while is needed. But for now it works.
+	 */
+	timeout = 0; 
+	
+	int attempt = 0;
 	switch (attributes & USB_ENDPOINT_XFERTYPE_MASK) {
 	case USB_ENDPOINT_XFER_CONTROL:
 		cerr << "Can't send on a control endpoint." << endl;
@@ -454,10 +462,16 @@ void DeviceProxy_LibUSB::receive_data(uint8_t endpoint, uint8_t attributes, uint
 		break;
 	case USB_ENDPOINT_XFER_BULK:
 		*dataptr = (uint8_t *) malloc(maxPacketSize * 8);
-		rc = libusb_bulk_transfer(dev_handle, endpoint, *dataptr, maxPacketSize, length, timeout);
-		if (rc == LIBUSB_SUCCESS && debugLevel > 2)
-			cerr << "received bulk msg (" << *length << " bytes)" << endl;
-		break;
+		/* Edited by Skazza 20-10-2016 */
+		do {
+			rc = libusb_bulk_transfer(dev_handle, endpoint, *dataptr, maxPacketSize, length, timeout);
+			if (rc == LIBUSB_SUCCESS && debugLevel > 2)
+				cerr << "received bulk msg (" << *length << " bytes)" << endl;
+			if ((rc == LIBUSB_ERROR_PIPE || rc == LIBUSB_ERROR_TIMEOUT))
+				libusb_clear_halt(dev_handle, endpoint);
+			
+			attempts++;
+		} while ((rc == LIBUSB_ERROR_PIPE || rc == LIBUSB_ERROR_TIMEOUT) && attempt < MAX_ATTEMPTS);
 	case USB_ENDPOINT_XFER_INT:
 		*dataptr = (uint8_t *) malloc(maxPacketSize);
 		rc = libusb_interrupt_transfer(dev_handle, endpoint, *dataptr, maxPacketSize, length, timeout);
