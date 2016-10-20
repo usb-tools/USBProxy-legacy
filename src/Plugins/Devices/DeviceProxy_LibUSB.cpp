@@ -470,7 +470,7 @@ void DeviceProxy_LibUSB::receive_data(uint8_t endpoint, uint8_t attributes, uint
 			if ((rc == LIBUSB_ERROR_PIPE || rc == LIBUSB_ERROR_TIMEOUT))
 				libusb_clear_halt(dev_handle, endpoint);
 			
-			attempts++;
+			attempt++;
 		} while ((rc == LIBUSB_ERROR_PIPE || rc == LIBUSB_ERROR_TIMEOUT) && attempt < MAX_ATTEMPTS);
 	case USB_ENDPOINT_XFER_INT:
 		*dataptr = (uint8_t *) malloc(maxPacketSize);
