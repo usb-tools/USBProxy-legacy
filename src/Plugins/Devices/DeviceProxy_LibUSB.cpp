@@ -445,7 +445,7 @@ void DeviceProxy_LibUSB::receive_data(uint8_t endpoint, uint8_t attributes, uint
 	//if (timeout < 10)
 		//timeout = 10;	//TODO: explain this!
 
-	/* Skazza 20-10-2016
+	/* 
 	 * Infinite timeout to avoid stalling with mass storages, temporarily assigned here.
 	 * Need to check if this is useful or only do-while is needed. But for now it works.
 	 */
@@ -462,7 +462,6 @@ void DeviceProxy_LibUSB::receive_data(uint8_t endpoint, uint8_t attributes, uint
 		break;
 	case USB_ENDPOINT_XFER_BULK:
 		*dataptr = (uint8_t *) malloc(maxPacketSize * 8);
-		/* Edited by Skazza 20-10-2016 */
 		do {
 			rc = libusb_bulk_transfer(dev_handle, endpoint, *dataptr, maxPacketSize, length, timeout);
 			if (rc == LIBUSB_SUCCESS && debugLevel > 2)
