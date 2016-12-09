@@ -399,6 +399,7 @@ void DeviceProxy_LibUSB::send_data(uint8_t endpoint, uint8_t attributes, uint16_
 	}
 
 	int transferred;
+	int attempt = 0;
 	int rc = LIBUSB_SUCCESS;
 
 	switch (attributes & USB_ENDPOINT_XFERTYPE_MASK) {
