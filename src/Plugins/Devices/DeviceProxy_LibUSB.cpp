@@ -410,12 +410,18 @@ void DeviceProxy_LibUSB::send_data(uint8_t endpoint, uint8_t attributes, uint16_
 		cerr << "Isochronous endpoints unhandled." << endl;
 		break;
 	case USB_ENDPOINT_XFER_BULK:
-		rc = libusb_bulk_transfer(dev_handle, endpoint, dataptr, length, &transferred, 0);
-		//TODO retry transfer if incomplete
-		if (transferred != length)
-			cerr << "Incomplete Bulk transfer on EP" << hex2(endpoint) << endl;
-		if (rc == LIBUSB_SUCCESS && debugLevel > 2)
-			cerr << "Sent " << transferred << " bytes (Bulk) to libusb EP" << hex2(endpoint) << endl;
+		do {
+			rc = libusb_bulk_transfer(dev_handle, endpoint, dataptr, length, &transferred, 0);
+			//TODO retry transfer if incomplete
+			if (transferred != length)
+				cerr << "Incomplete Bulk transfer on EP" << hex2(endpoint) << endl;
+			if (rc == LIBUSB_SUCCESS && debugLevel > 2)
+				cerr << "Sent " << transferred << " bytes (Bulk) to libusb EP" << hex2(endpoint) << endl;
+			if ((rc == LIBUSB_ERROR_PIPE || rc == LIBUSB_ERROR_TIMEOUT))
+				libusb_clear_halt(dev_handle, endpoint);
+			
+			attempt++;
+		} while ((rc == LIBUSB_ERROR_PIPE || rc == LIBUSB_ERROR_TIMEOUT || transferred != length) && attempt < MAX_ATTEMPTS);
 		break;
 	case USB_ENDPOINT_XFER_INT:
 		rc = libusb_interrupt_transfer(dev_handle, endpoint, dataptr, length, &transferred, 0);
