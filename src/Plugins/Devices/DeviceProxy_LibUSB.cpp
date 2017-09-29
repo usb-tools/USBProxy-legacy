@@ -434,7 +434,7 @@ void DeviceProxy_LibUSB::send_data(uint8_t endpoint, uint8_t attributes, uint16_
 		break;
 	}
 	if (rc != LIBUSB_SUCCESS)
-		cerr << "Transfer error on EP" << hex2(endpoint) << " (xfertype "
+		cerr << "Transfer error sending on EP" << hex2(endpoint) << " (xfertype "
 				<< unsigned(attributes & USB_ENDPOINT_XFERTYPE_MASK) << ")" << ": "
 				<< libusb_strerror((libusb_error) rc) << endl;
 }
@@ -491,7 +491,7 @@ void DeviceProxy_LibUSB::receive_data(uint8_t endpoint, uint8_t attributes, uint
 		*length = 0;
 	}
 	if (rc != LIBUSB_SUCCESS)
-		cerr << "Transfer error on EP" << hex2(endpoint) << " (xfertype "
+		cerr << "Transfer error receiving on EP" << hex2(endpoint) << " (xfertype "
 				<< unsigned(attributes & USB_ENDPOINT_XFERTYPE_MASK) << ")" << ": "
 				<< libusb_strerror((libusb_error) rc) << endl;
 }
