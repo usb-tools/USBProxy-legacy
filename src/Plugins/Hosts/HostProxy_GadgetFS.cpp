@@ -518,7 +518,7 @@ void HostProxy_GadgetFS::setConfig(Configuration* fs_cfg,Configuration* hs_cfg,b
 				int rc = write(fd, buf, bufSize);
 				free(buf);
 				if (rc != bufSize)
-					std::cerr << "Error writing to EP 0x" << std::hex << epAddress << std::dec << '\n';
+					std::cerr << "Error writing to EP 0x" << std::hex << (unsigned)epAddress << std::dec << '\n';
 				aiocb* aio=new aiocb;
 				std::memset(aio, 0, sizeof(struct aiocb));
 				aio->aio_fildes = fd;
