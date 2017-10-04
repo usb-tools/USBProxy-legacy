@@ -186,6 +186,7 @@ const char * find_gadget_filename()
 	int i;
 
 	static const char *devices[] = {
+		"12480000.hsotg",
 		"2184000.usb",
 		"at91_udc",
 		"atmel_usba_udc",
@@ -196,8 +197,8 @@ const char * find_gadget_filename()
 		"lh740x_udc",
 		"musb-hdrc",
 		"musb_hdrc",
-		"omap_udc",
 		"net2280",
+		"omap_udc",
 		"pxa2xx_udc",
 		"sh_udc",
 		"sw_usb_udc",
