@@ -240,7 +240,7 @@ int DeviceProxy_LibUSB::connect(int vendorId, int productId, bool includeHubs) {
 	unsigned char unused[4];
 	rc = libusb_get_string_descriptor(dev_handle, 0, 0, unused, sizeof(unused));
 	if (rc < 0) {
-		cerr << "Device unresponsive: " << libusb_strerror((libusb_error) rc);
+		cerr << "Device unresponsive: " << libusb_strerror((libusb_error) rc) << endl;
 		return rc;
 	}
 
