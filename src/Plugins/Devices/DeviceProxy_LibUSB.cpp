@@ -478,6 +478,7 @@ void DeviceProxy_LibUSB::receive_data(uint8_t endpoint, uint8_t attributes, uint
 			
 			attempt++;
 		} while ((rc == LIBUSB_ERROR_PIPE || rc == LIBUSB_ERROR_TIMEOUT) && attempt < MAX_ATTEMPTS);
+		break;
 	case USB_ENDPOINT_XFER_INT:
 		*dataptr = (uint8_t *) malloc(maxPacketSize);
 		rc = libusb_interrupt_transfer(dev_handle, endpoint, *dataptr, maxPacketSize, length, timeout);
