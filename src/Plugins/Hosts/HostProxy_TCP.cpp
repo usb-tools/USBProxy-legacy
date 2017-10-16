@@ -54,7 +54,7 @@ bool HostProxy_TCP::is_connected() {
 }
 
 
-//return 0 in usb_ctrlrequest->brequest if there is no request
+//return 0 in if there is no request, 1 otherwise
 int HostProxy_TCP::control_request(usb_ctrlrequest *setup_packet, int *nbytes, __u8** dataptr, int timeout) {
 	int length=0;
 	__u8* buf=NULL;
@@ -80,7 +80,7 @@ int HostProxy_TCP::control_request(usb_ctrlrequest *setup_packet, int *nbytes, _
 		fprintf(stderr, "TCP< %s\n",hex);
 		free(hex);
 	}
-	return 0;
+	return 1;
 }
 
 void HostProxy_TCP::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length) {
