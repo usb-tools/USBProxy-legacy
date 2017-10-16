@@ -67,8 +67,8 @@ void RelayReader::relay_read_setup() {
 			buf=NULL;
 			length=0;
 
-			hostProxy->control_request(&ctrl_req, &length, &buf, CTRL_REQUEST_TIMEOUT_MS);
-			if (ctrl_req.bRequest) {
+			int is_control_req = hostProxy->control_request(&ctrl_req, &length, &buf, CTRL_REQUEST_TIMEOUT_MS);
+			if (is_control_req) {
 				p = std::make_shared<SetupPacket>(ctrl_req,buf);
 			}
 			if (!p)
