@@ -43,7 +43,7 @@ void PacketFilter_PSClassic::filter_setup_packet(SetupPacket* packet,bool direct
 	}*/
 }
 
-static PacketFilter_Xbox *proxy;
+static PacketFilter_PSClassic *proxy;
 
 extern "C" {
 	int plugin_type = PLUGIN_FILTER;
