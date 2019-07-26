@@ -4,11 +4,11 @@
 
 #include "PacketFilter_PSClassic.h"
 
-PacketFilter_Xbox::PacketFilter_PSClassic(ConfigParser *cfg) {
+PacketFilter_PSClassic::PacketFilter_PSClassic(ConfigParser *cfg) {
 	file  = (FILE *) cfg->get_pointer("PacketFilter_PSClassic::file");
 }
 
-void PacketFilter_Xbox::filter_packet(Packet* packet) {
+void PacketFilter_PSClassic::filter_packet(Packet* packet) {
 	if (packet->wLength >= 2) {
 		printf("%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d\n", 
 			(packet[0] & 0x1000000000000000) == 1,
@@ -29,7 +29,7 @@ void PacketFilter_Xbox::filter_packet(Packet* packet) {
 			(packet[0] & 0x0000000000000001) == 1 )
 	}
 }
-void PacketFilter_Xbox::filter_setup_packet(SetupPacket* packet,bool direction) {
+void PacketFilter_PSClassic::filter_setup_packet(SetupPacket* packet,bool direction) {
 /*	if (packet->ctrl_req.wLength && packet->data) {
 		char* hex_setup=hex_string(&(packet->ctrl_req),sizeof(packet->ctrl_req));
 		char* hex_data=hex_string((void*)(packet->data),packet->ctrl_req.wLength);
