@@ -38,7 +38,8 @@ void usage(char *arg) {
 	printf("\t-c <hostname | address> Client mode, connect to server at hostname or address\n");
 	printf("\t-l Enable stream logger (logs to stderr)\n");
 	printf("\t-i Enable UDP injector\n");
-	printf("\t-x Enable Xbox360 UDPHID injector & filter\n");
+	printf("\t-x RetroSpy Xbox mode\n");
+	printf("\t-y RetroSpy PlayStation Classic mode\n");
 	printf("\t-k Keylogger with ROT13 filter (for demo), specify optional filename to output to instead of stderr\n");
 	printf("\t-w <filename> Write to pcap file for viewing in Wireshark\n");
 	printf("\t-h Display this message\n");
@@ -91,7 +92,7 @@ extern "C" int main(int argc, char **argv)
 	
 	ConfigParser *cfg = new ConfigParser();
 
-	while ((opt = getopt (argc, argv, "v:p:P:D:H:dsc:C:lmik::w:hx")) != EOF) {
+	while ((opt = getopt (argc, argv, "v:p:P:D:H:dsc:C:lmik::w:hxy")) != EOF) {
 		switch (opt) {
 		case 'v':
 			cfg->set("vendorId", optarg);
@@ -165,8 +166,10 @@ extern "C" int main(int argc, char **argv)
 			//cfg->add_to_vector("Plugins", "Injector_UDPHID");
 			//cfg->set("Injector_UDP::port", "12345");
 			//cfg->add_to_vector("Plugins", "PacketFilter_UDPHID");
-			
 			break;
+		case 'y':
+			cfg->add_to_vector("Plugins", "PacketFilter_PSClassic");
+			cfg->add_pointer("PacketFilter_PSClassic::file", stdout);
 		case 'h':
 		default:
 			usage(argv[0]);
