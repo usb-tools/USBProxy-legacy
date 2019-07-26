@@ -21,12 +21,12 @@ void PacketFilter_PSClassic::filter_packet(Packet* packet) {
 			(packet->data[0] & 0b0000000100000000) != 0,
 			0,
 			0,
-			(packet->data[0] & 0b0000000000100000) != 0,
-			(packet->data[0] & 0b0000000000010000) == 0,
-			(packet->data[0] & 0b0000000000001000) != 0,
-			(packet->data[0] & 0b0000000000000100) == 0,
-			(packet->data[0] & 0b0000000000000010) != 0,
-			(packet->data[0] & 0b0000000000000001) != 0);
+			(packet->data[1] & 0b0000000000100000) != 0,
+			(packet->data[1] & 0b0000000000010000) == 0,
+			(packet->data[1] & 0b0000000000001000) != 0,
+			(packet->data[1] & 0b0000000000000100) == 0,
+			(packet->data[1] & 0b0000000000000010) != 0,
+			(packet->data[1] & 0b0000000000000001) != 0);
 	}
 }
 void PacketFilter_PSClassic::filter_setup_packet(SetupPacket* packet,bool direction) {
