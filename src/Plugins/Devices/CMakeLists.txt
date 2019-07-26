@@ -17,6 +17,7 @@ find_package(USB1)
 
 if( ${LIBUSB_FOUND} )
 	LIST(APPEND PLUGINS DeviceProxy_LibUSB)
+	LIST(APPEND PLUGINS DeviceProxy_Xbox)
 	include_directories(${LIBUSB_INCLUDE_DIR})
 	LIST(APPEND PLUGINS_LINK_LIBS ${LIBUSB_LIBRARIES})
 else( ${LIBUSB_FOUND} )

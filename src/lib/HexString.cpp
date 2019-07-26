@@ -105,3 +105,20 @@ char* hex_string(const void* buf,int length) {
   }
   return result;
 }
+
+void hex_string_nomalloc(const void* buf,int length, char* result) {
+  if (!length) {
+	  *result=0;
+  }
+  __u8* inbuf=(__u8*)buf;
+  result[length * 2] = 0;
+  __u16* p=(__u16*)result;
+
+  *p=hexAscii[inbuf[0]];
+  int i;
+
+  for (i = 1; i < length; i++) {
+	  p=(__u16*)(result+i*2);
+	  *p=hexAscii[inbuf[i]];
+  }
+}

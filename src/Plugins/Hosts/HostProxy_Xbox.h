@@ -2,8 +2,8 @@
  * This file is part of USBProxy.
  */
 
-#ifndef USBPROXY_HOSTPROXY_GADGETFS_H
-#define USBPROXY_HOSTPROXY_GADGETFS_H
+#ifndef USBPROXY_HOSTPROXY_XBOX_H
+#define USBPROXY_HOSTPROXY_XBOX_H
 
 extern "C" {
 #include <linux/usb/gadgetfs.h>
@@ -16,7 +16,7 @@ extern "C" {
 #include "aio.h"
 #include <linux/usb/ch9.h>
 
-class HostProxy_GadgetFS: public HostProxy {
+class HostProxy_Xbox: public HostProxy {
 private:
 	bool p_is_connected;
 	int p_device_file;
@@ -38,8 +38,8 @@ protected:
 	virtual void handle_USB_REQ_SET_CONFIGURATION();
 
 public:
-	HostProxy_GadgetFS(ConfigParser *cfg);
-	virtual ~HostProxy_GadgetFS();
+	HostProxy_Xbox(ConfigParser *cfg);
+	virtual ~HostProxy_Xbox();
 
 	int connect(Device* device,int timeout=250);
 	void disconnect();
@@ -56,4 +56,4 @@ public:
 	void setConfig(Configuration* fs_cfg,Configuration* hs_cfg,bool hs);
 };
 
-#endif /* USBPROXY_HOSTPROXY_GADGETFS_H */
+#endif /* USBPROXY_HOSTPROXY_XBOX_H */

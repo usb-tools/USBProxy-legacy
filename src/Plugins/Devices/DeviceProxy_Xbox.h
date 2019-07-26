@@ -2,8 +2,8 @@
  * This file is part of USBProxy.
  */
 
-#ifndef USBPROXY_DEVICEPROXY_LIBUSB_H
-#define USBPROXY_DEVICEPROXY_LIBUSB_H
+#ifndef USBPROXY_DEVICEPROXY_XBOX_H
+#define USBPROXY_DEVICEPROXY_XBOX_H
 
 #ifndef LIBUSB_HOTPLUG_MATCH_ANY
 #define LIBUSB_HOTPLUG_MATCH_ANY -1
@@ -14,7 +14,7 @@
 
 #include <vector>
 
-class DeviceProxy_LibUSB: public DeviceProxy {
+class DeviceProxy_Xbox: public DeviceProxy {
 private:
 	libusb_context* context;
 	libusb_hotplug_callback_handle callback_handle;
@@ -40,10 +40,10 @@ protected:
 	virtual int check_device_response(libusb_device_handle* dev_handle);
 
 public:
-	DeviceProxy_LibUSB(int vendorId = LIBUSB_HOTPLUG_MATCH_ANY, int productId = LIBUSB_HOTPLUG_MATCH_ANY,
+	DeviceProxy_Xbox(int vendorId = LIBUSB_HOTPLUG_MATCH_ANY, int productId = LIBUSB_HOTPLUG_MATCH_ANY,
 			bool includeHubs = false);
-	DeviceProxy_LibUSB(ConfigParser *cfg);
-	virtual ~DeviceProxy_LibUSB();
+	DeviceProxy_Xbox(ConfigParser *cfg);
+	virtual ~DeviceProxy_Xbox();
 
 	int connect(int timeout = 250);
 	int connect(int vendorId, int productId, bool includeHubs);
@@ -70,4 +70,4 @@ public:
 	char* toString();
 };
 
-#endif /* USBPROXY_DEVICEPROXY_LIBUSB_H */
+#endif /* USBPROXY_DEVICEPROXY_XBOX_H */

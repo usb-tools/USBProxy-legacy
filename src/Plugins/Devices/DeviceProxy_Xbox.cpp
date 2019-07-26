@@ -12,7 +12,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <signal.h>
-#include "DeviceProxy_LibUSB.h"
+#include "DeviceProxy_Xbox.h"
 #include "TRACE.h"
 #include "HexString.h"
 
@@ -24,7 +24,7 @@ using namespace std;
 
 int resetCount = 1;
 
-static DeviceProxy_LibUSB *proxy;
+static DeviceProxy_Xbox *proxy;
 
 extern "C" {
 	// for handling events of hotploug.
@@ -36,7 +36,7 @@ extern "C" {
 	}
 
 	DeviceProxy * get_deviceproxy_plugin(ConfigParser *cfg) {
-		proxy = new DeviceProxy_LibUSB(cfg);
+		proxy = new DeviceProxy_Xbox(cfg);
 		return (DeviceProxy *)proxy;
 	}
 
@@ -47,7 +47,7 @@ extern "C" {
 
 //CLEANUP hotplug support
 
-DeviceProxy_LibUSB::DeviceProxy_LibUSB(int vendorId, int productId, bool includeHubs) {
+DeviceProxy_Xbox::DeviceProxy_Xbox(int vendorId, int productId, bool includeHubs) {
 	context = NULL;
 	dev_handle = NULL;
 
@@ -67,7 +67,7 @@ DeviceProxy_LibUSB::DeviceProxy_LibUSB(int vendorId, int productId, bool include
 	}
 }
 
-DeviceProxy_LibUSB::DeviceProxy_LibUSB(ConfigParser *cfg) :
+DeviceProxy_Xbox::DeviceProxy_Xbox(ConfigParser *cfg) :
 	DeviceProxy(*cfg) {
 	int vendorId, productId;
 
@@ -106,7 +106,7 @@ DeviceProxy_LibUSB::DeviceProxy_LibUSB(ConfigParser *cfg) :
 	}
 }
 
-DeviceProxy_LibUSB::~DeviceProxy_LibUSB() {
+DeviceProxy_Xbox::~DeviceProxy_Xbox() {
 	// for handling events of hotploug.
 	if (context && callback_handle != -1) {
 		libusb_hotplug_deregister_callback(context, callback_handle);
@@ -120,11 +120,11 @@ DeviceProxy_LibUSB::~DeviceProxy_LibUSB() {
 	}
 }
 
-int DeviceProxy_LibUSB::connect(int timeout) {
+int DeviceProxy_Xbox::connect(int timeout) {
 	return connect(desired_vid, desired_pid, desired_hubs);
 }
 
-int DeviceProxy_LibUSB::connect(libusb_device* dvc, libusb_context* _context) {
+int DeviceProxy_Xbox::connect(libusb_device* dvc, libusb_context* _context) {
 	if (dev_handle) {
 		cerr << "LibUSB already connected." << endl;
 		return 0;
@@ -147,7 +147,7 @@ int DeviceProxy_LibUSB::connect(libusb_device* dvc, libusb_context* _context) {
 	return 0;
 }
 
-int DeviceProxy_LibUSB::connect(libusb_device_handle* devh, libusb_context* _context) {
+int DeviceProxy_Xbox::connect(libusb_device_handle* devh, libusb_context* _context) {
 	if (dev_handle) {
 		cerr << "LibUSB already connected." << endl;
 		return 0;
@@ -164,7 +164,7 @@ int DeviceProxy_LibUSB::connect(libusb_device_handle* devh, libusb_context* _con
 	return 0;
 }
 
-int DeviceProxy_LibUSB::connect(int vendorId, int productId, bool includeHubs) {
+int DeviceProxy_Xbox::connect(int vendorId, int productId, bool includeHubs) {
 	if (dev_handle) {
 		cerr << "LibUSB already connected." << endl;
 		return 0;
@@ -268,7 +268,7 @@ int DeviceProxy_LibUSB::connect(int vendorId, int productId, bool includeHubs) {
 	return 0;
 }
 
-void DeviceProxy_LibUSB::disconnect() {
+void DeviceProxy_Xbox::disconnect() {
 	// for handling events of hotploug.
 	if (context && callback_handle != -1) {
 		libusb_hotplug_deregister_callback(context, callback_handle);
@@ -285,7 +285,7 @@ void DeviceProxy_LibUSB::disconnect() {
 	context = NULL;
 }
 
-void DeviceProxy_LibUSB::reset() {
+void DeviceProxy_Xbox::reset() {
 	int rc = libusb_reset_device(dev_handle);
 	if (rc == LIBUSB_ERROR_NOT_FOUND) {
 		disconnect();
@@ -296,7 +296,7 @@ void DeviceProxy_LibUSB::reset() {
 	}
 }
 
-bool DeviceProxy_LibUSB::is_connected() {
+bool DeviceProxy_Xbox::is_connected() {
 	if (dev_handle) {
 		return true;
 	}
@@ -305,13 +305,13 @@ bool DeviceProxy_LibUSB::is_connected() {
 	}
 }
 
-bool DeviceProxy_LibUSB::is_highspeed() {
+bool DeviceProxy_Xbox::is_highspeed() {
 	libusb_device* dvc = libusb_get_device(dev_handle);
 	int speed = libusb_get_device_speed(dvc);
 	return (speed == LIBUSB_SPEED_HIGH) || (speed == LIBUSB_SPEED_SUPER);
 }
 
-char* DeviceProxy_LibUSB::toString() {
+char* DeviceProxy_Xbox::toString() {
 	unsigned char str_mfr[128] = "N/A";
 	unsigned char str_prd[128] = "N/A";
 	struct libusb_device_descriptor desc;
@@ -345,7 +345,7 @@ char* DeviceProxy_LibUSB::toString() {
 	return strdup(ss.str().c_str());
 }
 
-int DeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, int *nbytes, unsigned char * dataptr,
+int DeviceProxy_Xbox::control_request(const usb_ctrlrequest *setup_packet, int *nbytes, unsigned char * dataptr,
 	int timeout) {
 
 	timeout = control_request_timeout_override(timeout);
@@ -376,12 +376,12 @@ int DeviceProxy_LibUSB::control_request(const usb_ctrlrequest *setup_packet, int
 	return 0;
 }
 
-uint8_t DeviceProxy_LibUSB::get_address() {
+uint8_t DeviceProxy_Xbox::get_address() {
 	libusb_device* dvc = libusb_get_device(dev_handle);
 	return libusb_get_device_address(dvc);
 }
 
-bool DeviceProxy_LibUSB::endpoint_interface_claimed(uint8_t endpoint) {
+bool DeviceProxy_Xbox::endpoint_interface_claimed(uint8_t endpoint) {
 
 	if (!epInterfaces[endpoint & 0x0F].defined) {
 		cerr << "No interface defined for endpoint: " << hex2(endpoint) << endl;
@@ -395,7 +395,7 @@ bool DeviceProxy_LibUSB::endpoint_interface_claimed(uint8_t endpoint) {
 	return true;
 }
 
-void DeviceProxy_LibUSB::send_data(uint8_t endpoint, uint8_t attributes, uint16_t maxPacketSize, uint8_t* dataptr,
+void DeviceProxy_Xbox::send_data(uint8_t endpoint, uint8_t attributes, uint16_t maxPacketSize, uint8_t* dataptr,
 	int length) {
 
 	if (!endpoint_interface_claimed(endpoint)) {
@@ -444,7 +444,7 @@ void DeviceProxy_LibUSB::send_data(uint8_t endpoint, uint8_t attributes, uint16_
 		<< libusb_strerror((libusb_error)rc) << endl;
 }
 
-void DeviceProxy_LibUSB::receive_data(uint8_t endpoint, uint8_t attributes, uint16_t maxPacketSize, uint8_t ** dataptr,
+void DeviceProxy_Xbox::receive_data(uint8_t endpoint, uint8_t attributes, uint16_t maxPacketSize, uint8_t ** dataptr,
 	int* length, int timeout) {
 
 	if (!endpoint_interface_claimed(endpoint)) {
@@ -502,12 +502,12 @@ void DeviceProxy_LibUSB::receive_data(uint8_t endpoint, uint8_t attributes, uint
 		<< libusb_strerror((libusb_error)rc) << endl;
 }
 
-void DeviceProxy_LibUSB::set_endpoint_interface(uint8_t endpoint, uint8_t interface) {
+void DeviceProxy_Xbox::set_endpoint_interface(uint8_t endpoint, uint8_t interface) {
 	epInterfaces[endpoint & 0x0F].defined = true;
 	epInterfaces[endpoint & 0x0F].interface = interface;
 }
 
-void DeviceProxy_LibUSB::claim_interface(uint8_t interface) {
+void DeviceProxy_Xbox::claim_interface(uint8_t interface) {
 	if (is_connected()) {
 		int rc = libusb_claim_interface(dev_handle, interface);
 		if (rc != LIBUSB_SUCCESS) {
@@ -524,7 +524,7 @@ void DeviceProxy_LibUSB::claim_interface(uint8_t interface) {
 	}
 }
 
-void DeviceProxy_LibUSB::release_interface(uint8_t interface) {
+void DeviceProxy_Xbox::release_interface(uint8_t interface) {
 	if (is_connected()) {
 		int rc = libusb_release_interface(dev_handle, interface);
 		if (rc != LIBUSB_SUCCESS && rc != LIBUSB_ERROR_NOT_FOUND) {
@@ -541,18 +541,17 @@ void DeviceProxy_LibUSB::release_interface(uint8_t interface) {
 	}
 }
 
-int DeviceProxy_LibUSB::control_request_timeout_override(int timeout)
+int DeviceProxy_Xbox::control_request_timeout_override(int timeout)
 {
-	return timeout;
+	return 10;
 }
 
-bool DeviceProxy_LibUSB::swallow_setup_packet_send_error(const usb_ctrlrequest* setup_packet)
+bool DeviceProxy_Xbox::swallow_setup_packet_send_error(const usb_ctrlrequest* setup_packet)
 {
-	return false;
+	return setup_packet->wValue == 768;
 }
 
-int DeviceProxy_LibUSB::check_device_response(libusb_device_handle* dev_handle)
+int DeviceProxy_Xbox::check_device_response(libusb_device_handle* dev_handle)
 {
-	unsigned char unused[4];
-	return libusb_get_string_descriptor(dev_handle, 0, 0, unused, sizeof(unused));
+	return 0;
 }

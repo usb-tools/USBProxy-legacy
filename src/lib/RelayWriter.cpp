@@ -141,7 +141,7 @@ void RelayWriter::relay_write() {
 			}
 			if (p->transmit) {
 				proxy->send_data(endpoint,attributes,maxPacketSize,p->data,p->wLength);
-				writing=true;
+				//writing=true;
 			}
 		} else {
 			writing=!(proxy->send_wait_complete(endpoint, READ_TIMEOUT_MS));

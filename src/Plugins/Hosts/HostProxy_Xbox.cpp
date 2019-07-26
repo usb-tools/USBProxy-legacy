@@ -2,7 +2,7 @@
  * This file is part of USBProxy.
  */
 
-#include "HostProxy_GadgetFS.h"
+#include "HostProxy_Xbox.h"
 
 #include <cstring>
 #include <iostream>
@@ -21,7 +21,7 @@
 #include "Interface.h"
 #include "Endpoint.h"
 
-HostProxy_GadgetFS::HostProxy_GadgetFS(ConfigParser *cfg)
+HostProxy_Xbox::HostProxy_Xbox(ConfigParser *cfg)
 	: HostProxy(*cfg)
 {
 	mount_gadget();
@@ -38,7 +38,7 @@ HostProxy_GadgetFS::HostProxy_GadgetFS(ConfigParser *cfg)
 	}
 }
 
-HostProxy_GadgetFS::~HostProxy_GadgetFS() {
+HostProxy_Xbox::~HostProxy_Xbox() {
 	if (p_is_connected)
 		disconnect();
 	if (descriptor) {
@@ -48,7 +48,7 @@ HostProxy_GadgetFS::~HostProxy_GadgetFS() {
 	}
 }
 
-int HostProxy_GadgetFS::generate_descriptor(Device* device) {
+int HostProxy_Xbox::generate_descriptor(Device* device) {
 	char *ptr;
 	int i;
 	descriptor=(char*)malloc(USB_BUFSIZE);
@@ -132,7 +132,7 @@ int HostProxy_GadgetFS::generate_descriptor(Device* device) {
 }
 
 
-int HostProxy_GadgetFS::connect(Device* device,int timeout) {
+int HostProxy_Xbox::connect(Device* device,int timeout) {
 	int status;
 
 	if (p_is_connected) {fprintf(stderr,"GadgetFS already connected.\n"); return 0;}
@@ -164,7 +164,7 @@ int HostProxy_GadgetFS::connect(Device* device,int timeout) {
 	return 0;
 }
 
-int HostProxy_GadgetFS::reconnect() {
+int HostProxy_Xbox::reconnect() {
 	int status;
 
 	if (p_is_connected) {fprintf(stderr,"GadgetFS already connected.\n"); return 0;}
@@ -195,7 +195,7 @@ int HostProxy_GadgetFS::reconnect() {
 	return 0;
 }
 
-void HostProxy_GadgetFS::disconnect() {
+void HostProxy_Xbox::disconnect() {
 	if (!p_is_connected) {fprintf(stderr,"GadgetFS not connected.\n"); return;}
 
 	if (p_device_file) {
@@ -227,19 +227,19 @@ void HostProxy_GadgetFS::disconnect() {
 	p_is_connected = false;
 }
 
-void HostProxy_GadgetFS::reset() {
+void HostProxy_Xbox::reset() {
 	disconnect();
 	reconnect();
 }
 
-bool HostProxy_GadgetFS::is_connected() {
+bool HostProxy_Xbox::is_connected() {
 	return p_is_connected;
 }
 
 #define NEVENT 5
 
 //return 0 if there is no request, 1 otherwise
-int HostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *nbytes, __u8** dataptr,int timeout) {
+int HostProxy_Xbox::control_request(usb_ctrlrequest *setup_packet, int *nbytes, __u8** dataptr,int timeout) {
 	struct usb_gadgetfs_event events[NEVENT];
 	int ret, nevent, i;
 	struct pollfd fds;
@@ -326,7 +326,7 @@ int HostProxy_GadgetFS::control_request(usb_ctrlrequest *setup_packet, int *nbyt
 }
 
 
-void HostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length) {
+void HostProxy_Xbox::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8* dataptr,int length) {
 	if (!endpoint) {
 		int rc=write(p_device_file,dataptr,length);
 		if (rc<0) {
@@ -361,7 +361,7 @@ void HostProxy_GadgetFS::send_data(__u8 endpoint,__u8 attributes,__u16 maxPacket
 	}
 }
 
-bool HostProxy_GadgetFS::send_wait_complete(__u8 endpoint,int timeout) {
+bool HostProxy_Xbox::send_wait_complete(__u8 endpoint,int timeout) {
 	if (!endpoint) return true;
 	if (!(endpoint & 0x80)) {
 		fprintf(stderr,"trying to check send on an out EP%02x\n",endpoint);
@@ -410,7 +410,7 @@ bool HostProxy_GadgetFS::send_wait_complete(__u8 endpoint,int timeout) {
 	}
 }
 
-void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length, int timeout) {
+void HostProxy_Xbox::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPacketSize,__u8** dataptr, int* length, int timeout) {
 	if (!endpoint) {
 		fprintf(stderr,"trying to receive %d bytes on EP00\n",*length);
 		return;
@@ -461,7 +461,7 @@ void HostProxy_GadgetFS::receive_data(__u8 endpoint,__u8 attributes,__u16 maxPac
 
 }
 
-void HostProxy_GadgetFS::control_ack() {
+void HostProxy_Xbox::control_ack() {
 	if (debugLevel) fprintf(stderr,"Sending ACK\n");
 	if (lastControl.bRequestType&0x80) {
 		write(p_device_file,0,0);
@@ -470,7 +470,7 @@ void HostProxy_GadgetFS::control_ack() {
 	}
 }
 
-void HostProxy_GadgetFS::stall_ep(__u8 endpoint) {
+void HostProxy_Xbox::stall_ep(__u8 endpoint) {
 	if (debugLevel) fprintf(stderr,"Stalling EP%02x\n",endpoint);
 	if (endpoint) {
 		//FINISH for nonzero endpoint
@@ -483,7 +483,7 @@ void HostProxy_GadgetFS::stall_ep(__u8 endpoint) {
 	}
 }
 
-void HostProxy_GadgetFS::setConfig(Configuration* fs_cfg,Configuration* hs_cfg,bool hs) {
+void HostProxy_Xbox::setConfig(Configuration* fs_cfg,Configuration* hs_cfg,bool hs) {
 	int ifc_idx, aifc_idx;
 	__u8 ifc_count=fs_cfg->get_descriptor()->bNumInterfaces;
 	for (ifc_idx=0;ifc_idx<ifc_count;ifc_idx++) {
@@ -548,16 +548,16 @@ void HostProxy_GadgetFS::setConfig(Configuration* fs_cfg,Configuration* hs_cfg,b
 	}
 }
 
-void HostProxy_GadgetFS::handle_USB_REQ_SET_CONFIGURATION()
+void HostProxy_Xbox::handle_USB_REQ_SET_CONFIGURATION()
 {
-	control_ack();
+	return;
 }
 
-static HostProxy_GadgetFS *proxy;
+static HostProxy_Xbox *proxy;
 
 extern "C" {
 	HostProxy * get_hostproxy_plugin(ConfigParser *cfg) {
-		proxy = new HostProxy_GadgetFS(cfg);
+		proxy = new HostProxy_Xbox(cfg);
 		return (HostProxy *) proxy;
 	}
 	
