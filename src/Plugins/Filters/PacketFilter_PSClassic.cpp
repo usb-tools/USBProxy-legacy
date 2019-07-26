@@ -24,7 +24,7 @@ void PacketFilter_PSClassic::filter_packet(Packet* packet) {
 			(packet->data[1] & 0b00100000) != 0,
 			(packet->data[1] & 0b00010000) == 0 && (packet->data[1] & 0b00100000) == 0,
 			(packet->data[1] & 0b00001000) != 0,
-			(packet->data[1] & 0b00000100) == 0 && (packet->data[1] & 0b00001000) == 0),
+			(packet->data[1] & 0b00000100) == 0 && (packet->data[1] & 0b00001000) == 0,
 			(packet->data[1] & 0b00000010) != 0,
 			(packet->data[1] & 0b00000001) != 0);
 	}
