@@ -170,6 +170,7 @@ extern "C" int main(int argc, char **argv)
 		case 'y':
 			cfg->add_to_vector("Plugins", "PacketFilter_PSClassic");
 			cfg->add_pointer("PacketFilter_PSClassic::file", stdout);
+			break;
 		case 'h':
 		default:
 			usage(argv[0]);
