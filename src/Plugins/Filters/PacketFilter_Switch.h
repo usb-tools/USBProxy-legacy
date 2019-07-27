@@ -12,7 +12,7 @@ class PacketFilter_Switch : public PacketFilter {
 private:
 	FILE* file;
 public:
-	PacketFilter_PSClassic(ConfigParser *cfg);
+	PacketFilter_Switch(ConfigParser *cfg);
 	void filter_packet(Packet* packet);
 	void filter_setup_packet(SetupPacket* packet,bool direction);
 	virtual char* toString() {return (char*)"Nintendo Switch Filter";}
