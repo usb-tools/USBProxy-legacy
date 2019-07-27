@@ -40,6 +40,7 @@ void usage(char *arg) {
 	printf("\t-i Enable UDP injector\n");
 	printf("\t-x RetroSpy Xbox mode\n");
 	printf("\t-y RetroSpy PlayStation Classic mode\n");
+	printf("\t-z RetroSpy Switch mode\n");
 	printf("\t-k Keylogger with ROT13 filter (for demo), specify optional filename to output to instead of stderr\n");
 	printf("\t-w <filename> Write to pcap file for viewing in Wireshark\n");
 	printf("\t-h Display this message\n");
@@ -92,7 +93,7 @@ extern "C" int main(int argc, char **argv)
 	
 	ConfigParser *cfg = new ConfigParser();
 
-	while ((opt = getopt (argc, argv, "v:p:P:D:H:dsc:C:lmik::w:hxy")) != EOF) {
+	while ((opt = getopt (argc, argv, "v:p:P:D:H:dsc:C:lmik::w:hxyz")) != EOF) {
 		switch (opt) {
 		case 'v':
 			cfg->set("vendorId", optarg);
@@ -170,6 +171,10 @@ extern "C" int main(int argc, char **argv)
 		case 'y':
 			cfg->add_to_vector("Plugins", "PacketFilter_PSClassic");
 			cfg->add_pointer("PacketFilter_PSClassic::file", stdout);
+			break;
+		case 'z':
+			cfg->add_to_vector("Plugins", "PacketFilter_Switch");
+			cfg->add_pointer("PacketFilter_Switch::file", stdout);
 			break;
 		case 'h':
 		default:
