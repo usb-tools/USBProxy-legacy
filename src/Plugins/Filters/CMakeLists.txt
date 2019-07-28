@@ -8,7 +8,7 @@ set(PACKAGE usbproxy_filters)
 include_directories(${libusbproxy_SOURCE_DIR})
 LIST(APPEND PLUGINS_LINK_LIBS USBProxy)
 
-LIST(APPEND PLUGINS PacketFilter_Callback PacketFilter_KeyLogger PacketFilter_ROT13 PacketFilter_UDPHID PacketFilter_MassStorage PacketFilter_Power PacketFilter_StreamLog PacketFilter_Xbox PacketFilter_PSClassic PacketFilter_Switch)
+LIST(APPEND PLUGINS PacketFilter_Callback PacketFilter_KeyLogger PacketFilter_ROT13 PacketFilter_UDPHID PacketFilter_MassStorage PacketFilter_Power PacketFilter_StreamLog PacketFilter_Xbox PacketFilter_PSClassic PacketFilter_Switch PacketFilter_Xbox360)
 
 find_package(PCAP)
 
