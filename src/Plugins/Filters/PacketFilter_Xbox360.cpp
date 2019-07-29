@@ -10,6 +10,7 @@ PacketFilter_Xbox360::PacketFilter_Xbox360(ConfigParser *cfg) {
 
 void PacketFilter_Xbox360::filter_packet(Packet* packet) {
 	if (packet->wLength == 20) {
+		
 		for (int i = 0; i < 12; ++i)
 			for(int j = 0; j < 8; ++j)
 				fprintf(file, "%d", (packet->data[2+i] & (1 << j)) != 0);

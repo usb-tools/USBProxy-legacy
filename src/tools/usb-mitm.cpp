@@ -94,7 +94,7 @@ extern "C" int main(int argc, char **argv)
 	
 	ConfigParser *cfg = new ConfigParser();
 
-	while ((opt = getopt (argc, argv, "v:p:P:D:H:dsc:C:lmik::w:hxyza")) != EOF) {
+	while ((opt = getopt (argc, argv, "v:p:P:D:H:dsc:C:lmik::w:hxyzb")) != EOF) {
 		switch (opt) {
 		case 'v':
 			cfg->set("vendorId", optarg);
@@ -177,7 +177,7 @@ extern "C" int main(int argc, char **argv)
 			cfg->add_to_vector("Plugins", "PacketFilter_Switch");
 			cfg->add_pointer("PacketFilter_Switch::file", stdout);
 			break;
-		case 'a':
+		case 'b':
 			cfg->add_to_vector("Plugins", "PacketFilter_Xbox360");
 			cfg->add_pointer("PacketFilter_Xbox360::file", stdout);
 			break;
