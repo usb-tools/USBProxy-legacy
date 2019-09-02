@@ -76,14 +76,14 @@ DeviceProxy_LibUSB::DeviceProxy_LibUSB(ConfigParser *cfg) :
 		vendorId = LIBUSB_HOTPLUG_MATCH_ANY;
 	else
 		vendorId = stoi(vid_str, nullptr, 16);
-	cerr << "vendorId=" << hex4(vendorId) << endl;
+	//cerr << "vendorId=" << hex4(vendorId) << endl;
 
 	string pid_str = cfg->get("productId");
 	if (pid_str == "")
 		productId = LIBUSB_HOTPLUG_MATCH_ANY;
 	else
 		productId = stoi(pid_str, nullptr, 16);
-	cerr << "productId=" << hex4(productId) << endl;
+	//cerr << "productId=" << hex4(productId) << endl;
 
 	bool includeHubs = false;
 

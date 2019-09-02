@@ -30,7 +30,7 @@ int PluginManager::load_plugins(ConfigParser *cfg)
 	std::string plugin_file;
 	void* plugin_func;
 	PacketFilter *filter;
-	fprintf(stderr, "Loading plugins from %s\n", PLUGIN_PATH);
+	//fprintf(stderr, "Loading plugins from %s\n", PLUGIN_PATH);
 
 	device_plugin_getter dp_ptr;
 	host_plugin_getter hp_ptr;

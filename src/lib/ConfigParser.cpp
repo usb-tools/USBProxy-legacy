@@ -133,26 +133,27 @@ void *ConfigParser::get_pointer(std::string key) {
 
 /* Iterate over strings/vectors/pointers to print config */
 void ConfigParser::print_config() {
-	std::clog << "Printing Config data" << std::endl;
-	std::clog << "\tStrings: " << strings.size() << std::endl;
-	for(std::map<std::string, std::string>::iterator it = strings.begin();
-		it != strings.end(); ++it) {
-		std::clog << "\t\t" << it->first << ": " << it->second << std::endl;
-	}
+	//std::clog << "Printing Config data" << std::endl;
+	//std::clog << "\tStrings: " << strings.size() << std::endl;
+	//for(std::map<std::string, std::string>::iterator it = strings.begin();
+	//	it != strings.end(); ++it) {
+	//	std::clog << "\t\t" << it->first << ": " << it->second << std::endl;
+	//}
 	
-	std::clog << "\tVectors: " << vectors.size() << std::endl;
-	for(std::map<std::string, std::vector<std::string>>::iterator it = vectors.begin();
-		it != vectors.end(); ++it) {
-		std::clog << "\t\t" << it->first << ":\n";
-		for(std::vector<std::string>::iterator itv = it->second.begin();
-			itv != it->second.end(); ++itv) {
-			std::clog << "\t\t\t" << *itv << std::endl;
-		}
-	}
+	//std::clog << "\tVectors: " << vectors.size() << std::endl;
+	//for(std::map<std::string, std::vector<std::string>>::iterator it = vectors.begin();
+	//	it != vectors.end(); ++it) {
+	//	std::clog << "\t\t" << it->first << ":\n";
+	//	for(std::vector<std::string>::iterator itv = it->second.begin();
+	//		itv != it->second.end(); ++itv) {
+	//		std::clog << "\t\t\t" << *itv << std::endl;
+	//	}
+	//}
 	
-	std::clog << "Pointer: " << pointers.size() << std::endl;
-	for(std::map<std::string, void*>::iterator it = pointers.begin();
-		it != pointers.end(); ++it) {
-		std::clog << "\t\t" << it->first << ": " << it->second << std::endl;
-	}
+	//std::clog << "Pointer: " << pointers.size() << std::endl;
+	//for(std::map<std::string, void*>::iterator it = pointers.begin();
+	//	it != pointers.end(); ++it) {
+	//	std::clog << "\t\t" << it->first << ": " << it->second << std::endl;
+	//}
 }
+

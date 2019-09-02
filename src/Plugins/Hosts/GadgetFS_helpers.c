@@ -54,7 +54,7 @@ void clean_tmp() {
 
 	entry = malloc(offsetof(struct dirent, d_name) + fpathconf(dirfd(dir), _PC_NAME_MAX) + 1);
 
-	fprintf(stderr,"cleaning up /tmp\n");
+	//fprintf(stderr,"cleaning up /tmp\n");
 
 	if (!entry) {
 		closedir (dir);
@@ -76,7 +76,7 @@ void clean_tmp() {
 	}
 	free(entry);
 
-	fprintf(stderr,"removing %d\n",rmCount);
+	//fprintf(stderr,"removing %d\n",rmCount);
 	for (i=0;i<rmCount;i++) {
 		char buf[20]={0x0};
 		strcat(buf,"/tmp/");
@@ -139,7 +139,7 @@ int mount_gadget() {
 	memcpy(gadgetfs_path, mount_template, sizeof(mount_template));
 
 	gadgetfs_path = mkdtemp(gadgetfs_path);
-	fprintf(stderr, "Made directory %s for gadget\n", gadgetfs_path);
+	//fprintf(stderr, "Made directory %s for gadget\n", gadgetfs_path);
 	status = mount("USBProxy", gadgetfs_path, "gadgetfs", 0, "");
 	if (status!=0) {fprintf(stderr,"Error mounting gadgetfs from [%s].\n",gadgetfs_path);fprintf(stderr, "Error code from mount is: [%s]\n", strerror(errno));return 1;}
 	return 0;
@@ -218,7 +218,7 @@ const char * find_gadget_filename()
 				   + fpathconf(dirfd(dir), _PC_NAME_MAX)
 				   + 1);
 
-	fprintf(stderr,"searching in [%s]\n",gadgetfs_path);
+	//fprintf(stderr,"searching in [%s]\n",gadgetfs_path);
 
 	if (!entry) {
 		closedir (dir);

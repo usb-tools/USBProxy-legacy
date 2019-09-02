@@ -49,8 +49,10 @@ RelayReader::~RelayReader() {
 }
 
 void RelayReader::relay_read_setup() {
-	if (!hostProxy) {//fprintf(stderr,"HostProxy not initialized for EP00 reader.\n");return;}
-	if (!_recvQueue) {//fprintf(stderr,"inQueue not initialized for EP00 reader.\n");return;}
+	if (!hostProxy) {//fprintf(stderr,"HostProxy not initialized for EP00 reader.\n");
+		return;}
+	if (!_recvQueue) {//fprintf(stderr,"inQueue not initialized for EP00 reader.\n");
+		return;}
 
 	bool idle=true;
 	__u8* buf;
