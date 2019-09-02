@@ -62,15 +62,15 @@ RelayWriter::~RelayWriter() {
 
 void RelayWriter::relay_write_setup() {
 	if (!deviceProxy) {
-		fprintf(stderr,"DeviceProxy not initialized for EP00 writer.\n");
+		//fprintf(stderr,"DeviceProxy not initialized for EP00 writer.\n");
 		return;
 	}
 	if (!_sendQueue) {
-		fprintf(stderr,"outQueue not initialized for EP00 writer.\n");
+		//fprintf(stderr,"outQueue not initialized for EP00 writer.\n");
 		return;
 	}
 	if (!_recvQueue) {
-		fprintf(stderr,"inQueue not initialized for EP00 writer.\n");
+		//fprintf(stderr,"inQueue not initialized for EP00 writer.\n");
 		return;
 	}
 
@@ -81,7 +81,7 @@ void RelayWriter::relay_write_setup() {
 	int length;
 	usb_ctrlrequest ctrl_req;
 
-	fprintf(stderr,"Starting setup writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
+	//fprintf(stderr,"Starting setup writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
 	while (!_please_stop) {
 		p = _recvQueue->dequeue();
 		if (_please_stop)
@@ -115,7 +115,7 @@ void RelayWriter::relay_write_setup() {
 				filters[j]->filter_setup_packet(s, false);
 		_sendQueue->enqueue(p);
 	}
-	fprintf(stderr,"Finished setup writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
+	//fprintf(stderr,"Finished setup writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
 	_please_stop = false;
 }
 
@@ -128,7 +128,7 @@ void RelayWriter::relay_write() {
 	bool writing=false;
 	PacketPtr p;
 
-	fprintf(stderr,"Starting writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
+	//fprintf(stderr,"Starting writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
 	while (!_please_stop) {
 		if (!writing) {
 			p = _recvQueue->dequeue();
@@ -147,7 +147,7 @@ void RelayWriter::relay_write() {
 			writing=!(proxy->send_wait_complete(endpoint, READ_TIMEOUT_MS));
 		}
 	}
-	fprintf(stderr,"Finished writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
+	//fprintf(stderr,"Finished writer thread (%ld) for EP%02x.\n",gettid(),endpoint);
 	_please_stop = false;
 }
 
