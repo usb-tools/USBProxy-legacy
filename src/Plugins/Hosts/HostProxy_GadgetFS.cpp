@@ -541,7 +541,7 @@ void HostProxy_GadgetFS::setConfig(Configuration* fs_cfg,Configuration* hs_cfg,b
 						p_epout_async[epAddress&0x0f]=aio;
 					}
 				}
-				fprintf(stderr,"Opened EP%02x\n",epAddress);
+				//fprintf(stderr,"Opened EP%02x\n",epAddress);
 			}
 		}
 		// end
