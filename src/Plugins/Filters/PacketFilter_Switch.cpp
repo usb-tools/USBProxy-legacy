@@ -36,11 +36,11 @@ void PacketFilter_Switch::filter_packet(Packet* packet) {
 	}
 	if (packet->wLength == 8) {
 		for (int i = 0; i < 8; ++i)
-			fprintf(file, "%d", (packet->data[3] & (1 << i)) != 0);
+			fprintf(file, "%d", (packet->data[0] & (1 << i)) != 0);
 		for (int i = 0; i < 8; ++i)
-			fprintf(file, "%d", (packet->data[4] & (1 << i)) != 0);
+			fprintf(file, "%d", (packet->data[1] & (1 << i)) != 0);
 		for (int i = 0; i < 8; ++i)
-			fprintf(file, "%d", (packet->data[5] & (1 << i)) != 0);
+			fprintf(file, "%d", (packet->data[2] & (1 << i)) != 0);
 
 		fprintf(file, "\n");
 	}
