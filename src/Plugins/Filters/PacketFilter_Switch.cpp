@@ -50,7 +50,7 @@ void PacketFilter_Switch::filter_packet(Packet* packet) {
 		for (int i = 0; i < 8; ++i)
 			fprintf(file, "%d", (packet->data[6] & (1 << i)) != 0);
 
-		fprintf(file, "\n");
+		fprintf(file, "0\n");
 	}
 }
 void PacketFilter_Switch::filter_setup_packet(SetupPacket* packet,bool direction) {
