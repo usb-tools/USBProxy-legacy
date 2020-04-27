@@ -7,6 +7,6 @@
 #include <asm/unistd.h>
 #include "get_tid.h"
 
-long int gettid() {
+__pid_t gettid() {
 	return (pid_t)syscall(__NR_gettid);
 }

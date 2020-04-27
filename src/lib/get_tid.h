@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-long int gettid();
+__pid_t gettid();
 
 #ifdef __cplusplus
 }
