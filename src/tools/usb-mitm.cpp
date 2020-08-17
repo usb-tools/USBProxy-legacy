@@ -66,6 +66,7 @@ void handle_signal(int signum)
 			fprintf(stderr, "Exiting\n");
 			memset(&action, 0, sizeof(struct sigaction));
 			action.sa_handler = SIG_DFL;
+			sigaction(SIGINT, &action, NULL);
 			sigaction(SIGTERM, &action, NULL);
 			break;
 		case SIGHUP:
